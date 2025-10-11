@@ -45,7 +45,7 @@ import { Client } from '@upstash/qstash';
 
 import { usageCountCache, createMessageCountKey, createExtremeCountKey } from '@/lib/performance-cache';
 import { CronExpressionParser } from 'cron-parser';
-import { getComprehensiveUserData, getLightweightUserAuth } from '@/lib/user-data-server';
+import { getComprehensiveUserData, getLightweightUserAuth, clearCustomInstructionsCache } from '@/lib/user-data-server';
 import {
   createConnection,
   listUserConnections,
@@ -1714,6 +1714,8 @@ export async function saveCustomInstructions(content: string) {
       result = await createCustomInstructions({ userId: user.id, content: content.trim() });
     }
 
+    clearCustomInstructionsCache(user.id);
+
     return { success: true, data: result };
   } catch (error) {
     console.error('Error saving custom instructions:', error);
@@ -1731,6 +1733,7 @@ export async function deleteCustomInstructionsAction() {
     }
 
     const result = await deleteCustomInstructions({ userId: user.id });
+    clearCustomInstructionsCache(user.id);
     return { success: true, data: result };
   } catch (error) {
     console.error('Error deleting custom instructions:', error);

@@ -10,6 +10,7 @@ import { geolocation } from '@vercel/functions';
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
 import type { ChatMessage } from '@/lib/types';
 import { getLightweightUser, generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
+import { getCachedCustomInstructionsByUserId } from '@/lib/user-data-server';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -82,7 +83,7 @@ function buildAutoContext(summaries: Array<{ url: string; title?: string; excerp
 
 export async function POST(req: Request) {
   const requestStart = Date.now();
-  const { messages, model, group, timezone, id } = await req.json();
+  const { messages, model, group, timezone, id, isCustomInstructionsEnabled } = await req.json();
   const streamId = 'stream-' + uuidv4();
   const { latitude, longitude } = geolocation(req);
 
@@ -146,9 +147,21 @@ export async function POST(req: Request) {
     execute: async ({ writer }) => {
       const { instructions } = await getGroupConfig(group);
       const systemParts: string[] = [];
-      if (instructions) systemParts.unshift(instructions);
+      if (instructions) systemParts.push(instructions);
       if (autoContext) systemParts.push(autoContext);
       if (latitude && longitude) systemParts.push(`User location (approx): ${latitude}, ${longitude}`);
+
+      if (userId && isCustomInstructionsEnabled !== false) {
+        try {
+          const customInstructions = await getCachedCustomInstructionsByUserId(userId);
+          const content = customInstructions?.content?.trim();
+          if (content) {
+            const MAX_CHARS = 8000;
+            const safeContent = content.length > MAX_CHARS ? content.slice(0, MAX_CHARS) : content;
+            systemParts.unshift(safeContent);
+          }
+        } catch {}
+      }
 
       // Try Gemini 2.5 with fallbacks
       const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-exp'];
