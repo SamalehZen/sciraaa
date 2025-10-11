@@ -22,6 +22,7 @@ import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
+import { BorderTrail } from '@/components/core/border-trail';
 
 // Hook imports
 import { useAutoResume } from '@/hooks/use-auto-resume';
@@ -64,6 +65,7 @@ const ChatInterface = memo(
 
     const [selectedModel, setSelectedModel] = useLocalStorage('scira-selected-model', 'scira-default');
     const [selectedGroup, setSelectedGroup] = useLocalStorage<SearchGroupId>('scira-selected-group', 'web');
+	    const isCyrus = selectedGroup === 'cyrus';
     const [selectedConnectors, setSelectedConnectors] = useState<ConnectorProvider[]>([]);
     const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
       'scira-custom-instructions-enabled',
@@ -185,7 +187,7 @@ const ChatInterface = memo(
     }, [markManualScroll]);
 
     // Use clean React Query hooks for all data fetching
-    const { data: usageData, refetch: refetchUsage } = useUsageData(user || null);
+    const { data: usageData, refetch: refetchUsage, isFetching: isUsageFetching } = useUsageData(user || null);
 
     // Sign-in prompt timer
     const signInTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -616,6 +618,8 @@ const ChatInterface = memo(
       [chatId],
     );
 
+    const isReloading = (typeof isUsageFetching !== 'undefined' ? isUsageFetching : false) || status === 'submitted';
+
     return (
       <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground">
         <Navbar
@@ -668,12 +672,19 @@ const ChatInterface = memo(
 
 
         <div
-          className={`w-full p-2 sm:p-4 relative ${
+          className={`w-full p-2 sm:p-4 relative rounded-xl overflow-hidden ${
             status === 'ready' && messages.length === 0
-              ? 'flex-1 !flex !flex-col !items-center !justify-center' // Center everything when no messages
-              : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
+              ? 'flex-1 !flex !flex-col !items-center !justify-center'
+              : '!mt-20 sm:!mt-16 flex !flex-col'
           }`}
         >
+          {isCyrus && (status === 'streaming' || isReloading) && (
+            <BorderTrail
+              className="bg-gradient-to-r from-primary/20 via-primary to-primary/20"
+              size={50}
+              transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+            />
+          )}
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
             {status === 'ready' && messages.length === 0 && (
               <div className="text-center m-0 mb-2">
@@ -764,6 +775,7 @@ const ChatInterface = memo(
                 initialMessages={initialMessages}
                 isOwner={isOwner}
                 onHighlight={handleHighlight}
+                isCyrus={isCyrus}
               />
             )}
 

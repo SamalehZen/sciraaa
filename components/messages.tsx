@@ -35,6 +35,7 @@ interface MessagesProps {
   initialMessages?: any[]; // Add initial messages prop to detect existing chat
   isOwner?: boolean; // Add ownership prop
   onHighlight?: (text: string) => void; // Add highlight handler
+  isCyrus?: boolean;
 }
 
 const Messages: React.FC<MessagesProps> = ({
@@ -54,6 +55,7 @@ const Messages: React.FC<MessagesProps> = ({
   onHighlight,
   sendMessage,
   regenerate,
+  isCyrus,
 }) => {
   // Track visibility state for each reasoning section using messageIndex-partIndex as key
   const [reasoningVisibilityMap, setReasoningVisibilityMap] = useState<Record<string, boolean>>({});
@@ -362,7 +364,9 @@ const Messages: React.FC<MessagesProps> = ({
           // Determine proper spacing between messages
           let messageClasses = '';
 
-          if (isCurrentMessageUser && isNextMessageAssistant) {
+          if (isCyrus) {
+            messageClasses = 'py-3 sm:py-4';
+          } else if (isCurrentMessageUser && isNextMessageAssistant) {
             // Reduce space between user message and its response
             messageClasses = 'mb-0';
           } else if (isCurrentMessageAssistant && index < memoizedMessages.length - 1) {
@@ -412,6 +416,9 @@ const Messages: React.FC<MessagesProps> = ({
                     : false
                 }
               />
+              {isCyrus && index < memoizedMessages.length - 1 && (
+                <div className="h-px bg-border/60 dark:bg-border/60 mt-3 sm:mt-4" />
+              )}
             </div>
           );
         })}
