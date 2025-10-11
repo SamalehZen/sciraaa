@@ -213,6 +213,7 @@ const groupTools = {
   crypto: ['coin_data', 'coin_ohlc', 'coin_data_by_contract', 'datetime'] as const,
   chat: [] as const,
   cyrus: [] as const,
+  cyrus_v2: [] as const,
   extreme: ['extreme_search'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,
@@ -1297,6 +1298,7 @@ $$
   - Maintain accuracy to the source documents
   - Use the document content to provide comprehensive answers`,
   cyrus: `${CYRUS_PROMPT}\n\n${CYRUS_OUTPUT_RULES}`,
+  cyrus_v2: `Mode Cyrus v2 (rapide). Entrez 1 titre par ligne. La réponse s'affichera en JSON strict.`,
 };
 
 export async function getGroupConfig(groupId: LegacyGroupId = 'web') {

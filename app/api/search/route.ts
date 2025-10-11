@@ -1,10 +1,14 @@
 // /app/api/search/route.ts
 import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream } from 'ai';
+import { normalizeTitle } from '@/lib/retrieval/normalize';
+import { getCandidatesForTitle } from '@/lib/retrieval/candidates';
+import { adjudicate } from '@/lib/llm/adjudicate';
 import { scira } from '@/ai/providers';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { google } from '@ai-sdk/google';
+import crypto from 'crypto';
 import { geolocation } from '@vercel/functions';
 
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
@@ -139,6 +143,71 @@ export async function POST(req: Request) {
   const fetched = await Promise.all(urls.map((u) => fetchAndSummarize(u)));
   const summaries = fetched.filter((x): x is NonNullable<typeof x> => Boolean(x));
   const autoContext = buildAutoContext(summaries);
+
+  // Fast path: Cyrus v2 (rapide) pipeline
+  if (group === 'cyrus_v2') {
+    const startAll = Date.now();
+    const lines = (lastText || '').split(/\n+/).map((s: string) => s.trim()).filter(Boolean);
+    const items = lines.map((title: string, i: number) => ({ id: String(i + 1), title }));
+
+    const normed = items.map((it) => ({ id: it.id, raw: it.title, norm: normalizeTitle(it.title).normalized }));
+
+    const t1 = Date.now();
+    const withCands = await Promise.all(
+      normed.map(async (it) => ({
+        id: it.id,
+        titleNormalized: it.norm,
+        candidates: (await getCandidatesForTitle(it.norm)).map((c) => ({
+          sector_code: c.sector_code,
+          sector_name: c.sector_name,
+          rayon_code: c.rayon_code,
+          rayon_name: c.rayon_name,
+          famille_code: c.famille_code,
+          famille_name: c.famille_name,
+          sous_famille_code: c.sous_famille_code,
+          sous_famille_name: c.sous_famille_name,
+          full_path: c.full_path,
+          scores: c.scores,
+        })),
+      })),
+    );
+    const retrievalMs = Date.now() - t1;
+
+    const t2 = Date.now();
+    const { results, tokens } = await adjudicate(withCands);
+    const llmMs = Date.now() - t2;
+
+    const totalMs = Date.now() - startAll;
+
+    const payload = { results, timings: { retrievalMs, llmMs, totalMs }, tokens };
+
+    const dataStream = createUIMessageStream<ChatMessage>({
+      execute: async ({ writer }) => {
+        const message: ChatMessage = {
+          id: 'assistant-' + crypto.randomUUID(),
+          role: 'assistant',
+          parts: [{ type: 'text', text: JSON.stringify(payload) }],
+          metadata: {
+            model: 'gemini-2.5-flash',
+            completionTime: totalMs / 1000,
+            createdAt: new Date().toISOString(),
+            totalTokens: tokens.total,
+            inputTokens: tokens.input,
+            outputTokens: tokens.output,
+          },
+        } as any;
+        writer.write({ type: 'data-appendMessage', data: JSON.stringify(message), transient: true });
+      },
+    });
+
+    const streamContext = getStreamContext();
+    if (streamContext) {
+      return new Response(
+        await streamContext.resumableStream(streamId, () => dataStream.pipeThrough(new JsonToSseTransformStream())),
+      );
+    }
+    return new Response(dataStream.pipeThrough(new JsonToSseTransformStream()));
+  }
 
   const streamStart = Date.now();
 

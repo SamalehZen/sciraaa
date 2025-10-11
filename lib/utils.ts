@@ -33,7 +33,8 @@ export type SearchGroupId =
   | 'crypto'
   | 'code'
   | 'connectors'
-  | 'cyrus';
+  | 'cyrus'
+  | 'cyrus_v2';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {
@@ -146,6 +147,13 @@ export function getSearchGroups(searchProvider: SearchProvider = 'parallel') {
       id: 'cyrus' as const,
       name: 'Cyrus Structure',
       description: 'Classifie les articles par hiérarchie (Markdown)',
+      icon: Database02Icon,
+      show: true,
+    },
+    {
+      id: 'cyrus_v2' as const,
+      name: 'Cyrus v2 (rapide)',
+      description: 'Classification rapide (1 titre par ligne) → JSON',
       icon: Database02Icon,
       show: true,
     },
