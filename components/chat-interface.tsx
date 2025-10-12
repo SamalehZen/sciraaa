@@ -19,7 +19,9 @@ import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 
 // Component imports
 import { ChatDialogs } from '@/components/chat-dialogs';
-import DotScreenShader from '@/components/backgrounds/DotScreenShader';
+import dynamic from 'next/dynamic';
+import ErrorBoundary from '@/components/core/ErrorBoundary';
+const DotScreenShader = dynamic(() => import('@/components/backgrounds/DotScreenShader'), { ssr: false });
 import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
@@ -632,7 +634,9 @@ const ChatInterface = memo(
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               className="pointer-events-none fixed inset-0 -z-10"
             >
-              <DotScreenShader />
+              <ErrorBoundary>
+                <DotScreenShader />
+              </ErrorBoundary>
             </motion.div>
           )}
         </AnimatePresence>
