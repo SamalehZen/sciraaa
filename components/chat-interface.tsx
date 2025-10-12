@@ -6,6 +6,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useReducer, useSt
 
 // Third-party library imports
 import { useChat } from '@ai-sdk/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Crown02Icon } from '@hugeicons/core-free-icons';
 import { useRouter } from 'next/navigation';
@@ -18,6 +19,7 @@ import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 
 // Component imports
 import { ChatDialogs } from '@/components/chat-dialogs';
+import DotScreenShader from '@/components/backgrounds/DotScreenShader';
 import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
@@ -616,8 +618,25 @@ const ChatInterface = memo(
       [chatId],
     );
 
+    const isIntro = status === 'ready' && messages.length === 0;
+
     return (
       <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground">
+        <AnimatePresence>
+          {isIntro && (
+            <motion.div
+              key="dotshader-bg"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="pointer-events-none fixed inset-0 -z-10"
+            >
+              <DotScreenShader />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <Navbar
           isDialogOpen={chatState.anyDialogOpen}
           chatId={initialChatId || (messages.length > 0 ? chatId : null)}
