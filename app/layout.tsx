@@ -10,7 +10,7 @@ import { ClientAnalytics } from '@/components/client-analytics';
 // import { Databuddy } from '@databuddy/sdk';
 
 import { Providers } from './providers';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { DEFAULT_LOCALE, mapLocaleToHtmlLang, type SupportedLocale } from '@/lib/locale';
 import { LanguageProvider } from '@/providers/language-provider';
 
@@ -117,8 +117,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieLocale = (cookies().get('scira-locale')?.value as SupportedLocale) || DEFAULT_LOCALE;
-  const htmlLang = mapLocaleToHtmlLang(cookieLocale);
+  const cookieHeader = headers().get('cookie') || '';
+  const parseCookie = (name: string): string | undefined => {
+    const parts = cookieHeader.split(';');
+    for (const part of parts) {
+      const [k, ...rest] = part.trim().split('=');
+      if (k === name) return decodeURIComponent(rest.join('='));
+    }
+    return undefined;
+  };
+  const selected = (parseCookie('scira-locale') as SupportedLocale) || DEFAULT_LOCALE;
+  const htmlLang = mapLocaleToHtmlLang(selected);
   return (
     <html lang={htmlLang} suppressHydrationWarning>
       <body
@@ -127,7 +136,7 @@ export default function RootLayout({
       >
         <NuqsAdapter>
           <Providers>
-            <LanguageProvider initialLocale={cookieLocale}>
+            <LanguageProvider initialLocale={selected}>
               <Toaster position="top-center" />
               {children}
             </LanguageProvider>
