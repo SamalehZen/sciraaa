@@ -7,7 +7,6 @@ import * as THREE from "three";
 import { useTheme } from "next-themes";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
-// Dot screen shader material (implements required uniforms)
 const DotMaterialImpl = shaderMaterial(
   {
     time: 0,
@@ -102,7 +101,7 @@ function FullscreenDots({
     if (!materialRef.current) return;
     const m = materialRef.current as any;
     m.resolution.set(size.width, size.height);
-    if (!reducedMotion) m.time += delta; // freeze when reduced motion
+    if (!reducedMotion) m.time += delta
   });
 
   useEffect(() => {
@@ -122,7 +121,6 @@ function FullscreenDots({
   return (
     <mesh onPointerMove={onMove} frustumCulled={false}>
       <planeGeometry args={[2, 2]} />
-      {/* @ts-ignore - injected by extend */}
       <dotMaterial ref={materialRef} gridSize={reducedMotion ? 10 : 12} rotation={0.2} />
     </mesh>
   );
@@ -159,7 +157,7 @@ export function DotScreenShader() {
     blend: "screen",
   });
 
-  // Avoid SSR hydration mismatch
+
   if (!mounted) return null;
 
   const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
