@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "new": "Nouveau",
+    "upgrade": "Mettre à niveau",
+    "freePlan": "Offre gratuite",
+    "shared": "Partagé",
+    "sharedTooltipAnon": "Ceci est une page partagée",
+    "sharedTooltipOther": "Ceci est la page partagée de quelqu'un d'autre",
+    "proBadge": "pro",
+    "proTooltip": "Abonné Pro - Accès illimité"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "tabs": {
+      "account": "Compte",
+      "usage": "Utilisation",
+      "subscription": "Abonnement",
+      "preferences": "Préférences",
+      "connectors": "Connecteurs",
+      "memories": "Mémoires"
+    },
+    "language": {
+      "title": "Langue",
+      "description": "Modifiez la langue de l'interface et le formatage. Par défaut, le français est utilisé pour les visiteurs anonymes. Les réponses de l'IA restent dans la langue de vos messages.",
+      "selectLabel": "Langue de l'interface",
+      "optionFr": "Français (fr-FR)",
+      "optionEn": "English (en-US)",
+      "notice": "Votre choix est enregistré dans votre navigateur et un cookie."
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Bon retour",
+      "description": "Connectez‑vous pour continuer sur Scira AI",
+      "cta": "Se connecter",
+      "loading": "Connexion…"
+    },
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "terms": "Conditions",
+    "privacy": "Politique de confidentialité",
+    "notProvided": "Non renseigné"
+  },
+  "chat": {
+    "input": {
+      "placeholder": "Posez votre question…"
+    }
+  },
+  "pricing": {
+    "header": "Tarifs",
+    "subheader": "Choisissez l'offre qui vous convient",
+    "free": "Gratuit",
+    "perMonth": "/mois",
+    "cta": "Passer à Pro"
+  },
+  "error": {
+    "title": "Un problème est survenu",
+    "description": "Une erreur s'est produite lors du chargement de cette page. Veuillez réessayer plus tard.",
+    "tryAgain": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "home": "Retour à l'accueil"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "copy": "Copier",
+    "copied": "Copié"
+  }
+}

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { RefreshCw, Home, TriangleAlert, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Inter, Be_Vietnam_Pro, Baumans } from 'next/font/google';
 import { AnimatePresence, motion } from 'framer-motion';
+import { DEFAULT_LOCALE, mapLocaleToHtmlLang, type SupportedLocale } from '@/lib/locale';
+import fr from '@/locales/fr-FR.json';
+import en from '@/locales/en-US.json';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,9 +43,21 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Read locale from cookie on client
+  const cookieLocale = useMemo<SupportedLocale>(() => {
+    try {
+      const match = document.cookie.match(/(?:^|; )scira-locale=([^;]+)/);
+      const val = match ? decodeURIComponent(match[1]) : null;
+      if (val === 'en-US') return 'en-US';
+      return 'fr-FR';
+    } catch {
+      return DEFAULT_LOCALE;
+    }
+  }, []);
+  const htmlLang = mapLocaleToHtmlLang(cookieLocale);
+  const dict = cookieLocale === 'fr-FR' ? (fr as any) : (en as any);
+
   useEffect(() => {
-    // Central place to hook real error reporting (Sentry, PostHog, etc.)
-    // e.g. reportError(error);
     // eslint-disable-next-line no-console
     console.error('[GlobalErrorBoundary]', error);
   }, [error]);
@@ -67,7 +82,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   };
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={htmlLang} suppressHydrationWarning>
       <body
         className={`${inter.variable} ${beVietnamPro.variable} ${baumans.variable} font-sans antialiased bg-background text-foreground min-h-screen`}
         suppressHydrationWarning
@@ -92,24 +107,23 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                 </div>
 
                 <h1 className="font-be-vietnam-pro text-3xl md:text-4xl font-semibold tracking-tight">
-                  Something broke
+                  {dict.error?.title || 'Something went wrong'}
                 </h1>
 
                 <p className="text-muted-foreground leading-relaxed">
-                  A global application error occurred. You can try to recover, or head back to the home page. If this
-                  keeps happening, feel free to report it.
+                  {dict.error?.description || 'An error occurred while trying to load this page. Please try again later.'}
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <Button onClick={reset} className="rounded-full">
                     <RefreshCw className="size-4" />
-                    Try again
+                    {dict.error?.tryAgain || 'Try again'}
                   </Button>
 
                   <Link href="/" prefetch>
                     <Button variant="outline" className="rounded-full">
                       <Home className="size-4" />
-                      Home
+                      {dict.error?.home || 'Home'}
                     </Button>
                   </Link>
 
@@ -148,7 +162,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                               onClick={handleCopy}
                             >
                               <Copy className="size-3.5" />
-                              {copied ? 'Copied' : 'Copy'}
+                              {copied ? (dict.common?.copied || 'Copied') : (dict.common?.copy || 'Copy')}
                             </Button>
                           </div>
                         )}

@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "new": "New",
+    "upgrade": "Upgrade",
+    "freePlan": "Free Plan",
+    "shared": "Shared",
+    "sharedTooltipAnon": "This is a shared page",
+    "sharedTooltipOther": "This is someone else's shared page",
+    "proBadge": "pro",
+    "proTooltip": "Pro Subscribed - Unlimited access"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "account": "Account",
+      "usage": "Usage",
+      "subscription": "Subscription",
+      "preferences": "Preferences",
+      "connectors": "Connectors",
+      "memories": "Memories"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Change the interface language and formatting. Default is French for anonymous users. AI replies still mirror the language of your messages.",
+      "selectLabel": "Interface language",
+      "optionFr": "Français (fr-FR)",
+      "optionEn": "English (en-US)",
+      "notice": "Your choice is saved to your browser and a cookie."
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Welcome back",
+      "description": "Sign in to continue to Scira AI",
+      "cta": "Sign in",
+      "loading": "Signing in…"
+    },
+    "username": "Username",
+    "password": "Password",
+    "terms": "Terms",
+    "privacy": "Privacy Policy",
+    "notProvided": "Not provided"
+  },
+  "chat": {
+    "input": {
+      "placeholder": "Ask anything…"
+    }
+  },
+  "pricing": {
+    "header": "Pricing",
+    "subheader": "Choose the plan that works for you",
+    "free": "Free",
+    "perMonth": "/month",
+    "cta": "Upgrade to Pro"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "description": "An error occurred while trying to load this page. Please try again later.",
+    "tryAgain": "Try again",
+    "home": "Return to home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "home": "Return to home"
+  },
+  "common": {
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied"
+  }
+}

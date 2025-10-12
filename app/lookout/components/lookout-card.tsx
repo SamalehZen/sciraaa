@@ -9,6 +9,7 @@ import { BorderTrail } from '@/components/core/border-trail';
 import { StatusBadge } from './status-badge';
 import { ActionButtons } from './action-buttons';
 import { formatNextRun } from '../utils/time-utils';
+import { useLocale } from '@/hooks/use-locale';
 
 interface Lookout {
   id: string;
@@ -51,6 +52,7 @@ export function LookoutCard({
     e.stopPropagation();
   };
 
+  const { locale } = useLocale();
   return (
     <Card
       className={`shadow-none border border-primary/50 cursor-pointer relative overflow-hidden hover:border-primary/40 ${
@@ -102,7 +104,7 @@ export function LookoutCard({
           {/* Next run information */}
           {lookout.nextRunAt && lookout.status === 'active' && (
             <p className="text-xs text-muted-foreground">
-              Next Run: {formatNextRun(lookout.nextRunAt, lookout.timezone)}
+              Next Run: {formatNextRun(lookout.nextRunAt, lookout.timezone, locale)}
             </p>
           )}
 
@@ -110,7 +112,7 @@ export function LookoutCard({
           {lookout.lastRunAt && (
             <div className="flex items-center gap-2">
               <p className="text-xs text-muted-foreground">
-                Last Run: {formatNextRun(lookout.lastRunAt, lookout.timezone)}
+                Last Run: {formatNextRun(lookout.lastRunAt, lookout.timezone, locale)}
               </p>
               {lookout.lastRunChatId && (
                 <Link

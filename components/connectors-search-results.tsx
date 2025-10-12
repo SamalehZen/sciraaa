@@ -187,11 +187,16 @@ const DocumentCard: React.FC<{ document: Document; onClick?: () => void }> = ({ 
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    try {
+      const { locale } = require('@/hooks/use-locale').useLocale();
+      return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }).format(new Date(dateString));
+    } catch {
+      return new Date(dateString).toLocaleDateString();
+    }
   };
 
   const truncateText = (text: string, maxLength: number = 200) => {

@@ -63,7 +63,7 @@ const formatPrice = (price: number | null | undefined, currency: string = 'USD')
   }
 
   try {
-    const formatter = new Intl.NumberFormat('en-US', {
+    const formatter = new Intl.NumberFormat(Intl.DateTimeFormat().resolvedOptions().locale, {
       style: 'currency',
       currency: currency.toUpperCase(),
       minimumFractionDigits: price < 1 ? 6 : 2,
@@ -252,12 +252,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       return (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 shadow-sm max-w-[200px] z-50">
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 truncate">
-            {new Date(data.date).toLocaleDateString('en-US', {
+            {new Intl.DateTimeFormat(Intl.DateTimeFormat().resolvedOptions().locale, {
               weekday: 'short',
               year: 'numeric',
               month: 'short',
               day: 'numeric',
-            })}
+            }).format(new Date(data.date))}
           </p>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between gap-2">

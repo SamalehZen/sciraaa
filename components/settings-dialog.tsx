@@ -74,6 +74,7 @@ import {
 } from '@/components/ui/kibo-ui/contribution-graph';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CONNECTOR_CONFIGS, CONNECTOR_ICONS, type ConnectorProvider } from '@/lib/connectors';
+import { useLocale } from '@/hooks/use-locale';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -283,6 +284,23 @@ function SearchProviderSelector({
   );
 }
 
+function LanguageSelector() {
+  const { locale, setLocale } = useLocale();
+  return (
+    <div className="w-full">
+      <Select value={locale} onValueChange={(v) => setLocale(v as any)}>
+        <SelectTrigger className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fr-FR">Français (fr-FR)</SelectItem>
+          <SelectItem value="en-US">English (en-US)</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 // Component for Combined Preferences (Search + Custom Instructions)
 function PreferencesSection({
   user,
@@ -403,6 +421,29 @@ function PreferencesSection({
             <p className="text-xs text-muted-foreground leading-relaxed">
               Select your preferred search provider for web searches. Changes take effect immediately and will be used
               for all future searches.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Language Section */}
+      <div className="space-y-3">
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <HugeiconsIcon icon={Settings02Icon} className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm">Langue / Language</h4>
+              <p className="text-xs text-muted-foreground">
+                Default is French for anonymous users. Only the UI and formatting change. AI replies still mirror your message language.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            <LanguageSelector />
+            <p className="text-xs text-muted-foreground">
+              Your choice is saved in your browser and a cookie.
             </p>
           </div>
         </div>
@@ -1787,6 +1828,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [currentTab, setCurrentTab] = useState(initialTab);
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const { t } = useLocale();
 
   // Reset tab when initialTab changes or when dialog opens
   useEffect(() => {
@@ -1913,7 +1955,7 @@ export function SettingsDialog({
             <DrawerHeader className="pb-2 px-4 pt-3 shrink-0">
               <DrawerTitle className="text-base font-medium flex items-center gap-2">
                 <SciraLogo className="size-6" />
-                Settings
+                {t('settings.title')}
               </DrawerTitle>
             </DrawerHeader>
 
@@ -1975,7 +2017,7 @@ export function SettingsDialog({
         <DialogHeader className="p-4 !m-0">
           <DialogTitle className="text-xl font-medium tracking-normal flex items-center gap-2">
             <SciraLogo className="size-6" color="currentColor" />
-            Settings
+            {t('settings.title')}
           </DialogTitle>
         </DialogHeader>
 

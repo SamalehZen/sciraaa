@@ -22,9 +22,11 @@ export const formatTime12Hour = (time24: string) => {
   return { hour12: hour12.toString(), minute, ampm };
 };
 
-export const formatNextRun = (date: Date | string, timezone: string): string => {
+import { DEFAULT_LOCALE } from '@/lib/locale';
+
+export const formatNextRun = (date: Date | string, timezone: string, locale: string = DEFAULT_LOCALE): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale || DEFAULT_LOCALE, {
     timeZone: timezone,
     dateStyle: 'medium',
     timeStyle: 'short',

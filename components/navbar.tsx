@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 
 import { useRouter, usePathname } from 'next/navigation';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
+import { useLocale } from '@/hooks/use-locale';
 
 type VisibilityType = 'public' | 'private';
 
@@ -64,6 +65,7 @@ const Navbar = memo(
     const hasActiveSubscription = isProUser;
     const showProLoading = isProStatusLoading;
 
+    const { t } = useLocale();
     return (
       <>
         <div
@@ -85,7 +87,7 @@ const Navbar = memo(
                 className="rounded-lg bg-accent hover:bg-accent/80 group transition-all hover:scale-105 pointer-events-auto"
               >
                 <PlusIcon size={16} className="group-hover:rotate-90 transition-all" />
-                <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">New</span>
+                <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">{t('nav.new')}</span>
               </Button>
             </Link>
 
@@ -97,7 +99,7 @@ const Navbar = memo(
                 className="rounded-md h-7 px-2 text-xs sm:hidden"
                 onClick={() => router.push('/pricing')}
               >
-                Upgrade
+                {t('nav.upgrade')}
               </Button>
             )}
           </div>
@@ -111,14 +113,14 @@ const Navbar = memo(
               )}
             >
               <div className="flex items-center bg-muted/50 rounded-lg border border-border">
-                <span className="px-2 py-1.5 text-sm font-medium text-muted-foreground">Free Plan</span>
+                <span className="px-2 py-1.5 text-sm font-medium text-muted-foreground">{t('nav.freePlan')}</span>
                 <Button
                   variant="default"
                   size="sm"
                   className="rounded-md mr-1.5 h-6"
                   onClick={() => router.push('/pricing')}
                 >
-                  Upgrade
+                  {t('nav.upgrade')}
                 </Button>
               </div>
             </div>
@@ -153,11 +155,11 @@ const Navbar = memo(
                           disabled
                         >
                           <GlobeHemisphereWestIcon size={16} className="text-blue-600 dark:text-blue-400" />
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Shared</span>
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{t('nav.shared')}</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" sideOffset={4}>
-                        {user ? "This is someone else's shared page" : 'This is a shared page'}
+                        {user ? t('nav.sharedTooltipOther') : t('nav.sharedTooltipAnon')}
                       </TooltipContent>
                     </Tooltip>
                   )
@@ -177,7 +179,7 @@ const Navbar = memo(
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" sideOffset={4}>
-                      Loading subscription status...
+                      {t('common.loading')}
                     </TooltipContent>
                   </Tooltip>
                 ) : hasActiveSubscription ? (
@@ -185,12 +187,12 @@ const Navbar = memo(
                     <TooltipTrigger asChild>
                       <div className="pointer-events-auto mr-1">
                         <span className="font-baumans! px-2.5 pt-0.5 pb-1.75 sm:pt-1 leading-4 inline-flex items-center gap-1 rounded-lg shadow-sm border-transparent ring-1 ring-ring/35 ring-offset-1 ring-offset-background bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground  dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
-                          <span>pro</span>
+                          <span>{t('nav.proBadge')}</span>
                         </span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" sideOffset={4}>
-                      Pro Subscribed - Unlimited access
+                      {t('nav.proTooltip')}
                     </TooltipContent>
                   </Tooltip>
                 ) : null}

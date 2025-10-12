@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { useLocale } from '@/hooks/use-locale';
 
 interface AuthCardProps {
   title: string;
@@ -14,6 +15,7 @@ export default function AuthCard({ title, description }: AuthCardProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLocale();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,11 +29,11 @@ export default function AuthCard({ title, description }: AuthCardProps) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || 'Failed to sign in');
+        throw new Error(data?.error || t('auth.signIn.cta'));
       }
       window.location.href = '/';
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || t('auth.signIn.cta'));
     } finally {
       setLoading(false);
     }
@@ -48,21 +50,21 @@ export default function AuthCard({ title, description }: AuthCardProps) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="username">
-              Username
+              {t('auth.username')}
             </label>
             <Input
               id="username"
               name="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              placeholder={t('auth.username')}
               autoComplete="username"
               required
             />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="password">
-              Password
+              {t('auth.password')}
             </label>
             <Input
               id="password"
@@ -70,14 +72,14 @@ export default function AuthCard({ title, description }: AuthCardProps) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t('auth.password')}
               autoComplete="current-password"
               required
             />
           </div>
           {error && <p className="text-xs text-destructive/90">{error}</p>}
           <Button type="submit" className="w-full h-10" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? t('auth.signIn.loading') : t('auth.signIn.cta')}
           </Button>
         </form>
 
@@ -85,11 +87,11 @@ export default function AuthCard({ title, description }: AuthCardProps) {
           <p className="text-[11px] text-center text-muted-foreground/60 leading-relaxed">
             By continuing, you agree to our{' '}
             <a href="/terms" className="hover:text-muted-foreground underline-offset-2 underline">
-              Terms
+              {t('auth.terms')}
             </a>{' '}
             and{' '}
             <a href="/privacy-policy" className="hover:text-muted-foreground underline-offset-2 underline">
-              Privacy Policy
+              {t('auth.privacy')}
             </a>
           </p>
         </div>

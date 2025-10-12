@@ -8,6 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useIsMobile } from '@/hooks/use-mobile';
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useLocale } from '@/hooks/use-locale';
+import { formatDate } from '@/lib/locale';
 
 interface AcademicResult {
   title: string;
@@ -26,6 +28,7 @@ const AcademicSourceCard: React.FC<{
   paper: AcademicResult;
   onClick?: () => void;
 }> = ({ paper, onClick }) => {
+  const { locale } = useLocale();
   // Format authors for display
   const formatAuthors = (author: string | null | undefined) => {
     if (!author) return null;
@@ -79,7 +82,7 @@ const AcademicSourceCard: React.FC<{
         {paper.publishedDate && (
           <time className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
             <Calendar className="w-3 h-3" />
-            {new Date(paper.publishedDate).toLocaleDateString('en-US', {
+            {formatDate(new Date(paper.publishedDate), locale, {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

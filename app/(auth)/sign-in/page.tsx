@@ -1,7 +1,9 @@
 'use client';
 
 import AuthCard from '@/components/auth-card';
+import { useLocale } from '@/hooks/use-locale';
 
 export default function SignInPage() {
-  return <AuthCard title="Welcome back" description="Sign in to continue to Scira AI" />;
+  const { t } = useLocale();
+  return <AuthCard title={t('auth.signIn.title')} description={t('auth.signIn.description')} />;
 }

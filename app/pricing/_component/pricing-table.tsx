@@ -17,6 +17,8 @@ import { useLocation } from '@/hooks/use-location';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
 import { StudentDomainRequestButton } from '@/components/student-domain-request-button';
 import { SupportedDomainsList } from '@/components/supported-domains-list';
+import { useLocale } from '@/hooks/use-locale';
+import { formatDate as fmtDate } from '@/lib/locale';
 
 type SubscriptionDetails = {
   id: string;
@@ -47,6 +49,7 @@ interface PricingTableProps {
 export default function PricingTable({ subscriptionDetails, user }: PricingTableProps) {
   const router = useRouter();
   const location = useLocation();
+  const { locale } = useLocale();
 
   // Debug logging (can be removed in production)
   console.log('PricingTable Debug:', {
@@ -208,8 +211,8 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
     return null;
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDateLocal = (date: Date) => {
+    return fmtDate(date, locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -408,13 +411,13 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
                   {getProAccessSource() === 'polar' && subscriptionDetails.subscription && (
                     <p className="text-sm text-muted-foreground text-center">
                       {subscriptionDetails.subscription.cancelAtPeriodEnd
-                        ? `Subscription expires ${formatDate(subscriptionDetails.subscription.currentPeriodEnd)}`
-                        : `Renews ${formatDate(subscriptionDetails.subscription.currentPeriodEnd)}`}
+                        ? `Subscription expires ${formatDateLocal(subscriptionDetails.subscription.currentPeriodEnd)}`
+                        : `Renews ${formatDateLocal(subscriptionDetails.subscription.currentPeriodEnd)}`}
                     </p>
                   )}
                   {getProAccessSource() === 'dodo' && user?.dodoPayments?.expiresAt && (
                     <p className="text-sm text-muted-foreground text-center">
-                      Access expires {formatDate(new Date(user.dodoPayments.expiresAt))}
+                      Access expires {formatDateLocal(new Date(user.dodoPayments.expiresAt))}
                     </p>
                   )}
                 </div>

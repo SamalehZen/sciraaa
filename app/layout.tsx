@@ -10,6 +10,9 @@ import { ClientAnalytics } from '@/components/client-analytics';
 // import { Databuddy } from '@databuddy/sdk';
 
 import { Providers } from './providers';
+import { cookies } from 'next/headers';
+import { DEFAULT_LOCALE, mapLocaleToHtmlLang, type SupportedLocale } from '@/lib/locale';
+import { LanguageProvider } from '@/providers/language-provider';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://scira.ai'),
@@ -112,16 +115,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieLocale = (cookies().get('scira-locale')?.value as SupportedLocale) || DEFAULT_LOCALE;
+  const htmlLang = mapLocaleToHtmlLang(cookieLocale);
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={htmlLang} suppressHydrationWarning>
       <body
         className={`${inter.variable} ${beVietnamPro.variable} ${baumans.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
         <NuqsAdapter>
           <Providers>
-            <Toaster position="top-center" />
-            {children}
+            <LanguageProvider initialLocale={cookieLocale}>
+              <Toaster position="top-center" />
+              {children}
+            </LanguageProvider>
           </Providers>
         </NuqsAdapter>
         {/* <Databuddy clientId={process.env.DATABUDDY_CLIENT_ID!} enableBatching={true} trackSessions={true} /> */}

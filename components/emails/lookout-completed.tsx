@@ -9,7 +9,7 @@ interface SearchCompletedEmailProps {
 
 const SearchCompletedEmail = (props: SearchCompletedEmailProps) => {
   return (
-    <Html lang="en" dir="ltr">
+    <Html lang="fr" dir="ltr">
       <Tailwind>
         <Head />
         <Body className="bg-white font-sans py-[40px]">

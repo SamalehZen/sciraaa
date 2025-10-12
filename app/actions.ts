@@ -10,6 +10,8 @@ import { z } from 'zod';
 import { getUser } from '@/lib/auth-utils';
 import { scira } from '@/ai/providers';
 import { CYRUS_PROMPT, CYRUS_OUTPUT_RULES } from '@/ai/prompts/classification-cyrus';
+import { cookies } from 'next/headers';
+import { DEFAULT_LOCALE, formatDate } from '@/lib/locale';
 import {
   getChatsByUserId,
   deleteChatById,
@@ -147,9 +149,10 @@ export async function generateTitleFromUserMessage({ message }: { message: UIMes
 
 export async function enhancePrompt(raw: string) {
   try {
+    const locale = (cookies().get('scira-locale')?.value as string) || DEFAULT_LOCALE;
     const system = `You are an expert prompt engineer. You are given a prompt and you need to enhance it.
 
-Today's Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' })}.
+Today's Date: ${formatDate(new Date(), locale, { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' })}.
 
 Guidelines (MANDATORY):
 - Preserve the user's original intent and constraints
