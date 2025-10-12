@@ -191,14 +191,14 @@ const searchProviders = [
     label: 'Exa',
     description: 'Enhanced and faster web search with images and advanced filtering',
     icon: ExaIcon,
-    default: false,
+    default: true,
   },
   {
     value: 'parallel',
     label: 'Parallel AI',
     description: 'Base and premium web search along with Firecrawl image search support',
     icon: ParallelIcon,
-    default: true,
+    default: false,
   },
   {
     value: 'tavily',
@@ -296,7 +296,7 @@ function PreferencesSection({
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchProvider, setSearchProvider] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
     'scira-search-provider',
-    'parallel',
+    'exa',
   );
 
   const [content, setContent] = useState('');

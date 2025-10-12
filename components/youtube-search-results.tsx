@@ -9,6 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { generateYouTubeChapters, generateYouTubeTranscript } from '@/app/actions';
 import { SearchLoadingState } from './tool-invocation-list-view';
 
 // Helper function to parse captions that might be JSON-encoded
@@ -65,6 +67,9 @@ interface YouTubeSearchResultsProps {
 const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [chapterSearch, setChapterSearch] = useState('');
+  const [genLoading, setGenLoading] = useState<{ chapters: boolean; transcript: boolean }>({ chapters: false, transcript: false });
+  const [localTimestamps, setLocalTimestamps] = useState<string[] | undefined>(video.timestamps);
+  const [localCaptions, setLocalCaptions] = useState<string | undefined>(video.captions as any);
 
   // Format timestamp for accessibility and URL generation
   const formatTimestamp = (timestamp: string) => {
@@ -81,7 +86,7 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
   };
 
   // Parse captions properly
-  const parsedCaptions = parseCaptions(video?.captions);
+  const parsedCaptions = parseCaptions(localCaptions);
 
   // Filter transcript based on search
   const filteredTranscript = useMemo(() => {
@@ -95,7 +100,7 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
 
   // Filter chapters based on search (both time and content)
   const filteredChapters = useMemo(() => {
-    if (!video?.timestamps || !chapterSearch.trim()) return video?.timestamps || [];
+    if (!localTimestamps || !chapterSearch.trim()) return localTimestamps || [];
 
     const searchTerm = chapterSearch.toLowerCase();
     return video.timestamps.filter((timestamp: string) => {
@@ -256,29 +261,46 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
         </div>
 
         {/* Action Buttons */}
-        {((video.timestamps && video.timestamps?.length > 0) || parsedCaptions) && (
-          <div className="absolute bottom-3 left-3 right-3 flex gap-2">
-            {/* Timestamps Dialog */}
-            {video.timestamps && video.timestamps.length > 0 && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1.5 border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-600"
-                  >
-                    <Clock className="h-3 w-3" />
-                    Chapters ({video.timestamps.length})
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh]">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-lg">
-                      <Clock className="h-4 w-4 text-red-500" />
-                      Video Chapters
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="mt-4 space-y-4">
+        <div className="absolute bottom-3 left-3 right-3 flex gap-2">
+          {/* Timestamps Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={genLoading.chapters}
+                onClick={async () => {
+                  if (!localTimestamps || localTimestamps.length === 0) {
+                    try {
+                      setGenLoading((s) => ({ ...s, chapters: true }));
+                      const res = await generateYouTubeChapters({ videoUrl: video.url, videoId: video.videoId });
+                      if (res?.success) {
+                        setLocalTimestamps(res.chapters);
+                      } else {
+                        toast.error(res?.error || 'Failed to generate chapters');
+                      }
+                    } catch (e) {
+                      toast.error('Failed to generate chapters');
+                    } finally {
+                      setGenLoading((s) => ({ ...s, chapters: false }));
+                    }
+                  }
+                }}
+                className="h-7 px-2 text-xs gap-1.5 border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-600"
+              >
+                <Clock className="h-3 w-3" />
+                {genLoading.chapters ? 'Generating…' : `Chapters${localTimestamps && localTimestamps.length > 0 ? ` (${localTimestamps.length})` : ''}`}
+              </Button>
+            </DialogTrigger>
+            {localTimestamps && localTimestamps.length > 0 && (
+              <DialogContent className="max-w-2xl max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <Clock className="h-4 w-4 text-red-500" />
+                    Video Chapters
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
@@ -304,7 +326,7 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
 
                     <ScrollArea className="h-[400px] pr-4">
                       <div className="space-y-2">
-                        {(chapterSearch.trim() ? filteredChapters : video.timestamps || [])
+                        {(chapterSearch.trim() ? filteredChapters : localTimestamps || [])
                           .map((timestamp: string, i: number) => {
                             const { time, description } = formatTimestamp(timestamp);
                             const seconds = timestampToSeconds(time);
@@ -377,30 +399,49 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
                     </ScrollArea>
                   </div>
                 </DialogContent>
-              </Dialog>
+              </DialogContent>
             )}
+          </Dialog>
 
-            {/* Transcript Dialog */}
+          {/* Transcript Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={genLoading.transcript}
+                onClick={async () => {
+                  if (!parsedCaptions) {
+                    try {
+                      setGenLoading((s) => ({ ...s, transcript: true }));
+                      const res = await generateYouTubeTranscript({ videoUrl: video.url, videoId: video.videoId });
+                      if (res?.success) {
+                        setLocalCaptions(res.transcript);
+                      } else {
+                        toast.error(res?.error || 'Transcript not available');
+                      }
+                    } catch (e) {
+                      toast.error('Failed to fetch transcript');
+                    } finally {
+                      setGenLoading((s) => ({ ...s, transcript: false }));
+                    }
+                  }
+                }}
+                className="h-7 px-2 text-xs gap-1.5 border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-600"
+              >
+                <FileText className="h-3 w-3" />
+                {genLoading.transcript ? 'Loading…' : 'Transcript'}
+              </Button>
+            </DialogTrigger>
             {parsedCaptions && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1.5 border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-600"
-                  >
-                    <FileText className="h-3 w-3" />
-                    Transcript
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl max-h-[80vh]">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-lg">
-                      <FileText className="h-4 w-4 text-red-500" />
-                      Video Transcript
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="mt-4 space-y-4">
+              <DialogContent className="max-w-3xl max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="h-4 w-4 text-red-500" />
+                    Video Transcript
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />

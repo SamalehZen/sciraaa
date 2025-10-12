@@ -6,6 +6,32 @@ import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { google } from '@ai-sdk/google';
 import { geolocation } from '@vercel/functions';
+import {
+  academicSearchTool,
+  youtubeSearchTool,
+  webSearchTool,
+  greetingTool,
+  codeInterpreterTool,
+  weatherTool,
+  retrieveTool,
+  textTranslateTool,
+  findPlaceOnMapTool,
+  nearbyPlacesSearchTool,
+  flightTrackerTool,
+  movieTvSearchTool,
+  trendingMoviesTool,
+  trendingTvTool,
+  redditSearchTool,
+  xSearchTool,
+  coinDataTool,
+  coinDataByContractTool,
+  coinOhlcTool,
+  datetimeTool,
+  extremeSearchTool,
+  createConnectorsSearchTool,
+  createMemoryTools,
+  codeContextTool,
+} from '@/lib/tools';
 
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
 import type { ChatMessage } from '@/lib/types';
@@ -82,7 +108,7 @@ function buildAutoContext(summaries: Array<{ url: string; title?: string; excerp
 
 export async function POST(req: Request) {
   const requestStart = Date.now();
-  const { messages, model, group, timezone, id } = await req.json();
+  const { messages, model, group, timezone, id, searchProvider } = await req.json();
   const streamId = 'stream-' + uuidv4();
   const { latitude, longitude } = geolocation(req);
 
@@ -144,7 +170,7 @@ export async function POST(req: Request) {
 
   const dataStream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer }) => {
-      const { instructions } = await getGroupConfig(group);
+      const { instructions, tools: allowedTools } = await getGroupConfig(group);
       const systemParts: string[] = [];
       if (instructions) systemParts.unshift(instructions);
       if (autoContext) systemParts.push(autoContext);
@@ -156,10 +182,99 @@ export async function POST(req: Request) {
       let lastError: unknown = null;
       for (const name of modelNames) {
         try {
+          // Build tool registry based on group and register implementations
+          const available: Record<string, any> = {};
+          for (const t of allowedTools as readonly string[]) {
+            switch (t) {
+              case 'web_search':
+                available[t] = webSearchTool(writer, searchProvider);
+                break;
+              case 'youtube_search':
+                available[t] = youtubeSearchTool;
+                break;
+              case 'academic_search':
+                available[t] = academicSearchTool;
+                break;
+              case 'greeting':
+                available[t] = greetingTool(timezone);
+                break;
+              case 'code_interpreter':
+                available[t] = codeInterpreterTool;
+                break;
+              case 'get_weather_data':
+                available[t] = weatherTool;
+                break;
+              case 'retrieve':
+                available[t] = retrieveTool;
+                break;
+              case 'text_translate':
+                available[t] = textTranslateTool;
+                break;
+              case 'find_place_on_map':
+                available[t] = findPlaceOnMapTool;
+                break;
+              case 'nearby_places_search':
+                available[t] = nearbyPlacesSearchTool;
+                break;
+              case 'track_flight':
+                available[t] = flightTrackerTool;
+                break;
+              case 'movie_or_tv_search':
+                available[t] = movieTvSearchTool;
+                break;
+              case 'trending_movies':
+                available[t] = trendingMoviesTool;
+                break;
+              case 'trending_tv':
+                available[t] = trendingTvTool;
+                break;
+              case 'reddit_search':
+                available[t] = redditSearchTool;
+                break;
+              case 'x_search':
+                available[t] = xSearchTool;
+                break;
+              case 'coin_data':
+                available[t] = coinDataTool;
+                break;
+              case 'coin_data_by_contract':
+                available[t] = coinDataByContractTool;
+                break;
+              case 'coin_ohlc':
+                available[t] = coinOhlcTool;
+                break;
+              case 'datetime':
+                available[t] = datetimeTool;
+                break;
+              case 'extreme_search':
+                available[t] = extremeSearchTool;
+                break;
+              case 'connectors_search':
+                available[t] = createConnectorsSearchTool(lightweightUser?.userId || '', []);
+                break;
+              case 'search_memories': {
+                const mem = createMemoryTools(lightweightUser?.userId || '');
+                available[t] = mem.searchMemories;
+                break;
+              }
+              case 'add_memory': {
+                const mem = createMemoryTools(lightweightUser?.userId || '');
+                available[t] = mem.addMemory;
+                break;
+              }
+              case 'code_context':
+                available[t] = codeContextTool;
+                break;
+              default:
+                break;
+            }
+          }
+
           result = streamText({
             model: google(name as any),
             messages: convertToModelMessages(messages),
             system: systemParts.join('\n\n'),
+            tools: available,
           });
           break;
         } catch (err) {

@@ -1830,6 +1830,125 @@ export async function getDodoExpirationDate() {
   return userData?.dodoPayments?.expiresAt || null;
 }
 
+// --- YouTube background actions ---
+export async function generateYouTubeChapters(input: { videoId?: string; videoUrl?: string }) {
+  'use server';
+
+  const toUrl = (id?: string, url?: string) => {
+    if (url) return url;
+    if (id) return `https://www.youtube.com/watch?v=${id}`;
+    return null;
+  };
+
+  const target = toUrl(input.videoId, input.videoUrl);
+  if (!target) return { success: false, error: 'Missing video identifier' };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  const tryExa = async () => {
+    try {
+      const res = await fetch('https://api.exa.ai/contents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.EXA_API_KEY || '' },
+        body: JSON.stringify({ url: target }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('EXA_CONTENT_FAILED');
+      const data = await res.json();
+      const text = data?.content?.text || data?.text || '';
+      return text as string;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const tryFirecrawl = async () => {
+    try {
+      const res = await fetch('https://api.firecrawl.dev/v1/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.FIRECRAWL_API_KEY || '' },
+        body: JSON.stringify({ url: target }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('FIRECRAWL_FAILED');
+      const data = await res.json();
+      const text = data?.content || data?.markdown || data?.html || '';
+      return text as string;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  try {
+    const content = (await tryExa()) || (await tryFirecrawl());
+    clearTimeout(timeout);
+    if (!content || content.length < 200) {
+      return { success: false, error: 'Chapters not available for this video' };
+    }
+
+    // Synthesize chapters using Gemini
+    const schema = z.object({
+      chapters: z.array(
+        z.object({
+          time: z.string().describe('Timestamp like 0:06 or 1:23:45'),
+          title: z.string().describe('Short chapter title'),
+        }),
+      ).max(12),
+    });
+
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 15000);
+    const { object } = await generateObject({
+      model: scira.languageModel('scira-google'),
+      system:
+        'Given raw page content from a YouTube video page, extract 6-12 meaningful chapters. Use precise timestamps (MM:SS or H:MM:SS). Return only JSON.',
+      schema,
+      input: content.slice(0, 12000),
+      abortSignal: abort.signal as any,
+    });
+    clearTimeout(timer);
+
+    const timestamps = (object.chapters || []).map((c) => `${c.time} - ${c.title}`);
+    if (!timestamps.length) return { success: false, error: 'Failed to generate chapters' };
+
+    return { success: true, chapters: timestamps };
+  } catch (e: any) {
+    clearTimeout(timeout);
+    return { success: false, error: 'Failed to generate chapters. Please try again.' };
+  }
+}
+
+export async function generateYouTubeTranscript(input: { videoId?: string; videoUrl?: string }) {
+  'use server';
+
+  const toUrl = (id?: string, url?: string) => (url ? url : id ? `https://www.youtube.com/watch?v=${id}` : null);
+  const target = toUrl(input.videoId, input.videoUrl);
+  if (!target) return { success: false, error: 'Missing video identifier' };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    // Prefer Firecrawl for transcript-like text
+    const res = await fetch('https://api.firecrawl.dev/v1/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.FIRECRAWL_API_KEY || '' },
+      body: JSON.stringify({ url: target }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error('FIRECRAWL_FAILED');
+    const data = await res.json();
+    const transcript = (data?.content || data?.markdown || '').toString();
+    if (!transcript || transcript.length < 100) {
+      return { success: false, error: 'Transcript unavailable for this video' };
+    }
+    return { success: true, transcript };
+  } catch (e) {
+    clearTimeout(timeout);
+    return { success: false, error: 'Failed to fetch transcript. Please try again.' };
+  }
+}
 // Initialize QStash client
 const qstash = new Client({ token: serverEnv.QSTASH_TOKEN });
 
