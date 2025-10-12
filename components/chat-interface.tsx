@@ -682,7 +682,7 @@ const ChatInterface = memo(
                     Hyper
                   </h1>
                   {Boolean(user) && (
-                    <h1 className="text-2xl font-baumans! leading-none inline-flex items-center justify-center !px-4 !py-1.5 sm:!px-5 sm:!py-2 rounded-full shadow-sm !m-0 !mt-2 bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
+                    <h1 className="text-2xl font-baumans! leading-4 inline-block !px-3 !pt-1 !pb-2.5 rounded-xl shadow-sm !m-0 !mt-2 bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
                       Fix
                     </h1>
                   )}
