@@ -14,6 +14,8 @@ import { cookies } from 'next/headers';
 import { DEFAULT_LOCALE, mapLocaleToHtmlLang, type SupportedLocale } from '@/lib/locale';
 import { LanguageProvider } from '@/providers/language-provider';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://scira.ai'),
   title: {
