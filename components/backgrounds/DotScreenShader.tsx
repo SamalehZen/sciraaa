@@ -166,7 +166,7 @@ export function DotScreenShader() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden>
+    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
       <Canvas
         orthographic
         camera={{ position: [0, 0, 1], zoom: 1 }}
