@@ -3413,22 +3413,24 @@ const FormComponent: React.FC<FormComponentProps> = ({
           {/* Form container */}
           <div className="relative">
             {/* Shadow-like background blur effect */}
-            <div className="absolute -inset-1 rounded-2xl bg-primary/5 dark:bg-primary/2 !blur-sm pointer-events-none z-9999" />
+            <div className="absolute -inset-1 rounded-2xl bg-primary/5 dark:bg-primary/2 !blur-sm pointer-events-none z-0" />
             <div
               className={cn(
-                'relative rounded-xl !bg-muted border border-border/60 focus-within:border-ring/50 transition-all duration-200',
+                'relative rounded-xl !bg-muted border border-border/60 focus-within:border-ring/50 transition-all duration-200 z-10',
                 'border-0',
                 (isEnhancing || isTypewriting) && '!bg-muted',
               )}
             >
               {!hasInteracted && !isRecording && (
                 <BorderTrail
-                  size={16}
+                  size={22}
                   transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                   style={{
                     background:
                       'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--accent)))',
-                    filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.35))',
+                    filter:
+                      'drop-shadow(0 0 10px hsl(var(--primary) / 0.55)) drop-shadow(0 0 18px hsl(var(--accent) / 0.35))',
+                    zIndex: 20,
                   }}
                 />
               )}
