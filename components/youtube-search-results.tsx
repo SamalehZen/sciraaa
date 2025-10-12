@@ -399,7 +399,6 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
                     </ScrollArea>
                   </div>
                 </DialogContent>
-              </DialogContent>
             )}
           </Dialog>
 

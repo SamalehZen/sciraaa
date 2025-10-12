@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken } from '@/lib/local-session';
+import { verifySessionToken } from '@/lib/local-session-edge';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
@@ -9,10 +9,8 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('local.session')?.value || null;
   let session;
   try {
-    session = verifySessionToken(token);
-
+    session = await verifySessionToken(token);
   } catch {
-
     session = null;
   }
 
