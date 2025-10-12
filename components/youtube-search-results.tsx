@@ -103,11 +103,11 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
     if (!localTimestamps || !chapterSearch.trim()) return localTimestamps || [];
 
     const searchTerm = chapterSearch.toLowerCase();
-    return video.timestamps.filter((timestamp: string) => {
+    return (localTimestamps || []).filter((timestamp: string) => {
       const { time, description } = formatTimestamp(timestamp);
       return time.toLowerCase().includes(searchTerm) || description.toLowerCase().includes(searchTerm);
     });
-  }, [video?.timestamps, chapterSearch]);
+  }, [localTimestamps, chapterSearch]);
 
   if (!video) return null;
 
@@ -504,7 +504,6 @@ const YouTubeCard: React.FC<YouTubeCardProps> = ({ video, index }) => {
               </Dialog>
             )}
           </div>
-        )}
       </div>
     </div>
   );
