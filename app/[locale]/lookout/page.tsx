@@ -1,1 +1,1 @@
-export { default } from '@/app/lookout/page';
+export { default } from '@/app/lookout/page.localized';
