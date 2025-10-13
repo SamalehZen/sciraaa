@@ -1,0 +1,39 @@
+[
+  { "query": "YAOURTS NATURE", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "yaourt nature", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "yoghurt plain", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "yogurt nature", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "nature yogurt", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+
+  { "query": "BOEUF LOCAL", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","STAND TRADITIONNEL","BOEUF LOCAL"] },
+  { "query": "boeuf national", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","STAND TRADITIONNEL","BOEUF LOCAL"] },
+  { "query": "viande boeuf locale", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","STAND TRADITIONNEL","BOEUF LOCAL"] },
+  { "query": "boeuf local", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","LIBRE SERVICE","BOEUF LOCAL"] },
+
+  { "query": "LAIT 1/2 ECREME", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+  { "query": "lait demi ecreme", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+  { "query": "lait demi-écrémé", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+  { "query": "lait 1-2 ecreme", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+  { "query": "lait 1/2 écrémé", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+
+  { "query": "BEURRE DOUX", "expectedLabel": "BEURRE DOUX", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","BEURRES","BEURRE DOUX"] },
+  { "query": "beurre doux", "expectedLabel": "BEURRE DOUX", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","BEURRES","BEURRE DOUX"] },
+  { "query": "unsalted butter", "expectedLabel": "BEURRE DOUX", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","BEURRES","BEURRE DOUX"] },
+  { "query": "sweet butter", "expectedLabel": "BEURRE DOUX", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","BEURRES","BEURRE DOUX"] },
+
+  { "query": "YAOURTS AUX FRUITS", "expectedLabel": "YAOURTS AUX FRUITS", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS AUX FRUITS"] },
+  { "query": "yaourt aux fruits", "expectedLabel": "YAOURTS AUX FRUITS", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS AUX FRUITS"] },
+  { "query": "yoghurt fruit", "expectedLabel": "YAOURTS AUX FRUITS", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS AUX FRUITS"] },
+  { "query": "yogurt fruits", "expectedLabel": "YAOURTS AUX FRUITS", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS AUX FRUITS"] },
+
+  { "query": "lait ecreme", "expectedLabel": "LAIT ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT ECREME"] },
+  { "query": "lait entier", "expectedLabel": "LAIT ENTIER", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT ENTIER"] },
+
+  { "query": "Boeuf local stand", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","STAND TRADITIONNEL","BOEUF LOCAL"] },
+  { "query": "Boeuf local LS", "expectedLabel": "BOEUF LOCAL", "expectedPathLabels": ["GEANT CASINO","MARCHE","BOUCHERIE","LIBRE SERVICE","BOEUF LOCAL"] },
+
+  { "query": "yaourt naturel", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "yogourt nature", "expectedLabel": "YAOURTS NATURE", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","YAOURTS","YAOURTS NATURE"] },
+  { "query": "lait demi ecreme uht", "expectedLabel": "LAIT 1/2 ECREME", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","LAIT DE CONSOMMATION","LAIT 1/2 ECREME"] },
+  { "query": "butter unsalted", "expectedLabel": "BEURRE DOUX", "expectedPathLabels": ["GEANT CASINO","FRAIS INDUSTRIEL","PRODUITS FRAIS LACTES","BEURRES","BEURRE DOUX"] }
+]

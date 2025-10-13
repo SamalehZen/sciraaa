@@ -147,6 +147,12 @@ export async function POST(req: Request) {
       const { instructions } = await getGroupConfig(group);
       const systemParts: string[] = [];
       if (instructions) systemParts.unshift(instructions);
+      try {
+        if (group === 'cyrus') {
+          const len = instructions ? instructions.length : 0;
+          console.log(`[cyrus] system instructions length: ${len}`);
+        }
+      } catch {}
       if (autoContext) systemParts.push(autoContext);
       if (latitude && longitude) systemParts.push(`User location (approx): ${latitude}, ${longitude}`);
 

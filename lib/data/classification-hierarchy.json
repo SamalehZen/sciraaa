@@ -1,0 +1,69 @@
+{
+  "code": "201",
+  "label": "GEANT CASINO",
+  "children": [
+    {
+      "code": "01",
+      "label": "MARCHE",
+      "children": [
+        {
+          "code": "010",
+          "label": "BOUCHERIE",
+          "children": [
+            {
+              "code": "101",
+              "label": "STAND TRADITIONNEL",
+              "children": [
+                { "code": "101", "label": "BOEUF LOCAL" }
+              ]
+            },
+            {
+              "code": "102",
+              "label": "LIBRE SERVICE",
+              "children": [
+                { "code": "201", "label": "BOEUF LOCAL" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "02",
+      "label": "FRAIS INDUSTRIEL",
+      "children": [
+        {
+          "code": "020",
+          "label": "PRODUITS FRAIS LACTES",
+          "children": [
+            {
+              "code": "202",
+              "label": "LAIT DE CONSOMMATION",
+              "children": [
+                { "code": "201", "label": "LAIT 1/2 ECREME" },
+                { "code": "202", "label": "LAIT ECREME" },
+                { "code": "203", "label": "LAIT ENTIER" }
+              ]
+            },
+            {
+              "code": "206",
+              "label": "YAOURTS",
+              "children": [
+                { "code": "607", "label": "YAOURTS NATURE" },
+                { "code": "602", "label": "YAOURTS AUX FRUITS" }
+              ]
+            },
+            {
+              "code": "209",
+              "label": "BEURRES",
+              "children": [
+                { "code": "902", "label": "BEURRE DOUX" },
+                { "code": "903", "label": "BEURRES 1/2 SEL/GROS SEL" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

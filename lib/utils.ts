@@ -168,3 +168,13 @@ export function invalidateChatsCache() {
 export function isAnonymousUser(userId: string): boolean {
   return typeof userId === 'string' && userId.startsWith('arka:');
 }
+
+export function normalizeText(input: string): string {
+  return input
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s/\-_.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

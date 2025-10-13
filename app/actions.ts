@@ -212,7 +212,7 @@ const groupTools = {
   stocks: ['stock_chart', 'currency_converter', 'datetime'] as const,
   crypto: ['coin_data', 'coin_ohlc', 'coin_data_by_contract', 'datetime'] as const,
   chat: [] as const,
-  cyrus: [] as const,
+  cyrus: ['hierarchy_retrieve'] as const,
   extreme: ['extreme_search'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,

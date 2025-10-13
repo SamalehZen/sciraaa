@@ -100,6 +100,7 @@ export const sessionCache = new PerformanceCache<any>('sessions', 500, 15 * 60 *
 export const subscriptionCache = new PerformanceCache<any>('subscriptions', 1000, 1 * 60 * 1000); // 1 min, 1000 users
 export const usageCountCache = new PerformanceCache<number>('usage-counts', 2000, 5 * 60 * 1000); // 5 min, 2000 users
 export const proUserStatusCache = new PerformanceCache<boolean>('pro-user-status', 1000, 30 * 60 * 1000); // 30 min, 1000 users
+export const hierarchyCache = new PerformanceCache<any>('hierarchy', 1000, 24 * 60 * 60 * 1000); // 24h
 
 // DodoPayments-specific caches
 export const paymentCache = new PerformanceCache<any>('payments', 1000, 5 * 60 * 1000); // 5 min, 1000 users
