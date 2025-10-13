@@ -7,25 +7,59 @@ const MAX_AGE_DAYS = parseInt(process.env.LOCAL_SESSION_MAX_AGE_DAYS || '30', 10
 
 const enc = new TextEncoder();
 
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function base64Encode(bytes: Uint8Array): string {
+  let out = '';
+  let i = 0;
+  const len = bytes.length;
+  for (; i + 2 < len; i += 3) {
+    const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + B64[n & 63];
+  }
+  const rem = len - i;
+  if (rem === 1) {
+    const n = bytes[i] << 16;
+    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + '==';
+  } else if (rem === 2) {
+    const n = (bytes[i] << 16) | (bytes[i + 1] << 8);
+    out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + '=';
+  }
+  return out;
+}
+
+function base64DecodeToBytes(b64: string): Uint8Array {
+  const clean = b64.replace(/[^A-Za-z0-9+/=]/g, '');
+  if (clean.length % 4 === 1) throw new Error('Invalid base64');
+  const pad = clean.endsWith('==') ? 2 : clean.endsWith('=') ? 1 : 0;
+  const outLen = (clean.length / 4) * 3 - pad;
+  const out = new Uint8Array(outLen);
+  let p = 0;
+  function idx(ch: string): number {
+    if (ch === '=') return 0;
+    const i = B64.indexOf(ch);
+    if (i === -1) throw new Error('Invalid base64 char');
+    return i;
+  }
+  for (let i = 0; i < clean.length; i += 4) {
+    const n = (idx(clean[i]) << 18) | (idx(clean[i + 1]) << 12) | (idx(clean[i + 2]) << 6) | idx(clean[i + 3]);
+    out[p++] = (n >> 16) & 255;
+    if (clean[i + 2] !== '=') out[p++] = (n >> 8) & 255;
+    if (clean[i + 3] !== '=') out[p++] = n & 255;
+  }
+  return out;
+}
+
 function base64urlEncode(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  const b64 = btoa(binary);
+  const b64 = base64Encode(bytes);
   return b64.replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
-function base64urlDecodeToString(b64url: string): string {
-  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = b64.length % 4 === 2 ? '==' : b64.length % 4 === 3 ? '=' : '';
-  const bin = atob(b64 + pad);
-  return bin;
-}
-
 function base64urlDecodeToBytes(b64url: string): Uint8Array {
-  const bin = base64urlDecodeToString(b64url);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (b64.length % 4 || 4)) % 4;
+  const padded = b64 + '='.repeat(padLen);
+  return base64DecodeToBytes(padded);
 }
 
 async function hmacSign(keyUtf8: string, dataUtf8: string): Promise<Uint8Array> {

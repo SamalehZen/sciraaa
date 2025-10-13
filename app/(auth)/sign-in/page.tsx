@@ -1,7 +1,11 @@
-'use client';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-import AuthCard from '@/components/auth-card';
-
-export default function SignInPage() {
-  return <AuthCard title="Welcome back" description="Sign in to continue to Hyper AI" />;
+export default async function SignInPage() {
+  const hdrs = await headers();
+  const cookieHeader = hdrs.get('cookie') || '';
+  const match = cookieHeader.match(/(?:^|;)\s*locale=([^;]+)/);
+  const cookieLocale = match ? decodeURIComponent(match[1]) : null;
+  const locale = cookieLocale === 'en' || cookieLocale === 'fr' ? cookieLocale : 'fr';
+  redirect(`/${locale}/sign-in`);
 }
