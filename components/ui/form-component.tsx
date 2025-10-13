@@ -1164,7 +1164,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
                   </DialogDescription>
                   <Button
                     onClick={() => {
-                      window.location.href = '/sign-in';
+                      window.location.href = `/${locale}/sign-in`;
                     }}
                     className="backdrop-blur-md bg-white/90 border border-white/20 text-black hover:bg-white w-full font-medium"
                   >
@@ -1673,7 +1673,7 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
         // Check if user is authenticated before allowing extreme mode
         if (!session) {
           // Redirect to sign in page
-          window.location.href = '/sign-in';
+          window.location.href = `/${locale}/sign-in`;
           return;
         }
 

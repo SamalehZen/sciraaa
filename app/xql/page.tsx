@@ -70,7 +70,8 @@ export default function XQLPage() {
 
   React.useEffect(() => {
     if (!isProStatusLoading && !user) {
-      router.push('/sign-in');
+      const locale = document.cookie.match(/(?:^|;)\s*locale=([^;]+)/)?.[1] || 'fr';
+      router.push(`/${decodeURIComponent(locale)}/sign-in`);
     }
   }, [user, router, isProStatusLoading]);
 

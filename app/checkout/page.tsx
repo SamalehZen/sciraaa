@@ -13,6 +13,7 @@ import { ArrowLeft, CreditCard, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useT } from '@/lib/i18n/useT';
 import { useLocation } from '@/hooks/use-location';
 import { useLocalSession } from '@/hooks/use-local-session';
 import { useIsProUser } from '@/contexts/user-context';
@@ -37,6 +38,7 @@ const checkoutSchema = z.object({
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
+  const { locale } = useT();
   const [isLoading, setIsLoading] = useState(false);
   const [discountConfig, setDiscountConfig] = useState<DiscountConfig>({ enabled: false });
   const router = useRouter();
@@ -135,7 +137,7 @@ export default function CheckoutPage() {
 
   // Redirect if not authenticated
   if (!isPending && !session) {
-    router.push('/sign-in');
+    router.push(`/${locale}/sign-in`);
     return null;
   }
 

@@ -171,7 +171,11 @@ const EnhancedErrorDisplay: React.FC<EnhancedErrorDisplayProps> = ({
   const handleAction = (action: string) => {
     switch (action) {
       case 'signin':
-        window.location.href = '/sign-in';
+        {
+          const m = document.cookie.match(/(?:^|;)\s*locale=([^;]+)/);
+          const loc = m ? decodeURIComponent(m[1]) : 'fr';
+          window.location.href = `/${loc}/sign-in`;
+        }
         break;
       case 'upgrade':
         window.location.href = '/pricing';

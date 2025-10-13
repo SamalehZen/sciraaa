@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useT } from '@/lib/i18n/useT';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PRICING, SEARCH_LIMITS } from '@/lib/constants';
@@ -45,6 +46,7 @@ interface PricingTableProps {
 }
 
 export default function PricingTable({ subscriptionDetails, user }: PricingTableProps) {
+  const { locale } = useT();
   const router = useRouter();
   const location = useLocation();
 
@@ -161,7 +163,7 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
 
   const handleCheckout = async (_productId: string, _slug: string, paymentMethod?: 'dodo' | 'polar') => {
     if (!user) {
-      router.push('/sign-in');
+      router.push(`/${locale}/sign-in`);
       return;
     }
 

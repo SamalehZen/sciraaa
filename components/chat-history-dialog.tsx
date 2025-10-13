@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CommandDialog,
@@ -38,6 +38,7 @@ import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-q
 import { cn, invalidateChatsCache, isAnonymousUser } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Spinner } from '@/components/ui/spinner';
+import { useT } from '@/lib/i18n/useT';
 import { useChatPrefetch } from '@/hooks/use-chat-prefetch';
 import Link from 'next/link';
 import { Kbd } from '@/components/ui/kbd';
@@ -285,7 +286,7 @@ function advancedSearch(chat: Chat, query: string, mode: SearchMode): boolean {
 
 // Main component
 export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialogProps) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const pathname = usePathname();
   const router = useRouter();
   const rawChatId = pathname?.startsWith('/search/') ? pathname.split('/')[2] : null;
@@ -925,7 +926,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   // Redirect to sign in page
   const handleSignIn = () => {
     onOpenChange(false);
-    redirect('/sign-in');
+    router.push(`/${locale}/sign-in`);
   };
 
   // Show sign in prompt if user is not logged in
@@ -1180,7 +1181,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
 
 // Navigation Button component for navbar
 export function ChatHistoryButton({ onClickAction }: { onClickAction: () => void }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
