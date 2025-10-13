@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "fix": "prettier --write .",
-    "knip": "knip"
+    "knip": "knip",
+    "generate:leaf-embeddings": "bunx tsx scripts/generate-leaf-embeddings.ts",
+    "bench:classify-v2": "bunx tsx scripts/bench-classify-v2.ts"
   },
   "dependencies": {
     
