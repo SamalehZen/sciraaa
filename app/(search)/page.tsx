@@ -1,20 +1,11 @@
-import dynamic from 'next/dynamic';
-import React from 'react';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-const ChatInterface = dynamic(() => import('@/components/chat-interface').then(m => m.ChatInterface), {
-  ssr: true,
-  loading: () => <div style={{ minHeight: 240 }} />,
-});
-
-import { InstallPrompt } from '@/components/InstallPrompt';
-
-const Home = () => {
-  return (
-    <React.Fragment>
-      <ChatInterface />
-      <InstallPrompt />
-    </React.Fragment>
-  );
-};
-
-export default Home;
+export default async function Home() {
+  const hdrs = await headers();
+  const cookieHeader = hdrs.get('cookie') || '';
+  const match = cookieHeader.match(/(?:^|;)\s*locale=([^;]+)/);
+  const cookieLocale = match ? decodeURIComponent(match[1]) : null;
+  const locale = cookieLocale === 'en' || cookieLocale === 'fr' ? cookieLocale : 'fr';
+  redirect(`/${locale}`);
+}
