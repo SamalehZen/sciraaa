@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('local.session')?.value || null;
   let session: any = null;
   try {
-    session = verifySessionToken(token);
+    session = await verifySessionToken(token);
   } catch {
     session = null;
   }

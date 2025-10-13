@@ -51,7 +51,7 @@ import { CONNECTOR_CONFIGS, CONNECTOR_ICONS, type ConnectorProvider } from '@/li
 import { useQuery } from '@tanstack/react-query';
 import { listUserConnectorsAction } from '@/app/actions';
 import { BorderTrail } from '@/components/core/border-trail';
-import { useT } from '@/lib/i18n';
+import { useT } from '@/lib/i18n/useT';
 
 // Pro Badge Component
 const ProBadge = ({ className = '' }: { className?: string }) => (
@@ -86,6 +86,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
     subscriptionData,
     user,
   }) => {
+    const { t, locale } = useT();
     const isProUser = useMemo(
       () =>
         user?.isProUser || (subscriptionData?.hasSubscription && subscriptionData?.subscription?.status === 'active'),
@@ -1632,12 +1633,10 @@ ConnectorSelector.displayName = 'ConnectorSelector';
 const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
   ({ selectedGroup, onGroupSelect, status, onOpenSettings, isProUser }) => {
     const { t, locale } = useT();
-    const { t, locale } = useT();
     const { data: session } = useLocalSession();
     const [open, setOpen] = useState(false);
     const isMobile = useIsMobile();
     const isExtreme = selectedGroup === 'extreme';
-    const { t, locale } = useT();
 
     // Get search provider from localStorage with reactive updates
     const [searchProvider] = useLocalStorage<SearchProvider>('scira-search-provider', 'parallel');

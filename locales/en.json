@@ -98,7 +98,7 @@
   "markdown.wrap.enabled": "Code wrap enabled",
   "markdown.wrap.disabled": "Code wrap disabled",
   "markdown.lines": "{{count}} lines",
-  "markdown.downloadCsv": "Download CSV"
+  "markdown.downloadCsv": "Download CSV",
   "messages.aria.showLess": "Show less",
   "messages.aria.showMore": "Show more",
   "messages.aria.edit": "Edit message",

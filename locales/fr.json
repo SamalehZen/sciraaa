@@ -98,7 +98,7 @@
   "markdown.wrap.enabled": "Retour à la ligne activé",
   "markdown.wrap.disabled": "Retour à la ligne désactivé",
   "markdown.lines": "{{count}} lignes",
-  "markdown.downloadCsv": "Télécharger le CSV"
+  "markdown.downloadCsv": "Télécharger le CSV",
   "messages.aria.showLess": "Afficher moins",
   "messages.aria.showMore": "Afficher plus",
   "messages.aria.edit": "Modifier le message",

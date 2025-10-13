@@ -7,7 +7,7 @@ import { headers } from 'next/headers';
 
 export async function GET() {
   const hdrs = await headers();
-  const sess = getSessionFromHeaders(hdrs as any);
+  const sess = await getSessionFromHeaders(hdrs as any);
   if (!sess) return NextResponse.json({ user: null });
 
   const [u] = await db

@@ -9,7 +9,7 @@ export const auth = {
   api: {
     getSession: async (options?: { headers: any }) => {
       const requestHeaders = options?.headers || await headers();
-      const local = getSessionFromHeaders(requestHeaders as any);
+      const local = await getSessionFromHeaders(requestHeaders as any);
       if (!local?.userId) return null;
 
       const existing = await db.select().from(user).where(eq(user.id, local.userId)).limit(1);

@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const token = createSessionToken({ userId: localUserId, email: localEmail });
+    const token = await createSessionToken({ userId: localUserId, email: localEmail });
     const cookie = createCookie(token);
 
     const res = NextResponse.json({ success: true }, { status: 200 });

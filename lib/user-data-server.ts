@@ -162,7 +162,7 @@ export function clearCustomInstructionsCache(userId?: string): void {
 export async function getLightweightUserAuth(): Promise<LightweightUserAuth | null> {
   try {
     const hdrs = await headers();
-    const local = getSessionFromHeaders(hdrs as any);
+    const local = await getSessionFromHeaders(hdrs as any);
     let effectiveUserId: string | null = local?.userId ?? null;
     let effectiveEmail: string | null = local?.email ?? null;
 
@@ -221,7 +221,7 @@ export async function getLightweightUserAuth(): Promise<LightweightUserAuth | nu
 export async function getComprehensiveUserData(): Promise<ComprehensiveUserData | null> {
   try {
     const hdrs = await headers();
-    const local = getSessionFromHeaders(hdrs as any);
+    const local = await getSessionFromHeaders(hdrs as any);
     let effectiveUserId: string | null = local?.userId ?? null;
     let effectiveEmail: string | null = local?.email ?? null;
 

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   // Check for authentication but don't require it
   let isAuthenticated = false;
   try {
-    const sess = getSessionFromHeaders(request.headers as any);
+    const sess = await getSessionFromHeaders(request.headers as any);
     isAuthenticated = !!sess;
   } catch (error) {
     // Continue as unauthenticated
