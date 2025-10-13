@@ -88,13 +88,6 @@ export default function AboutPage() {
   };
   */
 
-  /*
-  const handleDismissCryptoAlert = () => {
-    setShowCryptoAlert(false);
-    localStorage.setItem('hasDismissedCryptoAlert', 'true');
-  };
-  */
-
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -595,7 +588,7 @@ export default function AboutPage() {
           {/* Vercel CTA */}
           <div className="mt-12 text-center">
             <div className="inline-flex flex-col sm:flex-row items-center gap-3 px-4 sm:px-5 py-3 rounded-lg bg-gradient-to-r from-background to-muted/20 border border-border/50 max-w-xs sm:max-w-none mx-auto">
-              <span className="text-sm text-muted-foreground text-center">Featured technology</span>
+              <span className="text-sm text-muted-foreground">Featured technology</span>
               <Button onClick={() => router.push('/')} size="sm" className="h-7 px-3 text-xs w-full sm:w-auto">
                 Try it now
                 <Sparkles className="ml-1 h-3 w-3" />
