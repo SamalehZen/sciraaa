@@ -229,7 +229,7 @@ function SearchProviderSelector({
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger
           className={cn(
-            'w-full h-auto min-h-18 sm:min-h-14 p-4',
+            'w-full h-auto min-h-14 p-4',
             'border border-input bg-background',
             'transition-all duration-200',
             'focus:outline-none focus:ring-0 focus:ring-offset-0',
@@ -1967,7 +1967,7 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-4xl !w-full max-h-[85vh] !p-0 gap-0 overflow-hidden">
+      <DialogContent className="!max-w-4xl !w-full max-h-[85vh] !p-0 gap-0 overflow-hidden bg-card border border-border rounded-2xl shadow-xl">
         <DialogHeader className="p-4 !m-0">
           <DialogTitle className="text-xl font-medium tracking-normal flex items-center gap-2">
             <SciraLogo className="size-6" color="currentColor" />
@@ -1976,14 +1976,14 @@ export function SettingsDialog({
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-48 !m-0">
+          <div className="w-48 border-r border-border !m-0">
             <div className="p-2 !gap-1 flex flex-col">
               {tabItems.map((item) => (
                 <button
                   key={item.value}
                   onClick={() => setCurrentTab(item.value)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     'hover:bg-muted',
                     currentTab === item.value
                       ? 'bg-muted text-foreground'
