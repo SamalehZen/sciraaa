@@ -1,5 +1,5 @@
 // /app/api/search/route.ts
-import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream } from 'ai';
+import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream, generateText } from 'ai';
 import { scira } from '@/ai/providers';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
@@ -141,6 +141,91 @@ export async function POST(req: Request) {
   const autoContext = buildAutoContext(summaries);
 
   const streamStart = Date.now();
+
+  const noStreamHeader = req.headers.get('x-no-stream') === '1' || req.headers.get('X-No-Stream') === '1';
+  if (noStreamHeader) {
+    try {
+      const { instructions } = await getGroupConfig(group);
+      const systemParts: string[] = [];
+      if (instructions) systemParts.unshift(instructions);
+      if (autoContext) systemParts.push(autoContext);
+      if (latitude && longitude) systemParts.push(`User location (approx): ${latitude}, ${longitude}`);
+
+      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+      let lastError: unknown = null;
+      let text = '';
+      let usage: { inputTokens?: number | null; outputTokens?: number | null; totalTokens?: number | null } = {};
+
+      for (const name of modelNames) {
+        try {
+          const started = Date.now();
+          const result = await generateText({
+            model: google(name as any),
+            messages: convertToModelMessages(messages),
+            system: systemParts.join('\n\n'),
+          });
+          const processingTime = (Date.now() - started) / 1000;
+          text = result.text || '';
+          usage = {
+            inputTokens: (result as any).usage?.inputTokens ?? null,
+            outputTokens: (result as any).usage?.outputTokens ?? null,
+            totalTokens: (result as any).usage?.totalTokens ?? null,
+          };
+
+          const assistantMessage: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text } as any],
+            metadata: {
+              createdAt: new Date().toISOString(),
+              model: model as string,
+              completionTime: processingTime,
+              inputTokens: usage.inputTokens ?? null,
+              outputTokens: usage.outputTokens ?? null,
+              totalTokens: usage.totalTokens ?? null,
+            },
+          } as ChatMessage;
+
+          if (userId) {
+            try {
+              await saveMessages({
+                messages: [
+                  {
+                    id: assistantMessage.id,
+                    role: assistantMessage.role,
+                    parts: assistantMessage.parts,
+                    createdAt: new Date(),
+                    attachments: [],
+                    chatId: id,
+                    model,
+                    completionTime: assistantMessage.metadata?.completionTime ?? 0,
+                    inputTokens: assistantMessage.metadata?.inputTokens ?? 0,
+                    outputTokens: assistantMessage.metadata?.outputTokens ?? 0,
+                    totalTokens: assistantMessage.metadata?.totalTokens ?? 0,
+                  },
+                ],
+              });
+            } catch {}
+          }
+
+          return new Response(JSON.stringify({ messages: [assistantMessage] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+
+      throw lastError ?? new Error('Failed to generate text');
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Oops, an error occurred!' }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+  }
 
   const dataStream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer }) => {

@@ -285,13 +285,22 @@ const ChatInterface = memo(
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
 
+    const hasReceivedDataRef = useRef(false);
+    const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const noStreamNextRequestRef = useRef(false);
+    const fallbackAttemptedRef = useRef(false);
+
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
       id: chatId,
       transport: new DefaultChatTransport({
         api: '/api/search',
         prepareSendMessagesRequest({ messages, body }) {
+          const headers: Record<string, string> = {};
+          if (noStreamNextRequestRef.current) {
+            headers['X-No-Stream'] = '1';
+          }
           // Use ref values to get current state
-          return {
+          const req = {
             body: {
               id: chatId,
               messages,
@@ -304,12 +313,20 @@ const ChatInterface = memo(
               ...(initialChatId ? { chat_id: initialChatId } : {}),
               ...body,
             },
-          };
+            headers,
+          } as any;
+          noStreamNextRequestRef.current = false;
+          return req;
         },
       }),
       experimental_throttle: 100,
       onData: (dataPart) => {
         console.log('onData<Client>', dataPart);
+        hasReceivedDataRef.current = true;
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
         setDataStream((ds) => (ds ? [...ds, dataPart] : []));
       },
       onFinish: async ({ message }) => {
@@ -354,10 +371,12 @@ const ChatInterface = memo(
         }
       },
       onError: (error) => {
+        if (fallbackAttemptedRef.current) {
+          toast.error('Réponse bloquée, veuillez réessayer');
+        }
         // Don't show toast for ChatSDK errors as they will be handled by the enhanced error display
         if (error instanceof ChatSDKError) {
           console.log('ChatSDK Error:', error.type, error.surface, error.message);
-          // Only show toast for certain error types that need immediate attention
           if (error.type === 'offline' || error.surface === 'stream') {
             toast.error('Connection Error', {
               description: error.message,
@@ -405,12 +424,40 @@ const ChatInterface = memo(
       initialMessages: initialMessages || [],
       resumeStream,
       setMessages,
+      disableAutoResume: fallbackAttemptedRef.current,
     });
 
     useEffect(() => {
       if (status) {
         console.log('[status]:', status);
       }
+    }, [status]);
+
+    useEffect(() => {
+      if (status === 'streaming') {
+        hasReceivedDataRef.current = false;
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+        }
+        fallbackTimerRef.current = setTimeout(async () => {
+          if (!hasReceivedDataRef.current && status === 'streaming' && !fallbackAttemptedRef.current) {
+            try {
+              fallbackAttemptedRef.current = true;
+              stop();
+              noStreamNextRequestRef.current = true;
+              await regenerate();
+            } catch (e) {
+              toast.error('Réponse bloquée, veuillez réessayer');
+            }
+          }
+        }, 6000);
+      } else {
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status]);
 
 
