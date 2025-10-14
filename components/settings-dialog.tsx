@@ -1967,7 +1967,7 @@ export function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-4xl !w-full max-h-[85vh] !p-0 gap-0 overflow-hidden bg-card border border-border rounded-2xl shadow-xl">
+      <DialogContent className="!max-w-[70rem] !w-full max-h-[85vh] !p-0 gap-0 overflow-hidden bg-card border border-border rounded-2xl shadow-xl">
         <DialogHeader className="p-4 !m-0">
           <DialogTitle className="text-xl font-medium tracking-normal flex items-center gap-2">
             <SciraLogo className="size-6" color="currentColor" />
