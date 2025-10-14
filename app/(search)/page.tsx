@@ -1,17 +1,11 @@
-import dynamic from 'next/dynamic';
 import React from 'react';
-
-const ChatInterface = dynamic(() => import('@/components/chat-interface').then(m => m.ChatInterface), {
-  ssr: false,
-  loading: () => <div style={{ minHeight: 240 }} />,
-});
-
+import { ChatInterfaceClient } from '@/components/chat-interface-client';
 import { InstallPrompt } from '@/components/InstallPrompt';
 
 const Home = () => {
   return (
     <React.Fragment>
-      <ChatInterface />
+      <ChatInterfaceClient />
       <InstallPrompt />
     </React.Fragment>
   );
