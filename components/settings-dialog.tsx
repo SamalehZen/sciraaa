@@ -377,7 +377,7 @@ function PreferencesSection({
   };
 
   return (
-    <div className={cn('space-y-6', isMobile ? 'space-y-4' : 'space-y-6')}>
+    <div className={cn(isMobile ? 'space-y-4 p-3 rounded-lg border border-border bg-card' : 'space-y-6 p-5 rounded-xl border border-border bg-card')}>
       <div>
         <h3 className={cn('font-semibold mb-1.5', isMobile ? 'text-sm' : 'text-base')}>Préférences</h3>
         <p className={cn('text-muted-foreground', isMobile ? 'text-xs leading-relaxed' : 'text-xs')}>
@@ -615,7 +615,7 @@ function UsageSection({ user }: any) {
     : Math.min(((searchCount?.count || 0) / SEARCH_LIMITS.DAILY_SEARCH_LIMIT) * 100, 100);
 
   return (
-    <div className={cn(isMobile ? 'space-y-3' : 'space-y-4', isMobile && !isProUser ? 'pb-4' : '')}>
+    <div className={cn(isMobile ? 'space-y-3 p-3 rounded-lg border border-border bg-card' : 'space-y-4 p-5 rounded-xl border border-border bg-card', isMobile && !isProUser ? 'pb-4' : '')}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">Utilisation quotidienne des recherches</h3>
         <Button
@@ -974,7 +974,7 @@ function SubscriptionSection({ subscriptionData, isProUser, user }: any) {
   const isExpiringSoon = daysUntilExpiration !== null && daysUntilExpiration <= 7 && daysUntilExpiration > 0;
 
   return (
-    <div className={isMobile ? 'space-y-3' : 'space-y-4'}>
+    <div className={cn(isMobile ? 'space-y-3 p-3 rounded-lg border border-border bg-card' : 'space-y-4 p-5 rounded-xl border border-border bg-card')}>
       {isProUserActive ? (
         <div className={isMobile ? 'space-y-2' : 'space-y-3'}>
           <div className={cn('bg-primary text-primary-foreground rounded-lg', isMobile ? 'p-3' : 'p-4')}>
@@ -1301,7 +1301,7 @@ function MemoriesSection() {
   const totalMemories = memoriesData?.pages.reduce((acc, page) => acc + page.memories.length, 0) || 0;
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3','p-4 sm:p-5 rounded-lg sm:rounded-xl border border-border bg-card')}>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
           {totalMemories} {totalMemories === 1 ? 'memory' : 'memories'} stored
@@ -1505,7 +1505,7 @@ function ConnectorsSection({ user }: { user: any }) {
   const connectionStatuses = connectionStatusQueries.data || {};
 
   return (
-    <div className={cn('space-y-4', isMobile ? 'space-y-3' : 'space-y-4')}>
+    <div className={cn(isMobile ? 'space-y-3 p-3 rounded-lg border border-border bg-card' : 'space-y-4 p-5 rounded-xl border border-border bg-card')}>
       <div>
         <h3 className={cn('font-semibold mb-1', isMobile ? 'text-sm' : 'text-base')}>Services connectés</h3>
         <p className={cn('text-muted-foreground', isMobile ? 'text-[11px] leading-relaxed' : 'text-xs')}>
