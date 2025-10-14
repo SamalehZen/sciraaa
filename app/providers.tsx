@@ -1,6 +1,5 @@
 'use client';
 
-import { clientEnv } from '@/env/client';
 import { ThemeProvider } from 'next-themes';
 import { ReactNode } from 'react';
 import React from 'react';

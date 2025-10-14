@@ -2,7 +2,7 @@
 'use server';
 
 import { geolocation } from '@vercel/functions';
-import { serverEnv } from '@/env/server';
+
 import { SearchGroupId } from '@/lib/utils';
 import { generateObject, UIMessage, generateText } from 'ai';
 import type { ModelMessage } from 'ai';
@@ -40,7 +40,7 @@ import { db, maindb } from '@/lib/db';
 import { user as userTable } from '@/lib/db/schema';
 import { get } from '@vercel/edge-config';
 
-import { Client } from '@upstash/qstash';
+
 
 
 import { usageCountCache, createMessageCountKey, createExtremeCountKey } from '@/lib/performance-cache';
@@ -1830,8 +1830,14 @@ export async function getDodoExpirationDate() {
   return userData?.dodoPayments?.expiresAt || null;
 }
 
-// Initialize QStash client
-const qstash = new Client({ token: serverEnv.QSTASH_TOKEN });
+// Lazy-load QStash client and server env when needed
+async function getQstash() {
+  const [{ serverEnv }, { Client }] = await Promise.all([
+    import('@/env/server'),
+    import('@upstash/qstash')
+  ]);
+  return new Client({ token: serverEnv.QSTASH_TOKEN });
+}
 
 // Helper function to convert frequency to cron schedule with timezone
 function frequencyToCron(frequency: string, time: string, timezone: string, dayOfWeek?: string): string {
@@ -2001,6 +2007,7 @@ export async function createScheduledLookout({
     // Create QStash schedule for all frequencies (recurring and once)
     if (lookout.id) {
       try {
+        const qstash = await getQstash();
         if (frequency === 'once') {
           console.log('⏰ Creating QStash one-time execution for lookout:', lookout.id);
           console.log('📅 Scheduled time:', nextRunAt.toISOString());
@@ -2140,6 +2147,7 @@ export async function updateLookoutStatusAction({
     // Update QStash schedule status if it exists
     if (lookout.qstashScheduleId) {
       try {
+        const qstash = await getQstash();
         if (status === 'paused') {
           await qstash.schedules.pause({ schedule: lookout.qstashScheduleId });
         } else if (status === 'active') {
@@ -2236,6 +2244,7 @@ export async function updateLookoutAction({
     // Update QStash schedule if it exists and frequency/time changed
     if (lookout.qstashScheduleId && frequency !== 'once') {
       try {
+        const qstash = await getQstash();
         // Delete old schedule
         await qstash.schedules.delete(lookout.qstashScheduleId);
 
@@ -2314,6 +2323,7 @@ export async function deleteLookoutAction({ id }: { id: string }) {
     // Delete QStash schedule if it exists
     if (lookout.qstashScheduleId) {
       try {
+        const qstash = await getQstash();
         await qstash.schedules.delete(lookout.qstashScheduleId);
       } catch (error) {
         console.error('Error deleting QStash schedule:', error);
