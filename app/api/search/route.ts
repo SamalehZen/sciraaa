@@ -82,7 +82,8 @@ function buildAutoContext(summaries: Array<{ url: string; title?: string; excerp
 
 export async function POST(req: Request) {
   const requestStart = Date.now();
-  const { messages, model, group, timezone, id } = await req.json();
+  const payload = await req.json();
+  const { messages, model, group, timezone, id } = payload;
   const streamId = 'stream-' + uuidv4();
   const { latitude, longitude } = geolocation(req);
 
@@ -142,8 +143,13 @@ export async function POST(req: Request) {
 
   const streamStart = Date.now();
 
-  const noStreamHeader = req.headers.get('x-no-stream') === '1' || req.headers.get('X-No-Stream') === '1';
-  if (noStreamHeader) {
+  const noStreamRequested =
+    req.headers.get('x-no-stream') === '1' ||
+    req.headers.get('X-No-Stream') === '1' ||
+    payload?.noStream === true ||
+    payload?.noStream === 1 ||
+    payload?.noStream === '1';
+  if (noStreamRequested) {
     try {
       const { instructions } = await getGroupConfig(group);
       const systemParts: string[] = [];

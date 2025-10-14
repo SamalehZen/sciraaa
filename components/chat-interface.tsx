@@ -311,6 +311,7 @@ const ChatInterface = memo(
               searchProvider: searchProviderRef.current,
               selectedConnectors: selectedConnectorsRef.current,
               ...(initialChatId ? { chat_id: initialChatId } : {}),
+              ...(noStreamNextRequestRef.current ? { noStream: true } : {}),
               ...body,
             },
             headers,
@@ -434,13 +435,13 @@ const ChatInterface = memo(
     }, [status]);
 
     useEffect(() => {
-      if (status === 'streaming') {
+      if ((status === 'submitted' || status === 'streaming')) {
         hasReceivedDataRef.current = false;
         if (fallbackTimerRef.current) {
           clearTimeout(fallbackTimerRef.current);
         }
         fallbackTimerRef.current = setTimeout(async () => {
-          if (!hasReceivedDataRef.current && status === 'streaming' && !fallbackAttemptedRef.current) {
+          if (!hasReceivedDataRef.current && (status === 'submitted' || status === 'streaming') && !fallbackAttemptedRef.current) {
             try {
               fallbackAttemptedRef.current = true;
               stop();
