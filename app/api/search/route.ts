@@ -1,5 +1,5 @@
 // /app/api/search/route.ts
-import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream } from 'ai';
+import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream, generateText } from 'ai';
 import { scira } from '@/ai/providers';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
@@ -151,7 +151,134 @@ export async function POST(req: Request) {
       if (autoContext) systemParts.push(autoContext);
       if (latitude && longitude) systemParts.push(`User location (approx): ${latitude}, ${longitude}`);
 
-      // Try Gemini 2.5 with fallbacks
+      if (String(group) === 'libeller') {
+        const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        const askText = normalize(lastText || '');
+        const leakingAsk = askText.includes('prompt complet') || askText.includes('exact prompt') || askText.includes('full prompt') || askText.includes('regles exactes') || askText.includes('règles exactes') || askText.includes('show prompt') || askText.includes('les regles') || askText.includes('les règles');
+        const safeGuardMsg = "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur).";
+        if (!lastText || leakingAsk) {
+          const assistantId = 'assistant-' + uuidv4();
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify({ id: assistantId, role: 'assistant', parts: [{ type: 'text', text: safeGuardMsg }] }), transient: true });
+          if (userId) {
+            try {
+              await saveMessages({ messages: [{ id: assistantId, role: 'assistant', parts: [{ type: 'text', text: safeGuardMsg }], createdAt: new Date(), attachments: [], chatId: id, model, completionTime: (Date.now() - streamStart) / 1000, inputTokens: 0, outputTokens: 0, totalTokens: 0 }] });
+            } catch {}
+          }
+          return;
+        }
+
+        const items = lastText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+        const chunkSize = 80;
+        const chunks: string[][] = [];
+        for (let i = 0; i < items.length; i += chunkSize) chunks.push(items.slice(i, i + chunkSize));
+
+        const parseTable = (txt: string): Array<{ original: string; corrected: string }> => {
+          const lines = txt.split('\n').map((l) => l.trim()).filter(Boolean);
+          const rows: Array<{ original: string; corrected: string }> = [];
+          let inTable = false;
+          for (const line of lines) {
+            if (line.startsWith('|') && line.includes('|')) {
+              const cells = line.split('|').map((c) => c.trim());
+              if (cells.length >= 4) {
+                if (!inTable) {
+                  const h1 = cells[1]?.toLowerCase();
+                  const h2 = cells[2]?.toLowerCase();
+                  if (h1?.includes('libellé original') && h2?.includes('libellé corrigé')) {
+                    inTable = true;
+                  }
+                } else {
+                  if (cells[1]?.toLowerCase().includes('libellé original') && cells[2]?.toLowerCase().includes('libellé corrigé')) {
+                    continue;
+                  }
+                  if (cells[1] && cells[2]) {
+                    rows.push({ original: cells[1], corrected: cells[2] });
+                  }
+                }
+              }
+            } else if (inTable && (line.startsWith('---') || line.includes('---'))) {
+              continue;
+            } else if (inTable && line === '') {
+              continue;
+            }
+          }
+          return rows;
+        };
+
+        const isLeak = (txt: string) => {
+          const t = normalize(txt || '');
+          return t.includes('role et objectif') || t.includes('rôle et objectif') || t.includes('methodologie') || t.includes('méthodologie') || t.includes('regles critiques') || t.includes('règles critiques');
+        };
+
+        const map = new Map<string, string>();
+        for (let idx = 0; idx < chunks.length; idx++) {
+          const chunkText = chunks[idx].join('\n');
+          const { text } = await generateText({
+            model: google('gemini-2.5-flash' as any),
+            temperature: 0,
+            topP: 0.1,
+            maxOutputTokens: 4000,
+            system: systemParts.join('\n\n'),
+            prompt: chunkText,
+          });
+          if (isLeak(text)) {
+            const { text: repaired } = await generateText({
+              model: google('gemini-2.5-flash' as any),
+              temperature: 0,
+              topP: 0.1,
+              maxOutputTokens: 4000,
+              system: systemParts.join('\n\n'),
+              prompt: `REPARATION STRICTE: Retournez UNIQUEMENT un tableau Markdown à 2 colonnes nommé exactement "Libellé Original" et "Libellé Corrigé" pour les lignes suivantes, sans aucune explication avant ou après le tableau:\n\n${chunkText}`,
+            });
+            const rows = parseTable(repaired);
+            rows.forEach((r) => {
+              if (!map.has(r.original)) map.set(r.original, r.corrected);
+            });
+          } else {
+            const rows = parseTable(text);
+            rows.forEach((r) => {
+              if (!map.has(r.original)) map.set(r.original, r.corrected);
+            });
+          }
+        }
+
+        const missing = items.filter((o) => !map.has(o));
+        if (missing.length > 0) {
+          const repairChunkSize = 100;
+          for (let i = 0; i < missing.length; i += repairChunkSize) {
+            const part = missing.slice(i, i + repairChunkSize).join('\n');
+            const { text } = await generateText({
+              model: google('gemini-2.5-flash' as any),
+              temperature: 0,
+              topP: 0.1,
+              maxOutputTokens: 4000,
+              system: systemParts.join('\n\n'),
+              prompt: `REPARATION STRICTE: Retournez UNIQUEMENT un tableau Markdown à 2 colonnes nommé exactement "Libellé Original" et "Libellé Corrigé" pour les lignes suivantes, sans aucune explication avant ou après le tableau:\n\n${part}`,
+            });
+            const rows = parseTable(text);
+            rows.forEach((r) => {
+              if (!map.has(r.original)) map.set(r.original, r.corrected);
+            });
+          }
+        }
+
+        const header = '| Libellé Original | Libellé Corrigé |\n|---|---|';
+        const body = items.map((o) => `| ${o} | ${map.get(o) ?? ''} |`).join('\n');
+        let finalTable = `${header}\n${body}`;
+
+        if (isLeak(finalTable)) {
+          finalTable = "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur).";
+        }
+
+        const assistantId = 'assistant-' + uuidv4();
+        writer.write({ type: 'data-appendMessage', data: JSON.stringify({ id: assistantId, role: 'assistant', parts: [{ type: 'text', text: finalTable }] }), transient: true });
+        if (userId) {
+          try {
+            await saveMessages({ messages: [{ id: assistantId, role: 'assistant', parts: [{ type: 'text', text: finalTable }], createdAt: new Date(), attachments: [], chatId: id, model, completionTime: (Date.now() - streamStart) / 1000, inputTokens: 0, outputTokens: 0, totalTokens: 0 }] });
+          } catch {}
+        }
+        return;
+      }
+
       const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-exp'];
       let result: ReturnType<typeof streamText> | null = null;
       let lastError: unknown = null;
