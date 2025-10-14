@@ -10,13 +10,14 @@ export interface UseAutoResumeParams {
   initialMessages: ChatMessage[];
   resumeStream: UseChatHelpers<ChatMessage>['resumeStream'];
   setMessages: UseChatHelpers<ChatMessage>['setMessages'];
+  disableAutoResume?: boolean;
 }
 
-export function useAutoResume({ autoResume, initialMessages, resumeStream, setMessages }: UseAutoResumeParams) {
+export function useAutoResume({ autoResume, initialMessages, resumeStream, setMessages, disableAutoResume = false }: UseAutoResumeParams) {
   const { dataStream } = useDataStream();
 
   useEffect(() => {
-    if (!autoResume) return;
+    if (!autoResume || disableAutoResume) return;
 
     const mostRecentMessage = initialMessages.at(-1);
 
@@ -26,7 +27,7 @@ export function useAutoResume({ autoResume, initialMessages, resumeStream, setMe
 
     // we intentionally run this once
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [disableAutoResume]);
 
   useEffect(() => {
     if (!dataStream) return;
