@@ -10,17 +10,13 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     categories: ['search', 'ai', 'productivity'],
     background_color: '#171717',
+    // PWA icons should be PNG; Next.js serves /favicon.ico separately.
     icons: [
       {
         src: '/icon-maskable.png',
         sizes: '1024x1024',
         type: 'image/png',
         purpose: 'maskable',
-      },
-      {
-        src: '/favicon.ico',
-        sizes: 'any',
-        type: 'image/x-icon',
       },
       {
         src: '/icon.png',

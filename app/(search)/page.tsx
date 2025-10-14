@@ -2,7 +2,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then(m => m.ChatInterface), {
-  ssr: true,
+  ssr: false,
   loading: () => <div style={{ minHeight: 240 }} />,
 });
 
