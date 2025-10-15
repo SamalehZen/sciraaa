@@ -12,7 +12,7 @@ Vous devez appliquer les étapes suivantes dans l'ordre pour CHAQUE libellé.
 
 ÉTAPE 1 : NETTOYAGE DES CARACTÈRES
 
-Suppression des caractères spéciaux : Scannez le libellé et supprimez tous les caractères qui ne sont PAS des lettres (A-Z), des chiffres (0-9) ou une virgule (,). Cela inclut les accents (é, è, à -> E, E, A), les apostrophes ('), les tirets (-), etc.
+Suppression des caractères spéciaux : Scannez le libellé et supprimez tous les caractères qui ne sont PAS des lettres (A-Z), des chiffres (0-9), des espaces ( ) ou une virgule (,). Cela inclut les accents (é, è, à -> E, E, A), les apostrophes ('), les tirets (-), etc.
 Traitement du point (.) : Remplacez systématiquement tout point (.) par une virgule (,) UNIQUEMENT s'il est situé entre deux chiffres ou entre un chiffre et une unité de mesure (ex : 1.5L -> 1,5L, 2.2L -> 2,2L). Les points utilisés pour les abréviations (ex: S.DB.) seront supprimés par la règle 1.
 Traitement de la barre oblique (/) : Remplacez systématiquement toute barre oblique (/) par un espace (). (ex: 50/70 CM -> 50 70 CM, KIWI/BAN -> KIWI BAN).
 ÉTAPE 2 : IDENTIFICATION ET EXTRACTION DES COMPOSANTS
