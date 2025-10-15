@@ -349,8 +349,11 @@ const ChatInterface = memo(
             { role: 'assistant', content: lastPartText },
           ];
           console.log('newHistory', newHistory);
-          const { questions } = await suggestQuestions(newHistory);
-          dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
+          suggestQuestions(newHistory).then(({ questions }) => {
+            dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
+          }).catch((error) => {
+            console.error('Error generating suggested questions:', error);
+          });
         }
       },
       onError: (error) => {
