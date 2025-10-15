@@ -206,7 +206,14 @@ export async function POST(req: Request) {
 
         const isLeak = (txt: string) => {
           const t = normalize(txt || '');
-          return t.includes('role et objectif') || t.includes('rôle et objectif') || t.includes('methodologie') || t.includes('méthodologie') || t.includes('regles critiques') || t.includes('règles critiques');
+          // Only flag as leak if it contains system/prompt-revealing patterns, not legitimate label content
+          const systemPromptPatterns = [
+            'role et objectif',
+            'rôle et objectif', 
+            'regles critiques',
+            'règles critiques'
+          ];
+          return systemPromptPatterns.some(pattern => t.includes(pattern));
         };
 
         const map = new Map<string, string>();
