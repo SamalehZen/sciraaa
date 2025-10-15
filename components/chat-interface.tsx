@@ -22,6 +22,7 @@ import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
+import { DotScreenShader } from '@/components/ui/dot-shader-background';
 
 // Hook imports
 import { useAutoResume } from '@/hooks/use-auto-resume';
@@ -714,6 +715,12 @@ const ChatInterface = memo(
                     </h1>
                   )}
                 </div>
+              </div>
+            )}
+
+            {status === 'ready' && messages.length === 0 && !chatState.hasSubmitted && (
+              <div className="absolute inset-0 -z-10 pointer-events-none">
+                <DotScreenShader />
               </div>
             )}
 
