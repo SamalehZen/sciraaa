@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BorderTrail } from "@/components/core/border-trail";
 import { TextShimmer } from "@/components/core/text-shimmer";
@@ -13,6 +13,7 @@ export interface CorrectionLibellerLoadingStateProps extends React.HTMLAttribute
 }
 
 export function CorrectionLibellerLoadingState({ size = 80, duration = 5, className, ...props }: CorrectionLibellerLoadingStateProps) {
+  const widths = useMemo(() => [32, 48, 58], []);
   return (
     <Card
       className={cn("relative w-full h-[100px] my-4 overflow-hidden shadow-none", className)}
@@ -52,7 +53,7 @@ export function CorrectionLibellerLoadingState({ size = 80, duration = 5, classN
                   <div
                     key={i}
                     className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse"
-                    style={{ width: `${Math.random() * 40 + 20}px`, animationDelay: `${i * 0.2}s` }}
+                    style={{ width: `${widths[i % widths.length]}px`, animationDelay: `${i * 0.2}s` }}
                   />
                 ))}
               </div>
