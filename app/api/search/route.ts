@@ -153,7 +153,9 @@ export async function POST(req: Request) {
 
       if (group === 'libeller') {
         const normalized = (lastText || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        const askForPrompt = /(prompt\s*complet|prompt|règles|règle|rules|instructions?)/i.test(lastText || '');
+        const normalizeAsk = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        const tAsk = normalizeAsk(lastText || '');
+        const askForPrompt = /(full\s*prompt|exact\s*prompt|prompt\s*(?:complet|entier|exact)|texte\s*du\s*prompt)/.test(tAsk) || /(regles?\s*(?:exactes?|precises?|completes?|detaillees?)|instructions?\s*(?:exactes?|precises?|completes?|detaillees?))/.test(tAsk);
         if (askForPrompt) {
           const msg: ChatMessage = {
             id: 'msg-' + uuidv4(),
@@ -427,7 +429,9 @@ export async function POST(req: Request) {
 
       if (group === 'nomenclature') {
         const normalized = (lastText || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        const askForPrompt = /\b(prompt|règles|rules|instructions?)\b/i.test(lastText || '');
+        const normalizeAsk = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+        const tAsk = normalizeAsk(lastText || '');
+        const askForPrompt = /(full\s*prompt|exact\s*prompt|prompt\s*(?:complet|entier|exact)|texte\s*du\s*prompt)/.test(tAsk) || /(regles?\s*(?:exactes?|precises?|completes?|detaillees?)|instructions?\s*(?:exactes?|precises?|completes?|detaillees?))/.test(tAsk);
         if (askForPrompt) {
           const msg: ChatMessage = {
             id: 'msg-' + uuidv4(),
