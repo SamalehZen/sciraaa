@@ -1,5 +1,5 @@
 // /app/api/search/route.ts
-import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream } from 'ai';
+import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream, generateText } from 'ai';
 import { scira } from '@/ai/providers';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
@@ -150,6 +150,264 @@ export async function POST(req: Request) {
       if (instructions) systemParts.unshift(instructions);
       if (autoContext) systemParts.push(autoContext);
       if (latitude && longitude) systemParts.push(`User location (approx): ${latitude}, ${longitude}`);
+
+      if (group === 'libeller') {
+        const normalized = (lastText || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const askForPrompt = /(prompt\s*complet|prompt|règles|règle|rules|instructions?)/i.test(lastText || '');
+        if (askForPrompt) {
+          const msg: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur)." }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: 0,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
+          return;
+        }
+        if (normalized.length === 0) {
+          const msg: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: "Format d’entrée invalide. Collez une liste multi‑ligne avec un libellé par ligne (pas de texte libre)." }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: 0,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
+          return;
+        }
+        if (normalized.length > 300) {
+          const warn: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: "Grand volume détecté, traitement par lots en cours…" }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: 0,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(warn), transient: true });
+        }
+
+        // Chunking strategy: aim ~8000 chars per chunk to fit prompt comfortably
+        const toChunks = (items: string[], maxChars = 8000): string[][] => {
+          const chunks: string[][] = [];
+          let current: string[] = [];
+          let currentLen = 0;
+          for (const it of items) {
+            const len = it.length + 1;
+            if (currentLen + len > maxChars && current.length > 0) {
+              chunks.push(current);
+              current = [it];
+              currentLen = len;
+            } else {
+              current.push(it);
+              currentLen += len;
+            }
+          }
+          if (current.length) chunks.push(current);
+          return chunks;
+        };
+
+        const chunks = toChunks(normalized);
+
+        const processChunk = async (lines: string[]): Promise<string> => {
+          const { text } = await generateText({
+            model: google('gemini-2.5-flash' as any),
+            system: systemParts.join('\n\n'),
+            temperature: 0,
+            topP: 0.1,
+            prompt: lines.join('\n')
+          });
+          return text || '';
+        };
+
+        const chunkOutputs: string[] = [];
+        for (let i = 0; i < chunks.length; i++) {
+          // Optional transient progress signal
+          const note: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: `Traitement du lot ${i + 1}/${chunks.length}…` }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: 0,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(note), transient: true });
+
+          const out = await processChunk(chunks[i]);
+          chunkOutputs.push(out);
+        }
+
+        // Aggregate Markdown tables into one
+        const expectedHeader = '| Libellé Original | Libellé Corrigé |';
+        const rows: string[] = [];
+        let sawLeak = false;
+        for (const out of chunkOutputs) {
+          if (/RÔLE ET OBJECTIF|MÉTHODOLOGIE|ÉTAPE\s+1|FORMAT DE SORTIE REQUIS/i.test(out)) {
+            sawLeak = true;
+          }
+          const lines = out.split(/\r?\n/).map((l) => l.trim());
+          // Extract only table lines
+          const tableLines = lines.filter((l) => /^\|.*\|$/.test(l));
+          if (!tableLines.length) continue;
+          // Remove header and separator lines for all but first chunk
+          let startIdx = 0;
+          const headerIdx = tableLines.findIndex((l) => /Libellé\s*Original/i.test(l) && /Libellé\s*Corrigé/i.test(l));
+          if (headerIdx !== -1) startIdx = headerIdx + 1; // skip header
+          const sepIdx = tableLines.findIndex((l) => /^\|\s*-+\s*\|/i.test(l));
+          let body = tableLines.slice(startIdx);
+          // If separator exists directly after header, drop it
+          if (sepIdx !== -1 && sepIdx >= startIdx && sepIdx < startIdx + 2) {
+            body = tableLines.slice(Math.max(sepIdx + 1, startIdx));
+          }
+          rows.push(...body);
+        }
+
+        // Build aggregated table with single header
+        let aggregated = [expectedHeader, '| --- | --- |', ...rows].join('\n');
+
+        // Validation: ensure exactly two columns and row count equals inputs
+        const parseTable = (md: string) => {
+          const lines = md.split(/\r?\n/).filter((l) => /^\|.*\|$/.test(l));
+          if (lines.length < 2) return { header: [], body: [] as string[][] };
+          const header = lines[0]
+            .split('|')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const body = lines.slice(2).map((line) => line
+            .split('|')
+            .map((s) => s.trim())
+            .filter(Boolean));
+          return { header, body };
+        };
+
+        const normalizeTwoCols = (md: string) => {
+          const { header, body } = parseTable(md);
+          const fixedHeader = ['Libellé Original', 'Libellé Corrigé'];
+          const fixedBody = body.map((cols) => {
+            if (cols.length >= 2) return [cols[0], cols[1]];
+            if (cols.length === 1) return [cols[0], ''];
+            return ['', ''];
+          });
+          return [
+            `| ${fixedHeader[0]} | ${fixedHeader[1]} |`,
+            '| --- | --- |',
+            ...fixedBody.map((r) => `| ${r[0]} | ${r[1]} |`),
+          ].join('\n');
+        };
+
+        const ensureRowCount = (md: string, originals: string[]) => {
+          const { body } = parseTable(md);
+          if (body.length === originals.length) return md;
+          return '';
+        };
+
+        const repairIfNeeded = async (md: string, originals: string[]): Promise<string> => {
+          // If rows mismatch or format off, ask model to repair strictly
+          const { body } = parseTable(md);
+          if (body.length === originals.length) {
+            return normalizeTwoCols(md);
+          }
+          const repairInstruction = `Répare uniquement la sortie suivante pour qu'elle soit un tableau Markdown avec exactement DEUX colonnes nommées "Libellé Original" et "Libellé Corrigé".\n\nContraintes strictes :\n- Ne pas modifier l'ordre ni le contenu des libellés originaux.\n- S'il manque des corrections, génère uniquement la colonne "Libellé Corrigé" correspondante.\n- Aucune explication : renvoyer UNIQUEMENT le tableau Markdown.\n\nLibellés originaux (ordre à respecter) :\n${originals.map((o) => `- ${o}`).join('\n')}\n\nSortie à réparer :\n${md}`;
+          const { text } = await generateText({
+            model: google('gemini-2.5-flash' as any),
+            system: `${systemParts.join('\n\n')}\n\n(Réparation stricte de format – ne pas ajouter de texte hors tableau)`,
+            temperature: 0,
+            topP: 0.1,
+            prompt: repairInstruction,
+          });
+          return text || '';
+        };
+
+        // Normalize and validate
+        aggregated = normalizeTwoCols(aggregated);
+        let finalTable = ensureRowCount(aggregated, normalized);
+        if (!finalTable) {
+          finalTable = await repairIfNeeded(aggregated, normalized);
+        }
+
+        if (sawLeak) {
+          const msg: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur)." }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: (Date.now() - streamStart) / 1000,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
+          return;
+        }
+
+        if (!finalTable) {
+          const err: ChatMessage = {
+            id: 'msg-' + uuidv4(),
+            role: 'assistant',
+            parts: [{ type: 'text', text: "La sortie n'a pas pu être validée. Assurez‑vous que chaque ligne d'entrée correspond à une ligne du tableau et réessayez." }],
+            attachments: [],
+            metadata: {
+              model: String(model),
+              completionTime: (Date.now() - streamStart) / 1000,
+              createdAt: new Date().toISOString(),
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+            },
+          } as any;
+          writer.write({ type: 'data-appendMessage', data: JSON.stringify(err), transient: false });
+          return;
+        }
+
+        // Emit the final aggregated table as a single assistant message
+        const msg: ChatMessage = {
+          id: 'msg-' + uuidv4(),
+          role: 'assistant',
+          parts: [{ type: 'text', text: finalTable }],
+          attachments: [],
+          metadata: {
+            model: String(model),
+            completionTime: (Date.now() - streamStart) / 1000,
+            createdAt: new Date().toISOString(),
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          },
+        } as any;
+        writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
+        return;
+      }
 
       if (group === 'nomenclature') {
         const normalized = (lastText || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
