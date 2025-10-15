@@ -13,6 +13,11 @@ export interface CorrectionLibellerLoadingStateProps extends React.HTMLAttribute
 }
 
 export function CorrectionLibellerLoadingState({ size = 80, duration = 5, className, ...props }: CorrectionLibellerLoadingStateProps) {
+  const shimmerWidths = React.useMemo(() => 
+    Array.from({ length: 3 }, () => Math.random() * 40 + 20), 
+    []
+  );
+
   return (
     <Card
       className={cn("relative w-full h-[100px] my-4 overflow-hidden shadow-none", className)}
@@ -52,7 +57,7 @@ export function CorrectionLibellerLoadingState({ size = 80, duration = 5, classN
                   <div
                     key={i}
                     className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse"
-                    style={{ width: `${Math.random() * 40 + 20}px`, animationDelay: `${i * 0.2}s` }}
+                    style={{ width: `${shimmerWidths[i]}px`, animationDelay: `${i * 0.2}s` }}
                   />
                 ))}
               </div>
