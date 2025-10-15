@@ -267,7 +267,6 @@ export async function POST(req: Request) {
         // Aggregate Markdown tables into one
         const expectedHeader = '| Libellé Original | Libellé Corrigé |';
         const rows: string[] = [];
-        let sawLeak = false;
         for (const out of chunkOutputs) {
           if (/RÔLE ET OBJECTIF|MÉTHODOLOGIE|ÉTAPE\s+1|FORMAT DE SORTIE REQUIS/i.test(out)) {
             sawLeak = true;
@@ -345,6 +344,19 @@ export async function POST(req: Request) {
           return text || '';
         };
 
+        // Leak detection helper (ignore keywords inside table cells)
+        const includesLeakOutsideTable = (raw: string) => {
+          const lines = raw.split(/\r?\n/);
+          const nonTable = lines.filter((l) => !/^\|.*\|$/.test(l) && l.trim() !== '').join(' ').toUpperCase();
+          if (!nonTable.trim()) return false;
+          const hard = ['RÔLE ET OBJECTIF','ROLE ET OBJECTIF','FORMAT DE SORTIE REQUIS'];
+          if (hard.some((s) => nonTable.includes(s))) return true;
+          const soft = ['ÉTAPE','ETAPE','MÉTHODOLOGIE','METHODOLOGIE'];
+          let count = 0;
+          for (const s of soft) if (nonTable.includes(s)) count++;
+          return count >= 2;
+        };
+
         // Normalize and validate
         aggregated = normalizeTwoCols(aggregated);
         let finalTable = ensureRowCount(aggregated, normalized);
@@ -352,26 +364,30 @@ export async function POST(req: Request) {
           finalTable = await repairIfNeeded(aggregated, normalized);
         }
 
-        if (sawLeak) {
-          const msg: ChatMessage = {
-            id: 'msg-' + uuidv4(),
-            role: 'assistant',
-            parts: [{ type: 'text', text: "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur)." }],
-            attachments: [],
-            metadata: {
-              model: String(model),
-              completionTime: (Date.now() - streamStart) / 1000,
-              createdAt: new Date().toISOString(),
-              inputTokens: 0,
-              outputTokens: 0,
-              totalTokens: 0,
-            },
-          } as any;
-          writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
-          return;
-        }
+        // leak guard handled only if no valid table produced
+
+        const leakOutside = includesLeakOutsideTable(chunkOutputs.join('\n'));
 
         if (!finalTable) {
+          if (leakOutside) {
+            const msg: ChatMessage = {
+              id: 'msg-' + uuidv4(),
+              role: 'assistant',
+              parts: [{ type: 'text', text: "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur)." }],
+              attachments: [],
+              metadata: {
+                model: String(model),
+                completionTime: (Date.now() - streamStart) / 1000,
+                createdAt: new Date().toISOString(),
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+              },
+            } as any;
+            writer.write({ type: 'data-appendMessage', data: JSON.stringify(msg), transient: false });
+            return;
+          }
+
           const err: ChatMessage = {
             id: 'msg-' + uuidv4(),
             role: 'assistant',
