@@ -154,7 +154,7 @@ export async function POST(req: Request) {
       if (String(group) === 'libeller') {
         const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
         const askText = normalize(lastText || '');
-        const leakingAsk = askText.includes('prompt complet') || askText.includes('exact prompt') || askText.includes('full prompt') || askText.includes('regles exactes') || askText.includes('règles exactes') || askText.includes('show prompt') || askText.includes('les regles') || askText.includes('les règles');
+        const leakingAsk = askText.includes('prompt complet') || askText.includes('exact prompt') || askText.includes('full prompt') || askText.includes('regles exactes') || askText.includes('règles exactes') || askText.includes('show prompt') || askText.includes('montre les regles') || askText.includes('montre les règles') || askText.includes('affiche les regles') || askText.includes('affiche les règles') || (askText.includes('les regles') && (askText.includes('montre') || askText.includes('affiche') || askText.includes('donne') || askText.includes('explique'))) || (askText.includes('les règles') && (askText.includes('montre') || askText.includes('affiche') || askText.includes('donne') || askText.includes('explique')));
         const safeGuardMsg = "J’applique des règles internes de nettoyage et de standardisation. Pour les détails spécifiques, contactez Arka (développeur).";
         if (!lastText || leakingAsk) {
           const assistantId = 'assistant-' + uuidv4();
