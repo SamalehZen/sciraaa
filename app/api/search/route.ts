@@ -244,23 +244,25 @@ export async function POST(req: Request) {
         };
 
         const chunkOutputs: string[] = [];
+        const showBatchNote = chunks.length > 1;
         for (let i = 0; i < chunks.length; i++) {
-          // Optional transient progress signal
-          const note: ChatMessage = {
-            id: 'msg-' + uuidv4(),
-            role: 'assistant',
-            parts: [{ type: 'text', text: `Traitement du lot ${i + 1}/${chunks.length}…` }],
-            attachments: [],
-            metadata: {
-              model: String(model),
-              completionTime: 0,
-              createdAt: new Date().toISOString(),
-              inputTokens: 0,
-              outputTokens: 0,
-              totalTokens: 0,
-            },
-          } as any;
-          writer.write({ type: 'data-appendMessage', data: JSON.stringify(note), transient: true });
+          if (showBatchNote) {
+            const note: ChatMessage = {
+              id: 'msg-' + uuidv4(),
+              role: 'assistant',
+              parts: [{ type: 'text', text: `Traitement du lot ${i + 1}/${chunks.length}…` }],
+              attachments: [],
+              metadata: {
+                model: String(model),
+                completionTime: 0,
+                createdAt: new Date().toISOString(),
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+              },
+            } as any;
+            writer.write({ type: 'data-appendMessage', data: JSON.stringify(note), transient: true });
+          }
 
           const out = await processChunk(chunks[i]);
           chunkOutputs.push(out);
