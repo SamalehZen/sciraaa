@@ -76,7 +76,7 @@ const Navbar = memo(
                 : 'bg-background',
           )}
         >
-          <div className={cn('flex items-center gap-3', isDialogOpen ? 'pointer-events-auto' : '')}>
+          <div className={cn('flex items-center gap-3 pointer-events-auto')}>
             <Link href="/new">
               <Button
                 type="button"
