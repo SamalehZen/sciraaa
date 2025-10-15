@@ -112,7 +112,7 @@ function Scene() {
         return {
           dotColor: '#FFFFFF',
           bgColor: '#121212',
-          dotOpacity: 0.025
+          dotOpacity: 0.06
         }
       case 'light':
         return {
@@ -165,6 +165,7 @@ function Scene() {
     <mesh scale={[scale, scale, 1]} onPointerMove={handlePointerMove}>
       <planeGeometry args={[2, 2]} />
       <primitive
+        attach="material"
         object={dotMaterial}
         resolution={[size.width * viewport.dpr, size.height * viewport.dpr]}
         rotation={rotation}
