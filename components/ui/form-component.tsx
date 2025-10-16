@@ -3463,11 +3463,11 @@ const FormComponent: React.FC<FormComponentProps> = ({
             <div
               className={cn(
                 'relative rounded-xl overflow-hidden !bg-muted border border-border/60 focus-within:border-ring/50 transition-all duration-200',
-                'border-0',
                 (isEnhancing || isTypewriting) && '!bg-muted',
+                messages.length > 0 && 'border-0',
               )}
             >
-              {messages.length === 0 && (
+              {messages.length === 0 && !hasInteracted && (
                 <BorderTrail
                   className={cn('bg-gradient-to-r from-primary/20 via-primary to-primary/20', 'motion-reduce:hidden')}
                   size={115}
