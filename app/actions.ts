@@ -4,11 +4,12 @@
 import { geolocation } from '@vercel/functions';
 import { serverEnv } from '@/env/server';
 import { SearchGroupId } from '@/lib/utils';
-import { generateObject, UIMessage, generateText } from 'ai';
+import { generateObject, UIMessage } from 'ai';
 import type { ModelMessage } from 'ai';
 import { z } from 'zod';
 import { getUser } from '@/lib/auth-utils';
 import { scira } from '@/ai/providers';
+import { generateTextWithGeminiRotation } from '@/lib/gemini/rotation';
 import { CYRUS_PROMPT, CYRUS_OUTPUT_RULES } from '@/ai/prompts/classification-cyrus';
 import { NOMENCLATURE_DOUANIERE_PROMPT } from '@/ai/prompts/nomenclature-douaniere';
 import { LIBELLER_PROMPT } from '@/ai/prompts/correction-libeller';
@@ -131,8 +132,8 @@ export async function checkImageModeration(images: string[]) {
 }
 
 export async function generateTitleFromUserMessage({ message }: { message: UIMessage }) {
-  const { text: title } = await generateText({
-    model: scira.languageModel('scira-name'),
+  const { text: title } = await generateTextWithGeminiRotation({
+    modelName: 'gemini-2.5-flash',
     system: `You are an expert title generator. You are given a message and you need to generate a short title based on it.
 
     - you will generate a short title based on the first message a user begins a conversation with
@@ -167,8 +168,8 @@ Guidelines (MANDATORY):
 - Return ONLY the improved prompt text, with no quotes or commentary or answer to the user's query!!
 - Just return the improved prompt text in plain text format, no other text or commentary or markdown or anything else!!`;
 
-    const { text } = await generateText({
-      model: scira.languageModel('scira-enhance'),
+    const { text } = await generateTextWithGeminiRotation({
+      modelName: 'gemini-2.5-flash',
       temperature: 0.6,
       topP: 0.95,
       maxOutputTokens: 1024,

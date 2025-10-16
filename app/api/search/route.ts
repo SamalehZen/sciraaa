@@ -1,10 +1,10 @@
 // /app/api/search/route.ts
-import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream, generateText } from 'ai';
+import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream } from 'ai';
 import { scira } from '@/ai/providers';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { google } from '@ai-sdk/google';
+import { generateTextWithGeminiRotation, streamTextWithGeminiRotation, areAllGeminiKeysExhaustedToday } from '@/lib/gemini/rotation';
 import { geolocation } from '@vercel/functions';
 
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
@@ -141,6 +141,10 @@ export async function POST(req: Request) {
   const summaries = fetched.filter((x): x is NonNullable<typeof x> => Boolean(x));
   const autoContext = buildAutoContext(summaries);
 
+  if (await areAllGeminiKeysExhaustedToday()) {
+    return new Response('Toutes les clés Gemini ont atteint leur limite quotidienne', { status: 503 });
+  }
+
   const streamStart = Date.now();
 
   const dataStream = createUIMessageStream<ChatMessage>({
@@ -242,8 +246,8 @@ export async function POST(req: Request) {
             ...systemParts,
             'STRICT REPAIR ONLY: Convert the following content into a valid Markdown table with exactly two columns named "Libellé Original" and "Libellé Corrigé". Preserve every original label exactly as provided and in the same order. If a corrected value is missing, generate it using the transformation methodology without adding new words beyond transformations. Output ONLY the table.'
           ].join('\n\n');
-          const { text } = await generateText({
-            model: google('gemini-2.5-flash' as any),
+          const { text } = await generateTextWithGeminiRotation({
+            modelName: 'gemini-2.5-flash',
             system: repairSystem,
             temperature: 0,
             topP: 0.1,
@@ -303,8 +307,8 @@ export async function POST(req: Request) {
           for (let attempt = 0; attempt < item.retries; attempt++) {
             try {
               const toolsSpec = undefined;
-              result = streamText({
-                model: google(item.name as any),
+              result = await streamTextWithGeminiRotation({
+                modelName: item.name,
                 messages: convertToModelMessages(messages),
                 system: systemParts.join('\n\n'),
                 temperature: 0,
@@ -432,8 +436,8 @@ export async function POST(req: Request) {
           for (let attempt = 0; attempt < item.retries; attempt++) {
             try {
               const toolsSpec = undefined;
-              result = streamText({
-                model: google(item.name as any),
+              result = await streamTextWithGeminiRotation({
+                modelName: item.name,
                 messages: convertToModelMessages(messages),
                 system: systemParts.join('\n\n'),
                 temperature: 0,
@@ -482,8 +486,8 @@ export async function POST(req: Request) {
             const toolsSpec = Array.isArray(toolIds) && toolIds.includes('extreme_search')
               ? { extreme_search: extremeSearchTool(writer) }
               : undefined;
-            result = streamText({
-              model: google(name as any),
+            result = await streamTextWithGeminiRotation({
+              modelName: name,
               messages: convertToModelMessages(messages),
               system: systemParts.join('\n\n'),
               tools: toolsSpec as any,
