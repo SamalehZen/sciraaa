@@ -248,6 +248,54 @@ export const lookout = pgTable('lookout', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Custom Agents (MVP)
+export const customAgent = pgTable('custom_agent', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv4()),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  systemPrompt: text('system_prompt').notNull(),
+  visibility: varchar('visibility', { enum: ['private'] }).notNull().default('private'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const agentKnowledgeFile = pgTable('agent_knowledge_file', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv4()),
+  agentId: text('agent_id')
+    .notNull()
+    .references(() => customAgent.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  blobUrl: text('blob_url').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const agentExecution = pgTable('agent_execution', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => uuidv4()),
+  agentId: text('agent_id')
+    .notNull()
+    .references(() => customAgent.id, { onDelete: 'no action' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'no action' }),
+  chatId: text('chat_id').references(() => chat.id),
+  input: json('input').$type<any>(),
+  outputSummary: text('output_summary'),
+  tokens: integer('tokens').default(0),
+  durationMs: integer('duration_ms'),
+  status: varchar('status', { enum: ['success', 'error', 'timeout'] }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type User = InferSelectModel<typeof user>;
 export type Session = InferSelectModel<typeof session>;
 export type Account = InferSelectModel<typeof account>;
@@ -261,3 +309,6 @@ export type ExtremeSearchUsage = InferSelectModel<typeof extremeSearchUsage>;
 export type MessageUsage = InferSelectModel<typeof messageUsage>;
 export type CustomInstructions = InferSelectModel<typeof customInstructions>;
 export type Lookout = InferSelectModel<typeof lookout>;
+export type CustomAgent = InferSelectModel<typeof customAgent>;
+export type AgentKnowledgeFile = InferSelectModel<typeof agentKnowledgeFile>;
+export type AgentExecution = InferSelectModel<typeof agentExecution>;

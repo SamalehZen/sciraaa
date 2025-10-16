@@ -14,6 +14,9 @@ import {
   customInstructions,
   payment,
   lookout,
+  customAgent,
+  agentKnowledgeFile,
+  agentExecution,
 } from './schema';
 import { ChatSDKError } from '../errors';
 import { db, maindb } from './index';
@@ -971,5 +974,202 @@ export async function deleteLookout({ id }: { id: string }) {
     return deletedLookout;
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to delete lookout');
+  }
+}
+
+// ============ Custom Agents (MVP) ============
+export async function createCustomAgent({
+  userId,
+  name,
+  description,
+  systemPrompt,
+}: {
+  userId: string;
+  name: string;
+  description?: string | null;
+  systemPrompt: string;
+}) {
+  try {
+    const [row] = await db
+      .insert(customAgent)
+      .values({ userId, name, description: description ?? null, systemPrompt, visibility: 'private', createdAt: new Date(), updatedAt: new Date() })
+      .returning();
+    return row;
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to create custom agent');
+  }
+}
+
+export async function getCustomAgentById({ id, userId }: { id: string; userId: string }) {
+  try {
+    const [row] = await db
+      .select()
+      .from(customAgent)
+      .where(and(eq(customAgent.id, id), eq(customAgent.userId, userId)))
+      .limit(1);
+    return row || null;
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get custom agent');
+  }
+}
+
+export async function listCustomAgentsForUser({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(customAgent)
+      .where(eq(customAgent.userId, userId))
+      .orderBy(desc(customAgent.updatedAt));
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to list custom agents');
+  }
+}
+
+export async function updateCustomAgent({
+  id,
+  userId,
+  name,
+  description,
+  systemPrompt,
+}: {
+  id: string;
+  userId: string;
+  name?: string;
+  description?: string | null;
+  systemPrompt?: string;
+}) {
+  try {
+    const existing = await getCustomAgentById({ id, userId });
+    if (!existing) {
+      throw new ChatSDKError('forbidden:ownership', 'Agent not found or not owned');
+    }
+    const updateData: any = { updatedAt: new Date() };
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (systemPrompt !== undefined) updateData.systemPrompt = systemPrompt;
+    const [row] = await db
+      .update(customAgent)
+      .set(updateData)
+      .where(and(eq(customAgent.id, id), eq(customAgent.userId, userId)))
+      .returning();
+    return row;
+  } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
+    throw new ChatSDKError('bad_request:database', 'Failed to update custom agent');
+  }
+}
+
+export async function deleteCustomAgent({ id, userId }: { id: string; userId: string }) {
+  try {
+    const existing = await getCustomAgentById({ id, userId });
+    if (!existing) {
+      throw new ChatSDKError('forbidden:ownership', 'Agent not found or not owned');
+    }
+    const [row] = await db
+      .delete(customAgent)
+      .where(and(eq(customAgent.id, id), eq(customAgent.userId, userId)))
+      .returning();
+    return row;
+  } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
+    throw new ChatSDKError('bad_request:database', 'Failed to delete custom agent');
+  }
+}
+
+export async function addAgentKnowledgeFile({
+  agentId,
+  userId,
+  title,
+  blobUrl,
+  sizeBytes,
+}: {
+  agentId: string;
+  userId: string;
+  title: string;
+  blobUrl: string;
+  sizeBytes: number;
+}) {
+  try {
+    const existing = await getCustomAgentById({ id: agentId, userId });
+    if (!existing) {
+      throw new ChatSDKError('forbidden:ownership', 'Agent not found or not owned');
+    }
+    const [row] = await db
+      .insert(agentKnowledgeFile)
+      .values({ agentId, title, blobUrl, sizeBytes, createdAt: new Date() })
+      .returning();
+    return row;
+  } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
+    throw new ChatSDKError('bad_request:database', 'Failed to add knowledge file');
+  }
+}
+
+export async function listAgentKnowledgeFiles({ agentId, userId }: { agentId: string; userId: string }) {
+  try {
+    const existing = await getCustomAgentById({ id: agentId, userId });
+    if (!existing) {
+      throw new ChatSDKError('forbidden:ownership', 'Agent not found or not owned');
+    }
+    return await db.select().from(agentKnowledgeFile).where(eq(agentKnowledgeFile.agentId, agentId));
+  } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
+    throw new ChatSDKError('bad_request:database', 'Failed to list knowledge files');
+  }
+}
+
+export async function deleteAgentKnowledgeFile({ id, userId }: { id: string; userId: string }) {
+  try {
+    const [file] = await db.select().from(agentKnowledgeFile).where(eq(agentKnowledgeFile.id, id)).limit(1);
+    if (!file) return null;
+    const existing = await getCustomAgentById({ id: file.agentId, userId });
+    if (!existing) {
+      throw new ChatSDKError('forbidden:ownership', 'Agent not found or not owned');
+    }
+    const [row] = await db.delete(agentKnowledgeFile).where(eq(agentKnowledgeFile.id, id)).returning();
+    return row;
+  } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
+    throw new ChatSDKError('bad_request:database', 'Failed to delete knowledge file');
+  }
+}
+
+export async function logAgentExecution({
+  agentId,
+  userId,
+  chatId,
+  input,
+  outputSummary,
+  tokens = 0,
+  durationMs,
+  status,
+}: {
+  agentId: string;
+  userId: string;
+  chatId?: string | null;
+  input: any;
+  outputSummary?: string | null;
+  tokens?: number;
+  durationMs?: number | null;
+  status: 'success' | 'error' | 'timeout';
+}) {
+  try {
+    const [row] = await db
+      .insert(agentExecution)
+      .values({
+        agentId,
+        userId,
+        chatId: chatId ?? null,
+        input,
+        outputSummary: outputSummary ?? null,
+        tokens: tokens ?? 0,
+        durationMs: durationMs ?? null,
+        status,
+        createdAt: new Date(),
+      })
+      .returning();
+    return row;
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to log agent execution');
   }
 }

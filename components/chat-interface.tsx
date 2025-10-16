@@ -70,6 +70,9 @@ const ChatInterface = memo(
       true,
     );
 
+    const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+    const [selectedAgentName, setSelectedAgentName] = useState<string | null>(null);
+
     // Settings dialog state management with URL hash support
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [settingsInitialTab, setSettingsInitialTab] = useState<string>('profile');
@@ -277,6 +280,7 @@ const ChatInterface = memo(
     const isCustomInstructionsEnabledRef = useRef(isCustomInstructionsEnabled);
     const searchProviderRef = useRef(searchProvider);
     const selectedConnectorsRef = useRef(selectedConnectors);
+    const selectedAgentIdRef = useRef<string | null>(selectedAgentId);
 
     // Update refs whenever state changes - this ensures we always have current values
     selectedModelRef.current = selectedModel;
@@ -284,6 +288,7 @@ const ChatInterface = memo(
     isCustomInstructionsEnabledRef.current = isCustomInstructionsEnabled;
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
+    selectedAgentIdRef.current = selectedAgentId;
 
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
       id: chatId,
@@ -291,12 +296,14 @@ const ChatInterface = memo(
         api: '/api/search',
         prepareSendMessagesRequest({ messages, body }) {
           // Use ref values to get current state
+          const groupValue = selectedAgentIdRef.current ? 'custom' : selectedGroupRef.current;
           return {
             body: {
               id: chatId,
               messages,
               model: selectedModelRef.current,
-              group: selectedGroupRef.current,
+              group: groupValue,
+              agentId: selectedAgentIdRef.current || undefined,
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
@@ -843,6 +850,10 @@ const ChatInterface = memo(
                   onOpenSettings={handleOpenSettings}
                   selectedConnectors={selectedConnectors}
                   setSelectedConnectors={setSelectedConnectors}
+                  selectedAgentId={selectedAgentId}
+                  setSelectedAgentId={setSelectedAgentId}
+                  selectedAgentName={selectedAgentName}
+                  setSelectedAgentName={setSelectedAgentName}
                 />
               </div>
             )}

@@ -1473,6 +1473,10 @@ interface FormComponentProps {
   onOpenSettings?: (tab?: string) => void;
   selectedConnectors?: ConnectorProvider[];
   setSelectedConnectors?: React.Dispatch<React.SetStateAction<ConnectorProvider[]>>;
+  selectedAgentId?: string | null;
+  setSelectedAgentId?: (id: string | null) => void;
+  selectedAgentName?: string | null;
+  setSelectedAgentName?: (name: string | null) => void;
 }
 
 interface GroupSelectorProps {
@@ -1637,6 +1641,48 @@ const ConnectorSelector: React.FC<ConnectorSelectorProps> = React.memo(
 );
 
 ConnectorSelector.displayName = 'ConnectorSelector';
+
+const AgentSelector: React.FC<{ selectedAgentId?: string | null; selectedAgentName?: string | null; onSelect: (id: string | null, name: string | null) => void }>= ({ selectedAgentId, selectedAgentName, onSelect }) => {
+  const [agents, setAgents] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [loading, setLoading] = React.useState(false);
+  React.useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetch('/api/agents')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!mounted) return;
+        setAgents((d.agents || []).map((a: any) => ({ id: a.id, name: a.name })));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1">
+      <label className="text-[10px] text-muted-foreground">Agent</label>
+      <select
+        className="text-xs border rounded px-2 py-1 bg-background"
+        value={selectedAgentId || ''}
+        onChange={(e) => {
+          const value = e.target.value;
+          const agent = agents.find((a) => a.id === value);
+          onSelect(value || null, agent?.name || null);
+        }}
+      >
+        <option value="">None</option>
+        {agents.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
   ({ selectedGroup, onGroupSelect, status, onOpenSettings, isProUser }) => {
@@ -2150,6 +2196,10 @@ const FormComponent: React.FC<FormComponentProps> = ({
   onOpenSettings,
   selectedConnectors = [],
   setSelectedConnectors,
+  selectedAgentId = null,
+  setSelectedAgentId,
+  selectedAgentName = null,
+  setSelectedAgentName,
 }) => {
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
   const isMounted = useRef(true);
@@ -3619,6 +3669,24 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     subscriptionData={subscriptionData}
                     user={user}
                   />
+
+                  {setSelectedAgentId && (
+                    <AgentSelector
+                      selectedAgentId={selectedAgentId || null}
+                      selectedAgentName={selectedAgentName || null}
+                      onSelect={(id, name) => {
+                        setSelectedAgentId(id);
+                        setSelectedAgentName && setSelectedAgentName(name);
+                        // Optionally force group to custom visually
+                        if (id && selectedGroup !== 'custom') {
+                          handleGroupSelect('custom');
+                        }
+                        if (!id && selectedGroup === 'custom') {
+                          handleGroupSelect('chat');
+                        }
+                      }}
+                    />
+                  )}
                 </div>
 
                 <div className={cn('flex items-center flex-shrink-0 gap-1')}>

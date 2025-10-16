@@ -37,7 +37,8 @@ export type SearchGroupId =
   | 'connectors'
   | 'cyrus'
   | 'libeller'
-  | 'nomenclature';
+  | 'nomenclature'
+  | 'custom';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {

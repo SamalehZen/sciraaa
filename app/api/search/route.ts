@@ -10,7 +10,7 @@ import { geolocation } from '@vercel/functions';
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
 import { extremeSearchTool } from '@/lib/tools';
 import type { ChatMessage } from '@/lib/types';
-import { getLightweightUser, generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
+import { getLightweightUser, generateTitleFromUserMessage, getGroupConfig, getCustomAgentConfig } from '@/app/actions';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -83,7 +83,7 @@ function buildAutoContext(summaries: Array<{ url: string; title?: string; excerp
 
 export async function POST(req: Request) {
   const requestStart = Date.now();
-  const { messages, model, group, timezone, id } = await req.json();
+  const { messages, model, group, timezone, id, agentId } = await req.json();
   const streamId = 'stream-' + uuidv4();
   const { latitude, longitude } = geolocation(req);
 
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
 
   const dataStream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer }) => {
-      const { instructions, tools: toolIds } = await getGroupConfig(group);
+      const { instructions, tools: toolIds } = group === 'custom' ? await getCustomAgentConfig(agentId) : await getGroupConfig(group as any);
       const systemParts: string[] = [];
       if (instructions) systemParts.unshift(instructions);
       if (autoContext) systemParts.push(autoContext);
