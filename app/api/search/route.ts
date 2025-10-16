@@ -45,6 +45,22 @@ function extractUrlsFromText(text: string): string[] {
 
 async function fetchAndSummarize(url: string): Promise<{ value: { url: string; title?: string; excerpt?: string } | null; timedOut: boolean }> {
   const MAX_TEXT = 50 * 1024; // 50KB
+  const pyUrl = process.env.PY_SERVICE_URL;
+  if (pyUrl) {
+    try {
+      const res = await fetchWithTimeout(`${String(pyUrl).replace(/\/$/, '')}/v1/web/summarize`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url, timeoutMs: 1000, maxBytes: MAX_TEXT }),
+        timeoutMs: 1200,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Expecting shape: { value: { url, title?, excerpt? } | null, timedOut: boolean }
+        return { value: data?.value ?? null, timedOut: Boolean(data?.timedOut) };
+      }
+    } catch {}
+  }
   try {
     const res = await fetchWithTimeout(url, { redirect: 'follow', timeoutMs: 1000 });
     const contentType = res.headers.get('content-type') || '';

@@ -6,6 +6,9 @@ import { getCustomAgentById, listAgentKnowledgeFiles, logAgentExecution } from '
 import { fetchWithTimeout } from '@/lib/http';
 
 const TOTAL_CONTEXT_CAP = 200 * 1024; // 200KB across files
+const PY_SERVICE_URL = process.env.PY_SERVICE_URL;
+
+type KnowledgeResult = { excerpt: string; totalBytes: number; capped: boolean; nbFiles: number; nbTimeouts: number };
 
 function sanitizeKnowledge(text: string): string {
   const patterns = [/ignore\s+system\s+prompt/gi, /ignore\s+previous\s+instructions/gi, /disregard\s+all\s+above/gi];
@@ -14,10 +17,7 @@ function sanitizeKnowledge(text: string): string {
   return out;
 }
 
-async function loadKnowledge(
-  agentId: string,
-  userId: string,
-): Promise<{ excerpt: string; totalBytes: number; capped: boolean; nbFiles: number; nbTimeouts: number }> {
+async function loadKnowledgeLocal(agentId: string, userId: string): Promise<KnowledgeResult> {
   const files = await listAgentKnowledgeFiles({ agentId, userId }).catch(() => []);
   const CONCURRENCY = 5;
   const TIMEOUT_MS = 2000;
@@ -41,7 +41,6 @@ async function loadKnowledge(
       }
       if (consumed >= TOTAL_CONTEXT_CAP) {
         cancelled = true;
-        // Abort any still-running requests
         for (const [, c] of inFlight) {
           try {
             c.abort();
@@ -108,6 +107,42 @@ async function loadKnowledge(
 
   const nbFiles = ordered.length;
   return { excerpt, totalBytes: consumed, capped: consumed >= TOTAL_CONTEXT_CAP, nbFiles, nbTimeouts };
+}
+
+async function loadKnowledgeViaPy(agentId: string, userId: string): Promise<KnowledgeResult | null> {
+  if (!PY_SERVICE_URL) return null;
+  try {
+    const files = await listAgentKnowledgeFiles({ agentId, userId }).catch(() => []);
+    const payload = {
+      files: files.filter((f: any) => f?.blobUrl).map((f: any) => ({ title: f.title, blobUrl: f.blobUrl, sizeBytes: f.sizeBytes })),
+      capBytes: TOTAL_CONTEXT_CAP,
+      timeoutMs: 2000,
+    };
+    const res = await fetchWithTimeout(`${PY_SERVICE_URL.replace(/\/$/, '')}/v1/knowledge/excerpt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      timeoutMs: 2500,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const excerpt = String(data.excerpt || '').trim();
+    const totalBytes = Number(data.totalBytes || 0);
+    const nbFiles = Number(data.nbFiles || 0);
+    const nbTimeouts = Number(data.nbTimeouts || 0);
+    const capped = Boolean(data.capped);
+    return { excerpt, totalBytes, nbFiles, nbTimeouts, capped };
+  } catch {
+    return null;
+  }
+}
+
+async function loadKnowledge(agentId: string, userId: string): Promise<KnowledgeResult> {
+  if (PY_SERVICE_URL) {
+    const py = await loadKnowledgeViaPy(agentId, userId);
+    if (py) return py;
+  }
+  return await loadKnowledgeLocal(agentId, userId);
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
