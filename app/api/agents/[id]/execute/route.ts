@@ -3,8 +3,12 @@ import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTra
 import { google } from '@ai-sdk/google';
 import { getUser } from '@/lib/auth-utils';
 import { getCustomAgentById, listAgentKnowledgeFiles, logAgentExecution } from '@/lib/db/queries';
+import { fetchWithTimeout } from '@/lib/http';
 
 const TOTAL_CONTEXT_CAP = 200 * 1024; // 200KB across files
+const PY_SERVICE_URL = process.env.PY_SERVICE_URL;
+
+type KnowledgeResult = { excerpt: string; totalBytes: number; capped: boolean; nbFiles: number; nbTimeouts: number };
 
 function sanitizeKnowledge(text: string): string {
   const patterns = [/ignore\s+system\s+prompt/gi, /ignore\s+previous\s+instructions/gi, /disregard\s+all\s+above/gi];
@@ -13,28 +17,136 @@ function sanitizeKnowledge(text: string): string {
   return out;
 }
 
-async function loadKnowledge(agentId: string, userId: string): Promise<{ excerpt: string; totalBytes: number; capped: boolean }> {
+async function loadKnowledgeLocal(agentId: string, userId: string): Promise<KnowledgeResult> {
   const files = await listAgentKnowledgeFiles({ agentId, userId }).catch(() => []);
+  const CONCURRENCY = 5;
+  const TIMEOUT_MS = 2000;
   let consumed = 0;
-  let excerpt = '';
-  for (const f of files) {
-    if (!f.blobUrl) continue;
-    if (consumed >= TOTAL_CONTEXT_CAP) break;
-    try {
-      const res = await fetch(f.blobUrl);
-      if (!res.ok) continue;
-      const text = await res.text();
-      const remaining = TOTAL_CONTEXT_CAP - consumed;
-      const chunk = sanitizeKnowledge(text).slice(0, remaining);
-      excerpt += `\n\n# File: ${f.title} (${f.sizeBytes} bytes)\n${chunk}`;
-      consumed += Buffer.byteLength(chunk, 'utf8');
-    } catch {}
+  let cancelled = false;
+  let nbTimeouts = 0;
+  const results: Array<{ index: number; text: string } | null> = new Array(files.length).fill(null);
+
+  let nextIndex = 0;
+  const inFlight = new Map<number, AbortController>();
+
+  async function runOne() {
+    while (true) {
+      if (cancelled) return;
+      const i = nextIndex++;
+      if (i >= files.length) return;
+      const f = files[i];
+      if (!f?.blobUrl) {
+        results[i] = null;
+        continue;
+      }
+      if (consumed >= TOTAL_CONTEXT_CAP) {
+        cancelled = true;
+        for (const [, c] of inFlight) {
+          try {
+            c.abort();
+          } catch {}
+        }
+        return;
+      }
+
+      const controller = new AbortController();
+      inFlight.set(i, controller);
+      try {
+        const res = await fetchWithTimeout(f.blobUrl, { timeoutMs: TIMEOUT_MS, signal: controller.signal, redirect: 'follow' });
+        if (!res.ok) {
+          results[i] = null;
+          continue;
+        }
+        const raw = await res.text();
+        const remaining = Math.max(0, TOTAL_CONTEXT_CAP - consumed);
+        if (remaining <= 0) {
+          cancelled = true;
+          for (const [, c] of inFlight) {
+            try {
+              c.abort();
+            } catch {}
+          }
+          return;
+        }
+        const sanitized = sanitizeKnowledge(raw);
+        const chunk = sanitized.slice(0, remaining);
+        const addedBytes = Buffer.byteLength(chunk, 'utf8');
+        consumed += addedBytes;
+        if (chunk) {
+          const header = `\n\n# File: ${f.title} (${f.sizeBytes} bytes)\n`;
+          results[i] = { index: i, text: header + chunk };
+        } else {
+          results[i] = null;
+        }
+        if (consumed >= TOTAL_CONTEXT_CAP) {
+          cancelled = true;
+          for (const [, c] of inFlight) {
+            try {
+              c.abort();
+            } catch {}
+          }
+        }
+      } catch (err) {
+        nbTimeouts += 1;
+        results[i] = null;
+      } finally {
+        inFlight.delete(i);
+      }
+    }
   }
-  return { excerpt: excerpt.trim(), totalBytes: consumed, capped: consumed >= TOTAL_CONTEXT_CAP };
+
+  const workers = Array.from({ length: Math.min(CONCURRENCY, files.length) }, () => runOne());
+  await Promise.all(workers);
+
+  const ordered = results.filter(Boolean) as Array<{ index: number; text: string }>;
+  const excerpt = ordered
+    .sort((a, b) => a.index - b.index)
+    .map((r) => r.text)
+    .join('')
+    .trim();
+
+  const nbFiles = ordered.length;
+  return { excerpt, totalBytes: consumed, capped: consumed >= TOTAL_CONTEXT_CAP, nbFiles, nbTimeouts };
+}
+
+async function loadKnowledgeViaPy(agentId: string, userId: string): Promise<KnowledgeResult | null> {
+  if (!PY_SERVICE_URL) return null;
+  try {
+    const files = await listAgentKnowledgeFiles({ agentId, userId }).catch(() => []);
+    const payload = {
+      files: files.filter((f: any) => f?.blobUrl).map((f: any) => ({ title: f.title, blobUrl: f.blobUrl, sizeBytes: f.sizeBytes })),
+      capBytes: TOTAL_CONTEXT_CAP,
+      timeoutMs: 2000,
+    };
+    const res = await fetchWithTimeout(`${PY_SERVICE_URL.replace(/\/$/, '')}/v1/knowledge/excerpt`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+      timeoutMs: 2500,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const excerpt = String(data.excerpt || '').trim();
+    const totalBytes = Number(data.totalBytes || 0);
+    const nbFiles = Number(data.nbFiles || 0);
+    const nbTimeouts = Number(data.nbTimeouts || 0);
+    const capped = Boolean(data.capped);
+    return { excerpt, totalBytes, nbFiles, nbTimeouts, capped };
+  } catch {
+    return null;
+  }
+}
+
+async function loadKnowledge(agentId: string, userId: string): Promise<KnowledgeResult> {
+  if (PY_SERVICE_URL) {
+    const py = await loadKnowledgeViaPy(agentId, userId);
+    if (py) return py;
+  }
+  return await loadKnowledgeLocal(agentId, userId);
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const start = Date.now();
+  const requestStart = Date.now();
   const { messages, chatId } = await req.json();
   const user = await getUser();
   if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
@@ -49,11 +161,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (knowledge.excerpt) systemParts.push(`${header}\n\n${knowledge.excerpt}`);
 
   const streamStart = Date.now();
+  const selectedModel = 'gemini-2.5-flash';
+  try {
+    console.info(
+      `perf.agent_execute ttfb_ms=${streamStart - requestStart} files=${knowledge.nbFiles} kb=${Math.round(
+        knowledge.totalBytes / 1024,
+      )} timeouts=${knowledge.nbTimeouts} urls=0 model=${selectedModel}`,
+    );
+  } catch {}
 
   const dataStream = createUIMessageStream({
     execute: async ({ writer }) => {
       const result = streamText({
-        model: google('gemini-2.5-flash' as any),
+        model: google(selectedModel as any),
         messages: convertToModelMessages(messages),
         system: systemParts.join('\n\n'),
       });
@@ -71,7 +191,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 totalTokens: part.totalUsage?.totalTokens ?? null,
                 inputTokens: part.totalUsage?.inputTokens ?? null,
                 outputTokens: part.totalUsage?.outputTokens ?? null,
-              };
+              } as any;
             }
           },
         }),
@@ -91,9 +211,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           input: { messages },
           outputSummary: outputText.slice(0, 2000),
           tokens: undefined as any,
-          durationMs: Date.now() - start,
+          durationMs: Date.now() - requestStart,
           status: 'success',
         });
+        try {
+          console.info(
+            `perf.agent_execute_done ttfb_ms=${streamStart - requestStart} files=${knowledge.nbFiles} kb=${Math.round(
+              knowledge.totalBytes / 1024,
+            )} timeouts=${knowledge.nbTimeouts} urls=0 model=${selectedModel}`,
+          );
+        } catch {}
       } catch {}
     },
   });
