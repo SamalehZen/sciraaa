@@ -1,6 +1,7 @@
 // /app/api/search/route.ts
 import { convertToModelMessages, streamText, createUIMessageStream, JsonToSseTransformStream, generateText } from 'ai';
 import { scira } from '@/ai/providers';
+import { fetchWithTimeout } from '@/lib/http';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
@@ -42,12 +43,13 @@ function extractUrlsFromText(text: string): string[] {
   return Array.from(urls);
 }
 
-async function fetchAndSummarize(url: string): Promise<{ url: string; title?: string; excerpt?: string } | null> {
+async function fetchAndSummarize(url: string): Promise<{ value: { url: string; title?: string; excerpt?: string } | null; timedOut: boolean }> {
+  const MAX_TEXT = 50 * 1024; // 50KB
   try {
-    const res = await fetch(url, { redirect: 'follow' });
+    const res = await fetchWithTimeout(url, { redirect: 'follow', timeoutMs: 1000 });
     const contentType = res.headers.get('content-type') || '';
-    if (!res.ok) return null;
-    if (!contentType.includes('text/html') && !contentType.includes('text/plain')) return null;
+    if (!res.ok) return { value: null, timedOut: false };
+    if (!contentType.includes('text/html') && !contentType.includes('text/plain')) return { value: null, timedOut: false };
 
     const text = await res.text();
     if (contentType.includes('text/html')) {
@@ -59,11 +61,12 @@ async function fetchAndSummarize(url: string): Promise<{ url: string; title?: st
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
-      return { url, title, excerpt: body.slice(0, 1200) };
+      return { value: { url, title, excerpt: body.slice(0, MAX_TEXT) }, timedOut: false };
     }
-    return { url, excerpt: text.slice(0, 1200) };
-  } catch {
-    return null;
+    return { value: { url, excerpt: text.slice(0, MAX_TEXT) }, timedOut: false };
+  } catch (err: any) {
+    const timedOut = err?.name === 'AbortError';
+    return { value: null, timedOut };
   }
 }
 
@@ -83,7 +86,7 @@ function buildAutoContext(summaries: Array<{ url: string; title?: string; excerp
 
 export async function POST(req: Request) {
   const requestStart = Date.now();
-  const { messages, model, group, timezone, id, agentId } = await req.json();
+  const { messages, model, group, timezone, id, agentId, enrichWithWeb } = await req.json();
   const streamId = 'stream-' + uuidv4();
   const { latitude, longitude } = geolocation(req);
 
@@ -131,21 +134,38 @@ export async function POST(req: Request) {
     } catch {}
   }
 
-  // Auto-fetch URLs from the last user text
+  // Auto-fetch URLs from the last user text (gated by enrichWithWeb)
   const lastText = (messages?.[messages.length - 1]?.parts || [])
     .filter((p: any) => p?.type === 'text')
     .map((p: any) => p.text)
     .join('\n');
-  const urls = extractUrlsFromText(lastText).slice(0, 3);
-  const fetched = await Promise.all(urls.map((u) => fetchAndSummarize(u)));
-  const summaries = fetched.filter((x): x is NonNullable<typeof x> => Boolean(x));
-  const autoContext = buildAutoContext(summaries);
+  const doEnrich = Boolean(enrichWithWeb);
+  let nbUrlTimeouts = 0;
+  let nbUrlFetched = 0;
+  let autoContext = '';
+  if (doEnrich) {
+    const urls = extractUrlsFromText(lastText).slice(0, 1);
+    const fetched = await Promise.all(urls.map((u) => fetchAndSummarize(u)));
+    nbUrlTimeouts = fetched.filter((r) => r.timedOut).length;
+    const summaries = fetched.map((r) => r.value).filter((x): x is NonNullable<typeof x> => Boolean(x));
+    nbUrlFetched = summaries.length;
+    autoContext = buildAutoContext(summaries);
+  }
 
   const streamStart = Date.now();
+  let selectedModelForPerf: string = ''; // will be set when a model is chosen
+  let knowledgeMetrics: { nbFiles: number; bytes: number; nbTimeouts: number } = { nbFiles: 0, bytes: 0, nbTimeouts: 0 };
+  try {
+    const hasUpstash = Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+    if (!hasUpstash) console.info('perf.cache db=off');
+  } catch {}
 
   const dataStream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer }) => {
-      const { instructions, tools: toolIds } = group === 'custom' ? await getCustomAgentConfig(agentId) : await getGroupConfig(group as any);
+      const conf: any = group === 'custom' ? await getCustomAgentConfig(agentId) : await getGroupConfig(group as any);
+      const instructions: string = conf.instructions;
+      const toolIds: any[] = conf.tools || [];
+      knowledgeMetrics = group === 'custom' && conf?._metrics ? conf._metrics : { nbFiles: 0, bytes: 0, nbTimeouts: 0 } as any;
       const systemParts: string[] = [];
       if (instructions) systemParts.unshift(instructions);
       if (autoContext) systemParts.push(autoContext);
@@ -192,10 +212,6 @@ export async function POST(req: Request) {
           return;
         }
 
-        function containsLeakSignals(text: string) {
-          return /(RÔLE\s+ET\s+OBJECTIF|M[ÉE]THODOLOGIE|prompt\s*complet)/i.test(text);
-        }
-
         function extractFirstMarkdownTable(text: string): string | null {
           const lines = text.split(/\r?\n/);
           let start = -1;
@@ -210,7 +226,6 @@ export async function POST(req: Request) {
           }
           if (start !== -1 && end > start) {
             const block = lines.slice(start, end + 1).join('\n').trim();
-            // Require at least header + alignment + one row OR allow empty rows to repair later
             return block;
           }
           return null;
@@ -253,7 +268,6 @@ export async function POST(req: Request) {
           return table && /^\|.*\|/m.test(table) ? table : null;
         }
 
-        // Conversational greeting handling — do NOT produce a table for simple salutations
         const isGreeting = (t: string) => /\b(?:salut|bonjour|bonsoir|coucou|hello|hi|slt|bjr|ça va|ca va|comment\s+ça\s+va|comment\s+ca\s+va|السلام\s+عليكم|marhaba|مرحبا)\b/i.test(t.trim());
         if (isGreeting(lastText || '') && normalized.length <= 1) {
           const msg: ChatMessage = {
@@ -274,7 +288,6 @@ export async function POST(req: Request) {
           return;
         }
 
-        // Nomenclature-like streaming pipeline for Libeller
         if (normalized.length > 300) {
           const warn: ChatMessage = {
             id: 'msg-' + uuidv4(),
@@ -295,7 +308,8 @@ export async function POST(req: Request) {
 
         const modelPlan: Array<{ name: string; retries: number }> = [
           { name: 'gemini-2.5-flash', retries: 1 },
-          { name: 'gemini-2.0-flash', retries: 2 },
+          { name: 'gemini-2.0-flash', retries: 1 },
+          { name: 'gemini-2.0-flash-exp', retries: 1 },
         ];
         let result: ReturnType<typeof streamText> | null = null;
         let lastError: unknown = null;
@@ -312,6 +326,7 @@ export async function POST(req: Request) {
                 tools: toolsSpec as any,
                 toolChoice: 'auto',
               });
+              selectedModelForPerf = item.name;
               break outer;
             } catch (err) {
               lastError = err;
@@ -346,7 +361,6 @@ export async function POST(req: Request) {
       if (group === 'nomenclature') {
         const normalized = (lastText || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
-        // Conversational greeting handling — do NOT produce a table for simple salutations
         const isGreeting = (t: string) => /\b(?:salut|bonjour|bonsoir|coucou|hello|hi|slt|bjr|ça va|ca va|comment\s+ça\s+va|comment\s+ca\s+va|السلام\s+عليكم|marhaba|مرحبا)\b/i.test((t || '').trim());
         if (isGreeting(lastText || '') && normalized.length <= 1) {
           const msg: ChatMessage = {
@@ -424,7 +438,8 @@ export async function POST(req: Request) {
 
         const modelPlan: Array<{ name: string; retries: number }> = [
           { name: 'gemini-2.5-flash', retries: 1 },
-          { name: 'gemini-2.0-flash', retries: 2 },
+          { name: 'gemini-2.0-flash', retries: 1 },
+          { name: 'gemini-2.0-flash-exp', retries: 1 },
         ];
         let result: ReturnType<typeof streamText> | null = null;
         let lastError: unknown = null;
@@ -441,6 +456,7 @@ export async function POST(req: Request) {
                 tools: toolsSpec as any,
                 toolChoice: 'auto',
               });
+              selectedModelForPerf = item.name;
               break outer;
             } catch (err) {
               lastError = err;
@@ -489,6 +505,7 @@ export async function POST(req: Request) {
               tools: toolsSpec as any,
               toolChoice: toolsSpec ? 'required' : 'auto',
             });
+            selectedModelForPerf = name;
           }
           break;
         } catch (err) {
@@ -523,6 +540,12 @@ export async function POST(req: Request) {
       return 'Oops, an error occurred!';
     },
     onFinish: async ({ messages: streamed }) => {
+      try {
+        const ttfb = streamStart - requestStart;
+        console.info(
+          `perf.search ttfb_ms=${ttfb} files=${knowledgeMetrics.nbFiles} kb=${Math.round(knowledgeMetrics.bytes / 1024)} timeouts=${knowledgeMetrics.nbTimeouts + nbUrlTimeouts} urls=${nbUrlFetched} model=${selectedModelForPerf || String(model)}`,
+        );
+      } catch {}
       if (userId) {
         try {
           await saveMessages({

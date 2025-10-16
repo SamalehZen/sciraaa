@@ -22,6 +22,8 @@ import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 // Hook imports
 import { useAutoResume } from '@/hooks/use-auto-resume';
@@ -281,6 +283,8 @@ const ChatInterface = memo(
     const searchProviderRef = useRef(searchProvider);
     const selectedConnectorsRef = useRef(selectedConnectors);
     const selectedAgentIdRef = useRef<string | null>(selectedAgentId);
+    const [enrichWithWeb, setEnrichWithWeb] = useLocalStorage('scira-web-enrichment', false);
+    const isWebEnrichmentEnabledRef = useRef(enrichWithWeb);
 
     // Update refs whenever state changes - this ensures we always have current values
     selectedModelRef.current = selectedModel;
@@ -289,6 +293,7 @@ const ChatInterface = memo(
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
     selectedAgentIdRef.current = selectedAgentId;
+    isWebEnrichmentEnabledRef.current = enrichWithWeb;
 
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
       id: chatId,
@@ -308,6 +313,7 @@ const ChatInterface = memo(
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
               selectedConnectors: selectedConnectorsRef.current,
+              enrichWithWeb: Boolean(isWebEnrichmentEnabledRef.current),
               ...(initialChatId ? { chat_id: initialChatId } : {}),
               ...body,
             },
@@ -816,6 +822,10 @@ const ChatInterface = memo(
                     : 'fixed bottom-0 left-0 right-0 z-20 !pb-6 mt-1 mx-4 sm:mx-2 p-0',
                 )}
               >
+                <div className="flex items-center justify-end mb-2 px-1">
+                  <Label htmlFor="web-enrichment" className="mr-2 text-sm text-muted-foreground">Web enrichment</Label>
+                  <Switch id="web-enrichment" checked={enrichWithWeb} onCheckedChange={setEnrichWithWeb} />
+                </div>
                 <FormComponent
                   chatId={chatId}
                   user={user!}
