@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken } from '@/lib/local-session';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -7,15 +6,54 @@ import { eq } from 'drizzle-orm';
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
 
+const SECRET = process.env.LOCAL_AUTH_SECRET || 'insecure-local-secret';
+
+function base64UrlToBase64(input: string) {
+  const pad = input.length % 4 === 2 ? '==' : input.length % 4 === 3 ? '=' : '';
+  return input.replace(/-/g, '+').replace(/_/g, '/') + pad;
+}
+
+function base64ToBase64Url(input: string) {
+  return input.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function strToUint8Array(str: string) {
+  return new TextEncoder().encode(str);
+}
+
+function arrayBufferToBase64Url(buf: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const b64 = btoa(binary);
+  return base64ToBase64Url(b64);
+}
+
+async function verifySessionTokenEdge(token: string | null | undefined): Promise<{ userId: string; email?: string } | null> {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== 'v1') return null;
+  const [, body, signature] = parts as [string, string, string];
+
+  try {
+    const key = await crypto.subtle.importKey('raw', strToUint8Array(SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const mac = await crypto.subtle.sign('HMAC', key, strToUint8Array(body));
+    const expected = arrayBufferToBase64Url(mac);
+    if (expected !== signature) return null;
+
+    const json = atob(base64UrlToBase64(body));
+    const data = JSON.parse(json);
+    if (!data?.userId) return null;
+    return { userId: data.userId as string, email: data.email as string | undefined };
+  } catch {
+    return null;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('local.session')?.value || null;
-  let session;
-  try {
-    session = verifySessionToken(token);
-  } catch {
-    session = null;
-  }
+  const session = await verifySessionTokenEdge(token);
 
   let response = NextResponse.next();
 
