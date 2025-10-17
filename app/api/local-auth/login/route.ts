@@ -102,7 +102,9 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ success: true }, { status: 200 });
     res.cookies.set(cookie.name, cookie.value, cookie.options);
     return res;
-  } catch {
-    return NextResponse.json({ error: 'Requête invalide' }, { status: 400 });
+  } catch (e: any) {
+    console.error('Local auth login error:', e);
+    const message = e?.message || String(e);
+    return NextResponse.json({ error: `Requête invalide: ${message}` }, { status: 400 });
   }
 }
