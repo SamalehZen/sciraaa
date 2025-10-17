@@ -3462,7 +3462,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
             <div className="absolute -inset-1 rounded-2xl bg-primary/5 dark:bg-primary/2 !blur-sm pointer-events-none z-9999" />
             <div
               className={cn(
-                'relative rounded-xl overflow-hidden !bg-muted border border-border/60 focus-within:border-ring/50 transition-all duration-200',
+                'relative rounded-xl overflow-hidden !bg-muted border focus-within:border-ring/50 transition-all duration-200',
+                messages.length === 0 ? 'border-transparent' : 'border-border/60',
                 (isEnhancing || isTypewriting) && '!bg-muted',
               )}
             >
