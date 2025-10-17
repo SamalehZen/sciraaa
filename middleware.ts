@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionToken } from '@/lib/local-session';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
@@ -10,16 +13,20 @@ export async function middleware(request: NextRequest) {
   let session;
   try {
     session = verifySessionToken(token);
-
   } catch {
-
     session = null;
   }
 
-  // Guest sessions disabled: do not create arka_client_id cookie
   let response = NextResponse.next();
 
-  if (pathname === '/api/search' || pathname.startsWith('/api/search/') || pathname.startsWith('/api/upload')) {
+  // Allow some API routes without auth
+  if (
+    pathname === '/api/search' ||
+    pathname.startsWith('/api/search/') ||
+    pathname.startsWith('/api/upload') ||
+    pathname.startsWith('/api/pusher/auth') ||
+    pathname.startsWith('/api/presence/heartbeat')
+  ) {
     return response;
   }
 
@@ -29,6 +36,44 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth/dodopayments/webhooks') ||
     pathname.startsWith('/api/raycast')
   ) {
+    return response;
+  }
+
+  // Compute username/role/active if session exists
+  let username: string | null = null;
+  let role: string | null = null;
+  let isActive: boolean | null = null;
+  if (session?.userId?.startsWith('local:')) {
+    username = session.userId.slice('local:'.length);
+    const cred = await db.query.users.findFirst({ where: eq(users.username, username) });
+    role = cred?.role || null;
+    isActive = cred?.isActive ?? null;
+  }
+
+  // Block suspended users globally (except minimal public pages & API)
+  if (isActive === false) {
+    // Return 403 for APIs
+    if (pathname.startsWith('/api')) {
+      return new NextResponse(JSON.stringify({ error: 'Compte suspendu' }), { status: 403 });
+    }
+    // Redirect to banned page for web
+    if (!pathname.startsWith('/banned')) {
+      return NextResponse.redirect(new URL('/banned', request.url));
+    }
+    return response;
+  }
+
+  // Guard Admin area
+  if (pathname.startsWith('/admin')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+    if (!username) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+    if (role !== 'admin') {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
     return response;
   }
 

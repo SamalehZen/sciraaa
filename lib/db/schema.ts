@@ -172,6 +172,10 @@ export const customInstructions = pgTable('custom_instructions', {
 export const users = pgTable('users', {
   username: text('username').primaryKey(),
   passwordHash: text('password_hash').notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  role: text('role').notNull().default('user'),
+  failedAttempts: integer('failed_attempts').notNull().default(0),
+  lockedUntil: timestamp('locked_until'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -247,6 +251,45 @@ export const lookout = pgTable('lookout', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
+
+// Audit log (append-only)
+export const auditLog = pgTable('audit_log', {
+  id: text('id').primaryKey().$defaultFn(() => generateId()),
+  actorUsername: text('actor_username').notNull(),
+  actorRole: text('actor_role').notNull(),
+  targetUsername: text('target_username'),
+  action: text('action').notNull(),
+  metadata: json('metadata'),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// User preferences (admin-editable)
+export const userPreferences = pgTable('user_preferences', {
+  username: text('username')
+    .primaryKey()
+    .references(() => users.username, { onDelete: 'cascade' }),
+  language: text('language').notNull().default('fr'),
+  theme: text('theme').notNull().default('system'), // light | dark | system
+  prefs: json('prefs'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// User presence (denormalized)
+export const userPresence = pgTable('user_presence', {
+  username: text('username')
+    .primaryKey()
+    .references(() => users.username, { onDelete: 'cascade' }),
+  lastSeenAt: timestamp('last_seen_at').notNull().defaultNow(),
+  lastIp: text('last_ip'),
+  userAgent: text('user_agent'),
+  city: text('city'),
+  country: text('country'),
+  lat: real('lat'),
+  lon: real('lon'),
+});
+
 
 export type User = InferSelectModel<typeof user>;
 export type Session = InferSelectModel<typeof session>;

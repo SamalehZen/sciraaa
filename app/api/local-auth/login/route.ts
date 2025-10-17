@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { users, user as appUser } from '@/lib/db/schema';
+import { users, user as appUser, session } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { createSessionToken, createCookie } from '@/lib/local-session';
+import { logAudit } from '@/lib/audit';
+import { v4 as uuidv4 } from 'uuid';
 
 function isArgon2(hash: string) {
   return hash.startsWith('$argon2');
@@ -25,6 +27,11 @@ async function verifyHybridPassword(hash: string, pwd: string) {
 }
 
 export async function POST(req: Request) {
+  const hdrs = req.headers;
+  const xfwd = hdrs.get('x-forwarded-for') || '';
+  const ip = (xfwd.split(',')[0] || '').trim() || null;
+  const userAgent = hdrs.get('user-agent') || null;
+
   try {
     const { username, password } = await req.json();
 
@@ -32,20 +39,27 @@ export async function POST(req: Request) {
     const pwd = String(password || '');
 
     if (!/^[a-zA-Z0-9._-]{3,32}$/.test(uname)) {
-      return NextResponse.json({ error: 'Invalid username' }, { status: 400 });
+      return NextResponse.json({ error: 'Nom d’utilisateur invalide' }, { status: 400 });
     }
     if (pwd.length < 3) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+      return NextResponse.json({ error: 'Mot de passe invalide' }, { status: 400 });
     }
 
     const cred = await db.query.users.findFirst({ where: eq(users.username, uname) });
     if (!cred) {
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
+      await logAudit({ actorUsername: uname, actorRole: 'unknown', action: 'LOGIN_FAILED', metadata: { reason: 'UNKNOWN_USER' }, ip, userAgent });
+      return NextResponse.json({ error: 'Nom d’utilisateur ou mot de passe incorrect' }, { status: 401 });
+    }
+
+    if (cred.isActive === false) {
+      await logAudit({ actorUsername: uname, actorRole: cred.role, action: 'LOGIN_FAILED', metadata: { reason: 'SUSPENDED' }, ip, userAgent });
+      return NextResponse.json({ error: 'Compte suspendu' }, { status: 403 });
     }
 
     const ok = await verifyHybridPassword(cred.passwordHash, pwd).catch(() => false);
     if (!ok) {
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
+      await logAudit({ actorUsername: uname, actorRole: cred.role, action: 'LOGIN_FAILED', metadata: { reason: 'BAD_PASSWORD' }, ip, userAgent });
+      return NextResponse.json({ error: 'Nom d’utilisateur ou mot de passe incorrect' }, { status: 401 });
     }
 
     const localUserId = `local:${uname}`;
@@ -69,10 +83,26 @@ export async function POST(req: Request) {
     const token = createSessionToken({ userId: localUserId, email: localEmail });
     const cookie = createCookie(token);
 
+    // Persist session row (for admin security views)
+    const now = new Date();
+    const expiresAt = new Date(cookie.options.expires ?? now.getTime() + (cookie.options.maxAge || 0) * 1000);
+    await db.insert(session).values({
+      id: uuidv4(),
+      token,
+      userId: localUserId,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt,
+      ipAddress: ip,
+      userAgent: userAgent,
+    });
+
+    await logAudit({ actorUsername: uname, actorRole: cred.role, action: 'LOGIN', ip, userAgent });
+
     const res = NextResponse.json({ success: true }, { status: 200 });
     res.cookies.set(cookie.name, cookie.value, cookie.options);
     return res;
   } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return NextResponse.json({ error: 'Requête invalide' }, { status: 400 });
   }
 }
