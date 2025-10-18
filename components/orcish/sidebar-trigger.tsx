@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
-import { IconLayoutSidebarLeft } from "@tabler/icons-react";
+import { IconLayoutSidebar } from "@tabler/icons-react";
 
 export function OrcishSidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
@@ -20,7 +20,7 @@ export function OrcishSidebarTrigger({ className, onClick, ...props }: React.Com
       }}
       {...props}
     >
-      <IconLayoutSidebarLeft />
+      <IconLayoutSidebar />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

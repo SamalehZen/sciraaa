@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const u = await db.query.user.findFirst({ where: eq(appUser.id, session.userId) });
   if (!u || (u as any).role !== 'admin' || (u as any).suspendedAt || (u as any).deletedAt) redirect('/');
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const activeThemeValue = cookieStore.get('active_theme')?.value;
 
   return (

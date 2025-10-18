@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ChartAreaAdmin } from '@/components/orcish/chart-area-admin';
-import { BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis } from 'recharts';
 
 export default function AdminDashboard() {
   const { data } = useQuery({
