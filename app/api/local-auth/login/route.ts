@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, user as appUser } from '@/lib/db/schema';
@@ -53,6 +54,10 @@ export async function POST(req: Request) {
 
     const existing = await db.query.user.findFirst({ where: eq(appUser.id, localUserId) });
 
+    if (existing && ((existing as any).suspendedAt || (existing as any).deletedAt)) {
+      return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
+    }
+
     if (!existing) {
       const now = new Date();
       await db.insert(appUser).values({
@@ -61,6 +66,7 @@ export async function POST(req: Request) {
         email: localEmail,
         emailVerified: false,
         image: null,
+        role: 'user',
         createdAt: now,
         updatedAt: now,
       });
@@ -71,6 +77,12 @@ export async function POST(req: Request) {
 
     const res = NextResponse.json({ success: true }, { status: 200 });
     res.cookies.set(cookie.name, cookie.value, cookie.options);
+    try {
+      const ipAddress = (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '').split(',')[0] || null;
+      const userAgent = req.headers.get('user-agent');
+      const { createAuditLog } = await import('@/lib/audit');
+      await createAuditLog({ userId: localUserId, action: 'login', resourceType: 'auth', resourceId: localUserId, metadata: {}, ipAddress, userAgent });
+    } catch {}
     return res;
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

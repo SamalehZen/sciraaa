@@ -85,7 +85,7 @@ export async function POST(req: Request) {
   const requestStart = Date.now();
   const { messages, model, group, timezone, id } = await req.json();
   const streamId = 'stream-' + uuidv4();
-  const { latitude, longitude } = geolocation(req);
+  const { latitude, longitude, country } = geolocation(req);
 
   // Ensure user (authenticated or anonymous via cookie) exists
   const lightweightUser = await getLightweightUser();
@@ -125,9 +125,16 @@ export async function POST(req: Request) {
             outputTokens: 0,
             totalTokens: 0,
             completionTime: 0,
-          },
+            source: group || null,
+            geoCountry: country || null,
+            issueType: null,
+          } as any,
         ],
       });
+      try {
+        const { pusherServer, ONLINE_USERS_CHANNEL } = await import('@/lib/realtime/pusher-server');
+        after(async () => { try { await pusherServer.trigger(ONLINE_USERS_CHANNEL, 'metrics:update', { scope: 'messages' }); } catch {} });
+      } catch {}
     } catch {}
   }
 
@@ -520,11 +527,20 @@ export async function POST(req: Request) {
       );
     },
     onError() {
+      try {
+        const { createAuditLog } = require('@/lib/audit');
+        const ip = (req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '').split(',')[0] || null;
+        const ua = req.headers.get('user-agent');
+        after(async () => {
+          try { await createAuditLog({ userId: userId || 'anon', action: 'api_error', resourceType: 'api', resourceId: id, metadata: { route: '/api/search' }, ipAddress: ip, userAgent: ua }); } catch {}
+        });
+      } catch {}
       return 'Oops, an error occurred!';
     },
     onFinish: async ({ messages: streamed }) => {
       if (userId) {
         try {
+          const { pusherServer, ONLINE_USERS_CHANNEL } = await import('@/lib/realtime/pusher-server');
           await saveMessages({
             messages: streamed.map((m) => ({
               id: m.id,
@@ -538,8 +554,12 @@ export async function POST(req: Request) {
               inputTokens: m.metadata?.inputTokens ?? 0,
               outputTokens: m.metadata?.outputTokens ?? 0,
               totalTokens: m.metadata?.totalTokens ?? 0,
-            })),
+              source: group || null,
+              geoCountry: country || null,
+              issueType: m.role === 'assistant' ? 'success' : null,
+            } as any)),
           });
+          try { await pusherServer.trigger(ONLINE_USERS_CHANNEL, 'metrics:update', { scope: 'messages' }); } catch {}
         } catch {}
       }
     },

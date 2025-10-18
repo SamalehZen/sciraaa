@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ['@aws-sdk/client-s3', 'prettier'],
-  transpilePackages: ['geist', '@daytonaio/sdk', 'shiki', 'resumable-stream', '@t3-oss/env-nextjs', '@t3-oss/env-core'],
+  transpilePackages: ['geist', '@daytonaio/sdk', 'shiki', 'resumable-stream', '@t3-oss/env-nextjs', '@t3-oss/env-core', 'pdfkit', 'fontkit'],
   output: 'standalone',
   devIndicators: false,
   typescript: { ignoreBuildErrors: true },

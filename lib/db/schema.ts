@@ -9,6 +9,9 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull(),
   image: text('image'),
+  role: text('role').notNull().default('user'),
+  suspendedAt: timestamp('suspended_at'),
+  deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });
@@ -77,8 +80,8 @@ export const message = pgTable('message', {
   chatId: text('chat_id')
     .notNull()
     .references(() => chat.id, { onDelete: 'cascade' }),
-  role: text('role').notNull(), // user, assistant, or tool
-  parts: json('parts').notNull(), // Store parts as JSON in the database
+  role: text('role').notNull(),
+  parts: json('parts').notNull(),
   attachments: json('attachments').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   model: text('model'),
@@ -86,6 +89,9 @@ export const message = pgTable('message', {
   outputTokens: integer('output_tokens'),
   totalTokens: integer('total_tokens'),
   completionTime: real('completion_time'),
+  source: text('source'),
+  geoCountry: text('geo_country'),
+  issueType: text('issue_type'),
 });
 
 export const stream = pgTable('stream', {
@@ -96,6 +102,18 @@ export const stream = pgTable('stream', {
     .notNull()
     .references(() => chat.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
+});
+
+export const auditLog = pgTable('audit_log', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(),
+  resourceType: text('resource_type').notNull(),
+  resourceId: text('resource_id').notNull(),
+  metadata: json('metadata'),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // Subscription table for Polar webhook data
@@ -261,3 +279,4 @@ export type ExtremeSearchUsage = InferSelectModel<typeof extremeSearchUsage>;
 export type MessageUsage = InferSelectModel<typeof messageUsage>;
 export type CustomInstructions = InferSelectModel<typeof customInstructions>;
 export type Lookout = InferSelectModel<typeof lookout>;
+export type AuditLog = InferSelectModel<typeof auditLog>;
