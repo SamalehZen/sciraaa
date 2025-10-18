@@ -26,10 +26,7 @@
       "@/*": [
         "./*"
       ]
-    },
-    "types": [
-      "google.maps"
-    ]
+    }
   },
   "include": [
     "next-env.d.ts",
