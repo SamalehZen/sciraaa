@@ -26,7 +26,9 @@ async function verifyHybridPassword(hash: string, pwd: string) {
 }
 
 export async function POST(req: Request) {
+  let stage = 'init';
   try {
+    stage = 'parse';
     const { username, password } = await req.json();
 
     const uname = (username || '').trim();
@@ -39,6 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
     }
 
+    stage = 'find_user_credentials';
     const cred = await db.query.users.findFirst({ where: eq(users.username, uname) });
     if (!cred) {
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
@@ -52,6 +55,7 @@ export async function POST(req: Request) {
     const localUserId = `local:${uname}`;
     const localEmail = `${uname}@local`;
 
+    stage = 'find_app_user';
     const existing = await db.query.user.findFirst({ where: eq(appUser.id, localUserId) });
 
     if (existing && ((existing as any).suspendedAt || (existing as any).deletedAt)) {
@@ -60,6 +64,7 @@ export async function POST(req: Request) {
 
     if (!existing) {
       const now = new Date();
+      stage = 'insert_app_user';
       await db.insert(appUser).values({
         id: localUserId,
         name: uname,
@@ -84,7 +89,14 @@ export async function POST(req: Request) {
       await createAuditLog({ userId: localUserId, action: 'login', resourceType: 'auth', resourceId: localUserId, metadata: {}, ipAddress, userAgent });
     } catch {}
     return res;
-  } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  } catch (err: any) {
+    console.error('local-auth/login error', err);
+    const name = err?.name;
+    if (name === 'SyntaxError') {
+      return NextResponse.json({ error: 'Invalid request', detail: String(err?.message), stage }, { status: 400 });
+    }
+    const code = err?.code ?? err?.original?.code;
+    const detail = err?.detail ?? err?.original?.detail ?? err?.message;
+    return NextResponse.json({ error: 'DB_ERROR', stage, code, detail }, { status: 500 });
   }
 }
