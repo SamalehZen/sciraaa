@@ -56,7 +56,20 @@ export async function POST(req: Request) {
     const localEmail = `${uname}@local`;
 
     stage = 'find_app_user';
-    const existing = await db.query.user.findFirst({ where: eq(appUser.id, localUserId) });
+    const existingRows = await db
+      .select({
+        id: appUser.id,
+        name: appUser.name,
+        email: appUser.email,
+        emailVerified: appUser.emailVerified,
+        image: appUser.image,
+        createdAt: appUser.createdAt,
+        updatedAt: appUser.updatedAt,
+      })
+      .from(appUser)
+      .where(eq(appUser.id, localUserId))
+      .limit(1);
+    const existing = existingRows[0];
 
     if (existing && ((existing as any).suspendedAt || (existing as any).deletedAt)) {
       return NextResponse.json({ error: 'Account suspended' }, { status: 403 });
