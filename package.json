@@ -59,6 +59,7 @@
     "@vercel/blob": "^2.0.0",
     "@vercel/edge-config": "^1.4.0",
     "@vercel/functions": "^3.1.1",
+    "@vercel/speed-insights": "^1.2.0",
     "ai": "5.0.60",
     "argon2": "^0.31.2",
     "axios": "^1.12.2",

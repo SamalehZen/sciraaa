@@ -1,4 +1,4 @@
-export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { pusherServer, ONLINE_USERS_CHANNEL } from '@/lib/realtime/pusher-server';
 import { getSessionFromHeaders } from '@/lib/local-session';
