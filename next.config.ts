@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
         : false,
   },
   experimental: {
+    turbo: { rules: { fontkit: false } },
     
     optimizePackageImports: [
       '@phosphor-icons/react',
