@@ -18,7 +18,9 @@ const nextConfig: NextConfig = {
         : false,
   },
   experimental: {
-    useCache: true,
+    turbo: false, // disable Turbopack for pdfkit/fontkit compatibility
+    // useCache disabled to avoid runtime conflicts
+    // useCache: true,
     optimizePackageImports: [
       '@phosphor-icons/react',
       'lucide-react',
@@ -34,7 +36,7 @@ const nextConfig: NextConfig = {
       static: 30,
     },
   },
-  serverExternalPackages: ['@aws-sdk/client-s3', 'prettier'],
+  serverExternalPackages: ['@aws-sdk/client-s3', 'prettier', 'pdfkit', 'fontkit', 'restructure', 'unicode-properties', 'linebreak'],
   transpilePackages: ['geist', '@daytonaio/sdk', 'shiki', 'resumable-stream', '@t3-oss/env-nextjs', '@t3-oss/env-core'],
   output: 'standalone',
   devIndicators: false,

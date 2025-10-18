@@ -10,6 +10,7 @@ import { ClientAnalytics } from '@/components/client-analytics';
 // import { Databuddy } from '@databuddy/sdk';
 
 import { Providers } from './providers';
+import { UserPresenceConnector } from '@/components/common/user-presence-connector';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hhyper.vercel.app'),
@@ -121,6 +122,7 @@ export default function RootLayout({
         <NuqsAdapter>
           <Providers>
             <Toaster position="top-center" />
+            <UserPresenceConnector />
             {children}
           </Providers>
         </NuqsAdapter>

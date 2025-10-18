@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionToken } from '@/lib/local-session';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
+const adminPrefix = '/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('local.session')?.value || null;
-  let session;
-  try {
-    session = verifySessionToken(token);
-
-  } catch {
-
-    session = null;
-  }
+  const session = Boolean(token);
 
   // Guest sessions disabled: do not create arka_client_id cookie
   let response = NextResponse.next();
@@ -37,6 +30,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/sign-in', request.url));
     }
     return NextResponse.redirect(new URL('/#settings', request.url));
+  }
+
+  if (pathname.startsWith(adminPrefix)) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
   }
 
   if (session && authRoutes.some((route) => pathname.startsWith(route))) {

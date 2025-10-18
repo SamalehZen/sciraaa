@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "app/admin/**/*",
+    "components/orcish/**/*",
+    "components/ui/**/*",
+    "hooks/**/*",
+    "lib/**/*",
+    "env/**/*",
+    "app/providers.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

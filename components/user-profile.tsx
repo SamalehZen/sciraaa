@@ -38,7 +38,6 @@ import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import { User } from '@/lib/db/schema';
-import { SettingsDialog } from './settings-dialog';
 import { SettingsIcon, type SettingsIconHandle } from '@/components/ui/settings';
 
 
@@ -332,7 +331,7 @@ const UserProfile = memo(
               <DropdownMenuItem className="cursor-pointer" onClick={() => setSettingsOpen?.(true)}>
                 <div className="w-full flex items-center gap-2">
                   <GearIcon size={16} />
-                  <span>Paramètres</span>
+                  <span>Profil</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/lookout')}>
@@ -395,22 +394,6 @@ const UserProfile = memo(
             </TooltipContent>
           </Tooltip>
         )}
-
-        {/* Settings Dialog */}
-        {settingsOpen !== undefined && setSettingsOpen && (
-          <SettingsDialog
-            open={settingsOpen}
-            onOpenChange={setSettingsOpen}
-            user={settingsUser}
-            subscriptionData={subscriptionData}
-            isProUser={isProUser}
-            isProStatusLoading={isProStatusLoading}
-            isCustomInstructionsEnabled={isCustomInstructionsEnabled}
-            setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-            initialTab={settingsInitialTab}
-          />
-        )}
-
 
       </>
     );

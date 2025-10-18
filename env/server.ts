@@ -11,7 +11,11 @@ export const serverEnv = createEnv({
 
     LOCAL_AUTH_SECRET: z.string().optional(),
 
-    // Deprecated / unused at runtime (kept for compile-time compatibility)
+    PUSHER_APP_ID: z.string().optional().default('deprecated'),
+    PUSHER_SECRET: z.string().optional().default('deprecated'),
+    PUSHER_KEY: z.string().optional().default('deprecated'),
+    PUSHER_CLUSTER: z.string().optional().default('deprecated'),
+
     XAI_API_KEY: z.string().optional().default('deprecated'),
     OPENAI_API_KEY: z.string().optional().default('deprecated'),
     ANTHROPIC_API_KEY: z.string().optional().default('deprecated'),
