@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
         : false,
   },
   experimental: {
+    turbo: false, // disable Turbopack for pdfkit/fontkit compatibility
     // useCache disabled to avoid runtime conflicts
     // useCache: true,
     optimizePackageImports: [
