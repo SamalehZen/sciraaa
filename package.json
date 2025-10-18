@@ -56,6 +56,7 @@
     "@upstash/qstash": "^2.8.3",
     "@upstash/redis": "^1.35.5",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "@vercel/blob": "^2.0.0",
     "@vercel/edge-config": "^1.4.0",
     "@vercel/functions": "^3.1.1",
@@ -124,7 +125,7 @@
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "zod": "4.1.8",
-    "@swc/helpers": "0.5.11"
+    "@swc/helpers": "0.5.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",
@@ -162,7 +163,7 @@
   },
   "overrides": {
     "react-is": "^19.0.0-rc-69d4b800-20241021",
-    "@swc/helpers": "0.5.11"
+    "@swc/helpers": "0.5.5"
   },
   "packageManager": "pnpm@10.18.0"
 }
