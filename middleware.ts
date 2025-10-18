@@ -3,6 +3,7 @@ import { verifySessionToken } from '@/lib/local-session';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
+const adminPrefix = '/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -37,6 +38,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/sign-in', request.url));
     }
     return NextResponse.redirect(new URL('/#settings', request.url));
+  }
+
+  if (pathname.startsWith(adminPrefix)) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/sign-in', request.url));
+    }
   }
 
   if (session && authRoutes.some((route) => pathname.startsWith(route))) {
