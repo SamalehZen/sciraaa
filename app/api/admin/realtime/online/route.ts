@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth-admin';
 import { getOnlineUsers } from '@/lib/realtime/pusher-server';
