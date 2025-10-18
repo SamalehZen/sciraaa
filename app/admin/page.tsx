@@ -3,7 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Line, LineChart, XAxis, YAxis, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { ChartAreaAdmin } from '@/components/orcish/chart-area-admin';
+import { BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 export default function AdminDashboard() {
   const { data } = useQuery({
@@ -30,16 +31,8 @@ export default function AdminDashboard() {
       <Card><CardHeader><CardTitle>Erreurs 24h</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{kpis.errors24h ?? 0}</CardContent></Card>
 
       <div className="col-span-1 md:col-span-3 lg:col-span-6">
-        <ChartContainer config={{ user: { label: 'User', color: 'hsl(var(--primary))' }, assistant: { label: 'Assistant', color: 'hsl(var(--muted-foreground))' } }}>
-          <LineChart data={series}>
-            <XAxis dataKey="date" hide />
-            <YAxis hide />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Line type="monotone" dataKey="user" stroke="var(--color-user)" dot={false} strokeWidth={2} />
-            <Line type="monotone" dataKey="assistant" stroke="var(--color-assistant)" dot={false} strokeWidth={2} />
-            <ChartLegend content={<ChartLegendContent />} />
-          </LineChart>
-        </ChartContainer>
+        {/* Orcish interactive chart wired to /api/admin/metrics */}
+        <ChartAreaAdmin />
       </div>
 
       <div className="col-span-1 md:col-span-3">
