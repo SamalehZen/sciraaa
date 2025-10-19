@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, desc, eq, ne } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { user, users as credentials, event } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 import { pusher } from '@/lib/pusher';
@@ -12,7 +12,7 @@ export async function GET() {
   const adminUser = await assertAdmin({ headers: hdrs });
   if (!adminUser) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const rows = await db
+  const rows = await maindb
     .select({
       id: user.id,
       name: user.name,
