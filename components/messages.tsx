@@ -8,6 +8,7 @@ import { CyrusLoadingState } from '@/components/cyrus-loading-state';
 import { NomenclatureLoadingState } from '@/components/nomenclature-loading-state';
 import { CorrectionLibellerLoadingState } from '@/components/correction-libeller-loading-state';
 import { PdfToExcelLoadingState } from '@/components/pdf-to-excel-loading-state';
+import { PdfExcelResearchProcessOverlay } from '@/components/pdf-excel-research-process-overlay';
 import { deleteTrailingMessages } from '@/app/actions';
 import { ChatMessage, CustomUIDataTypes } from '@/lib/types';
 import { UseChatHelpers } from '@ai-sdk/react';
@@ -64,6 +65,8 @@ const Messages: React.FC<MessagesProps> = ({
 }) => {
   // Track visibility state for each reasoning section using messageIndex-partIndex as key
   const [reasoningVisibilityMap, setReasoningVisibilityMap] = useState<Record<string, boolean>>({});
+  const [pdfExcelProcessOpen, setPdfExcelProcessOpen] = useState(false);
+  const [pdfExcelGateDone, setPdfExcelGateDone] = useState(false);
   const [reasoningFullscreenMap, setReasoningFullscreenMap] = useState<Record<string, boolean>>({});
   const reasoningScrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -294,6 +297,18 @@ const Messages: React.FC<MessagesProps> = ({
     return (status === 'submitted' || status === 'streaming') && selectedGroup === 'pdfExcel' && !hasActiveToolInvocations;
   }, [status, selectedGroup, hasActiveToolInvocations]);
 
+  useEffect(() => {
+    if (selectedGroup === 'pdfExcel') {
+      if ((status === 'submitted' || status === 'streaming') && !pdfExcelGateDone) {
+        setPdfExcelProcessOpen(true);
+      }
+    } else {
+      // Reset gate if user switches away
+      if (pdfExcelProcessOpen) setPdfExcelProcessOpen(false);
+      if (pdfExcelGateDone) setPdfExcelGateDone(false);
+    }
+  }, [selectedGroup, status, pdfExcelGateDone, pdfExcelProcessOpen]);
+
   // Compute index of the most recent assistant message; only that one should keep min-height
   const lastAssistantIndex = useMemo(() => {
     for (let i = memoizedMessages.length - 1; i >= 0; i -= 1) {
@@ -400,6 +415,12 @@ const Messages: React.FC<MessagesProps> = ({
           }
 
           console.log(`📤 About to render Message component for ${message.role} message ${index}`);
+          const blockAssistant = selectedGroup === 'pdfExcel' && !pdfExcelGateDone;
+          if (isCurrentMessageAssistant && blockAssistant) {
+            return (
+              <div key={message.id || index} className={messageClasses} />
+            );
+          }
           return (
             <div key={message.id || index} className={messageClasses}>
               <Message
@@ -484,6 +505,23 @@ const Messages: React.FC<MessagesProps> = ({
             <PdfToExcelLoadingState />
           </div>
         </div>
+      )}
+
+      {/* PDF→Excel Research Process Overlay (blocking) */}
+      {selectedGroup === 'pdfExcel' && (
+        <PdfExcelResearchProcessOverlay
+          open={pdfExcelProcessOpen}
+          onOpenChange={(open) => {
+            // Prevent closing while not done
+            if (!open && !pdfExcelGateDone) return;
+            setPdfExcelProcessOpen(open);
+          }}
+          onComplete={() => {
+            setPdfExcelGateDone(true);
+            setPdfExcelProcessOpen(false);
+          }}
+          title="Analyse et extraction des tables…"
+        />
       )}
 
       {/* Default loading animation when not in Cyrus, Nomenclature, Libeller, or PdfExcel condition */}
