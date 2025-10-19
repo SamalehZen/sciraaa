@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { and, desc, gte } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { and, desc, gte, isNotNull } from 'drizzle-orm';
+import { db, maindb } from '@/lib/db';
 import { user, message, chat } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 import { tokensToUsd } from '@/lib/cost';
@@ -50,9 +50,9 @@ export async function GET(req: NextRequest) {
   const since5s = new Date(now.getTime() - 5 * 1000);
 
   const [allUsers, activeUsers, recentMessages] = await Promise.all([
-    db.select({ id: user.id, status: user.status, name: user.name }).from(user),
-    db.select({ id: user.id }).from(user).where(and((user as any).lastSeen.isNotNull?.() ?? (user.lastSeen as any), gte(user.lastSeen, since5s))),
-    db
+    maindb.select({ id: user.id, status: user.status, name: user.name }).from(user),
+    maindb.select({ id: user.id }).from(user).where(and(isNotNull(user.lastSeen), gte(user.lastSeen, since5s))),
+    maindb
       .select({ id: message.id, model: message.model, totalTokens: message.totalTokens, inputTokens: message.inputTokens, outputTokens: message.outputTokens, createdAt: message.createdAt, chatId: message.chatId, mode: (message as any).mode as any })
       .from(message)
       .where(gte(message.createdAt, sinceWindow))
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
   const costByUserMap = new Map<string, number>();
   const byMode = { streaming: 0, non_streaming: 0 } as Record<'streaming' | 'non_streaming', number>;
 
-  const chats = await db.select({ id: chat.id, userId: chat.userId }).from(chat);
+  const chats = await maindb.select({ id: chat.id, userId: chat.userId }).from(chat);
   const chatUserMap = new Map<string, string>();
   chats.forEach((c) => chatUserMap.set(c.id, (c as any).userId));
 

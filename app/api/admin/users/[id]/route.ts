@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { user, users as credentials, event } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 import { pusher } from '@/lib/pusher';
@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || '').trim();
 
-  const existing = await db.query.user.findFirst({ where: eq(user.id, id) });
+  const existing = await maindb.query.user.findFirst({ where: eq(user.id, id) });
   if (!existing) return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 });
 
   const now = new Date();
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       const username = id.slice('local:'.length);
       const bcrypt = await import('bcryptjs');
       const passwordHash = await bcrypt.hash(pwd, 10);
-      const cred = await db.query.credentials?.findFirst?.({ where: eq(credentials.username, username) }).catch(() => null as any);
+      const cred = await maindb.query.credentials?.findFirst?.({ where: eq(credentials.username, username) }).catch(() => null as any);
       if (cred) {
         await db.update(credentials).set({ passwordHash }).where(eq(credentials.username, username));
       } else {
@@ -119,7 +119,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Vous ne pouvez pas vous supprimer vous-même' }, { status: 400 });
   }
 
-  const existing = await db.query.user.findFirst({ where: eq(user.id, id) });
+  const existing = await maindb.query.user.findFirst({ where: eq(user.id, id) });
   if (!existing) return NextResponse.json({ ok: true });
 
   const now = new Date();

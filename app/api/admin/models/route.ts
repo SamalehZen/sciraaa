@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, desc, eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { productModel } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 import { pusher } from '@/lib/pusher';
@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest) {
   const adminUser = await assertAdmin({ headers: hdrs });
   if (!adminUser) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const models = await db.select().from(productModel).orderBy(desc(productModel.createdAt));
+  const models = await maindb.select().from(productModel).orderBy(desc(productModel.createdAt));
   return NextResponse.json({ models });
 }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const status = (String(body?.status || 'active').trim() as 'active' | 'inactive');
   if (!key || !name) return NextResponse.json({ error: 'key and name required' }, { status: 400 });
 
-  const existing = await db.query.productModel.findFirst({ where: eq(productModel.key, key) }).catch(() => null as any);
+  const existing = await maindb.query.productModel.findFirst({ where: eq(productModel.key, key) }).catch(() => null as any);
 
   if (existing) {
     const [updated] = await db.update(productModel).set({ name, status, updatedAt: new Date() }).where(eq(productModel.key, key)).returning();
