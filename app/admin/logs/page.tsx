@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 async function fetchEvents(filter?: string) {
-  const url = filter ? `/api/admin/events/recent?filter=${encodeURIComponent(filter)}` : '/api/admin/events/recent';
+  const url = filter && filter !== '' ? `/api/admin/events/recent?filter=${encodeURIComponent(filter)}` : '/api/admin/events/recent';
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('failed');
   return res.json();
@@ -15,7 +15,7 @@ async function fetchEvents(filter?: string) {
 
 export default function AdminLogsPage() {
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [filter, setFilter] = useState<string>('');
   const { data } = useQuery({ queryKey: ['admin-events', filter], queryFn: () => fetchEvents(filter) });
 
   useEffect(() => {

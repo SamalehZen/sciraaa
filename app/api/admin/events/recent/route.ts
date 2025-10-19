@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, desc, eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { event } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const filter = searchParams.get('filter');
 
-  const rows = await db
+  const rows = await maindb
     .select()
     .from(event)
     .where(filter ? eq(event.category, filter as any) : undefined as any)
