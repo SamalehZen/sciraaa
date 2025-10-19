@@ -42,12 +42,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // Admin pages: require a session, role enforced in server layout
+  // Admin pages: defer all checks to server layout (to avoid any edge cookie mismatch)
   const isAdminPage = pathname === adminRoot || pathname.startsWith(`${adminRoot}/`);
   if (isAdminPage) {
-    if (!session?.userId) {
-      return NextResponse.redirect(new URL('/sign-in', request.url));
-    }
+    return response;
   }
 
   // Admin APIs: require a session here; role enforced inside each route via assertAdmin
