@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
