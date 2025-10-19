@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest) {
   if (!adminUser) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const now = new Date();
-  const since = new Date(now.getTime() - 60 * 1000);
+  const since = new Date(now.getTime() - 5 * 1000);
 
   const rows = await db
     .select({ id: user.id, name: user.name, ipAddress: user.ipAddress, lastSeen: user.lastSeen, status: user.status })

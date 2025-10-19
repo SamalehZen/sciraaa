@@ -215,7 +215,8 @@ export async function getChatWithUserById({ id }: { id: string }) {
 
 export async function saveMessages({ messages }: { messages: Array<Message> }) {
   try {
-    return await db.insert(message).values(messages);
+    const toInsert = messages.map((m: any) => ({ ...m, mode: m.mode ?? 'non_streaming' }));
+    return await db.insert(message).values(toInsert);
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save messages');
   }

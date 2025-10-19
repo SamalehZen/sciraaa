@@ -82,8 +82,8 @@ export const message = pgTable('message', {
   chatId: text('chat_id')
     .notNull()
     .references(() => chat.id, { onDelete: 'cascade' }),
-  role: text('role').notNull(), // user, assistant, or tool
-  parts: json('parts').notNull(), // Store parts as JSON in the database
+  role: text('role').notNull(),
+  parts: json('parts').notNull(),
   attachments: json('attachments').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   model: text('model'),
@@ -91,6 +91,7 @@ export const message = pgTable('message', {
   outputTokens: integer('output_tokens'),
   totalTokens: integer('total_tokens'),
   completionTime: real('completion_time'),
+  mode: varchar('mode', { enum: ['streaming', 'non_streaming'] }).notNull().default('non_streaming'),
 });
 
 export const stream = pgTable('stream', {
@@ -103,7 +104,6 @@ export const stream = pgTable('stream', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
-// Subscription table for Polar webhook data
 export const subscription = pgTable('subscription', {
   id: text('id').primaryKey(),
   createdAt: timestamp('createdAt').notNull(),
@@ -125,12 +125,11 @@ export const subscription = pgTable('subscription', {
   checkoutId: text('checkoutId').notNull(),
   customerCancellationReason: text('customerCancellationReason'),
   customerCancellationComment: text('customerCancellationComment'),
-  metadata: text('metadata'), // JSON string
-  customFieldData: text('customFieldData'), // JSON string
+  metadata: text('metadata'),
+  customFieldData: text('customFieldData'),
   userId: text('userId').references(() => user.id),
 });
 
-// Extreme search usage tracking table
 export const extremeSearchUsage = pgTable('extreme_search_usage', {
   id: text('id')
     .primaryKey()
@@ -145,7 +144,6 @@ export const extremeSearchUsage = pgTable('extreme_search_usage', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-// Message usage tracking table
 export const messageUsage = pgTable('message_usage', {
   id: text('id')
     .primaryKey()
@@ -160,7 +158,6 @@ export const messageUsage = pgTable('message_usage', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-// Custom instructions table
 export const customInstructions = pgTable('custom_instructions', {
   id: text('id')
     .primaryKey()
@@ -173,16 +170,14 @@ export const customInstructions = pgTable('custom_instructions', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-// Local auth credentials table (for username/password)
 export const users = pgTable('users', {
   username: text('username').primaryKey(),
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Payment table for Dodo Payments webhook data
 export const payment = pgTable('payment', {
-  id: text('id').primaryKey(), // payment_id from webhook
+  id: text('id').primaryKey(),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at'),
   brandId: text('brand_id'),
@@ -206,18 +201,15 @@ export const payment = pgTable('payment', {
   subscriptionId: text('subscription_id'),
   tax: integer('tax'),
   totalAmount: integer('total_amount').notNull(),
-  // JSON fields for complex objects
-  billing: json('billing'), // Billing address object
-  customer: json('customer'), // Customer data object
-  disputes: json('disputes'), // Disputes array
-  metadata: json('metadata'), // Metadata object
-  productCart: json('product_cart'), // Product cart array
-  refunds: json('refunds'), // Refunds array
-  // Foreign key to user
+  billing: json('billing'),
+  customer: json('customer'),
+  disputes: json('disputes'),
+  metadata: json('metadata'),
+  productCart: json('product_cart'),
+  refunds: json('refunds'),
   userId: text('user_id').references(() => user.id),
 });
 
-// Lookout table for scheduled searches
 export const lookout = pgTable('lookout', {
   id: text('id')
     .primaryKey()
@@ -227,30 +219,34 @@ export const lookout = pgTable('lookout', {
     .references(() => user.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   prompt: text('prompt').notNull(),
-  frequency: text('frequency').notNull(), // 'once', 'daily', 'weekly', 'monthly', 'yearly'
+  frequency: text('frequency').notNull(),
   cronSchedule: text('cron_schedule').notNull(),
   timezone: text('timezone').notNull().default('UTC'),
   nextRunAt: timestamp('next_run_at').notNull(),
   qstashScheduleId: text('qstash_schedule_id'),
-  status: text('status').notNull().default('active'), // 'active', 'paused', 'archived', 'running'
+  status: text('status').notNull().default('active'),
   lastRunAt: timestamp('last_run_at'),
   lastRunChatId: text('last_run_chat_id'),
-  // Store all run history as JSON
-  runHistory: json('run_history')
-    .$type<
-      Array<{
-        runAt: string; // ISO date string
-        chatId: string;
-        status: 'success' | 'error' | 'timeout';
-        error?: string;
-        duration?: number; // milliseconds
-        tokensUsed?: number;
-        searchesPerformed?: number;
-      }>
-    >()
-    .default([]),
+  runHistory: json('run_history').$type<Array<{ runAt: string; chatId: string; status: 'success' | 'error' | 'timeout'; error?: string; duration?: number; tokensUsed?: number; searchesPerformed?: number }>>().default([]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Product models (admin-managed access)
+export const productModel = pgTable('model', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  key: text('key').notNull().unique(),
+  name: text('name').notNull(),
+  status: varchar('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const userModelAccess = pgTable('user_model_access', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  modelId: uuid('model_id').notNull().references(() => productModel.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export type User = InferSelectModel<typeof user>;

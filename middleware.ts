@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionToken } from '@/lib/local-session';
+import { maindb } from '@/lib/db';
+import { user } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
-const adminApiRoutes = ['/api/admin'];
+const adminRoot = '/admin';
+const adminApiRoot = '/api/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,13 +15,10 @@ export async function middleware(request: NextRequest) {
   let session;
   try {
     session = verifySessionToken(token);
-
   } catch {
-
     session = null;
   }
 
-  // Guest sessions disabled: do not create arka_client_id cookie
   let response = NextResponse.next();
 
   if (pathname === '/api/search' || pathname.startsWith('/api/search/') || pathname.startsWith('/api/upload')) {
@@ -44,7 +45,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  if (!session && (protectedRoutes.some((route) => pathname.startsWith(route)) || adminApiRoutes.some((route) => pathname.startsWith(route)))) {
+  // Enforce admin access for admin pages and APIs
+  const isAdminPage = pathname === adminRoot || pathname.startsWith(`${adminRoot}/`);
+  const isAdminApi = pathname === adminApiRoot || pathname.startsWith(`${adminApiRoot}/`);
+
+  if (isAdminPage || isAdminApi) {
+    if (!session?.userId) {
+      return isAdminApi
+        ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
+        : NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+
+    try {
+      const [u] = await maindb.select().from(user).where(eq(user.id, session.userId)).limit(1);
+      const isAdmin = !!u && u.role === 'admin' && u.status !== 'suspended' && u.status !== 'deleted';
+      if (!isAdmin) {
+        return isAdminApi
+          ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
+          : NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+    } catch {
+      return isAdminApi
+        ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
+        : NextResponse.redirect(new URL('/sign-in', request.url));
+    }
+  }
+
+  // Block non-authenticated users from protected non-admin routes
+  if (!session && (protectedRoutes.some((route) => pathname.startsWith(route)))) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
@@ -53,7 +81,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
 };
