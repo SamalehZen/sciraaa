@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { pusherClient } from '@/lib/pusher-client';
 import { Card } from '@/components/ui/card';
@@ -30,6 +30,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import ManageAccessDialog from '@/components/admin/users/manage-access-dialog';
 
 async function fetchUsers() {
@@ -216,7 +217,7 @@ export default function AdminUsersPage() {
             </TableHeader>
             <TableBody>
               {users.map((u: any) => {
-                const online = u.lastSeen && new Date(u.lastSeen).getTime() > Date.now() - 5_000;
+                const online = u.lastSeen && new Date(u.lastSeen).getTime() > Date.now() - 5000;
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.name}</TableCell>
