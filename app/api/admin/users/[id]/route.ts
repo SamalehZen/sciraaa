@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db, maindb } from '@/lib/db';
 import { user, users as credentials, event } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
@@ -26,10 +26,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (action === 'resetPassword') {
       const pwd = String(body?.password || '');
       if (pwd.length < 3) return NextResponse.json({ error: 'Mot de passe invalide' }, { status: 400 });
-      if (!id.startsWith('local:')) return NextResponse.json({ error: "Impossible de réinitialiser: utilisateur non local" }, { status: 400 });
+      if (!id.startsWith('local:')) return NextResponse.json({ error: 'Impossible de réinitialiser: utilisateur non local' }, { status: 400 });
       const username = id.slice('local:'.length);
       const bcrypt = await import('bcryptjs');
       const passwordHash = await bcrypt.hash(pwd, 10);
+
       const cred = await maindb.query.credentials?.findFirst?.({ where: eq(credentials.username, username) }).catch(() => null as any);
       if (cred) {
         await db.update(credentials).set({ passwordHash }).where(eq(credentials.username, username));
