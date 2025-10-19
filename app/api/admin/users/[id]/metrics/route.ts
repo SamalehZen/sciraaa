@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { maindb as db } from '@/lib/db';
 import { user, message, chat } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 
