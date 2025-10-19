@@ -3,7 +3,8 @@ import { verifySessionToken } from '@/lib/local-session';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
-const adminApiRoutes = ['/api/admin'];
+const adminRoot = '/admin';
+const adminApiRoot = '/api/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,13 +12,10 @@ export async function middleware(request: NextRequest) {
   let session;
   try {
     session = verifySessionToken(token);
-
   } catch {
-
     session = null;
   }
 
-  // Guest sessions disabled: do not create arka_client_id cookie
   let response = NextResponse.next();
 
   if (pathname === '/api/search' || pathname.startsWith('/api/search/') || pathname.startsWith('/api/upload')) {
@@ -44,7 +42,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  if (!session && (protectedRoutes.some((route) => pathname.startsWith(route)) || adminApiRoutes.some((route) => pathname.startsWith(route)))) {
+  // Admin pages: defer all checks to server layout (to avoid any edge cookie mismatch)
+  const isAdminPage = pathname === adminRoot || pathname.startsWith(`${adminRoot}/`);
+  if (isAdminPage) {
+    return response;
+  }
+
+  // Admin APIs: defer all checks to route handlers (assertAdmin) to avoid edge/server cookie mismatch on Vercel
+  const isAdminApi = pathname === adminApiRoot || pathname.startsWith(`${adminApiRoot}/`);
+  if (isAdminApi) {
+    return response;
+  }
+
+  // Block non-authenticated users from protected non-admin routes
+  if (!session && (protectedRoutes.some((route) => pathname.startsWith(route)))) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
@@ -53,7 +64,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
 };

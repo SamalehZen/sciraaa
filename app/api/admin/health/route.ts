@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { gte } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { message } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 
@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest) {
   const now = new Date();
   const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-  const rows = await db
+  const rows = await maindb
     .select({ model: message.model, completionTime: message.completionTime })
     .from(message)
     .where(gte(message.createdAt, since24h));

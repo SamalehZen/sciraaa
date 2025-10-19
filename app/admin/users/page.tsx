@@ -31,6 +31,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import ManageAccessDialog from '@/components/admin/users/manage-access-dialog';
 
 async function fetchUsers() {
   const res = await fetch('/api/admin/users', { cache: 'no-store' });
@@ -38,7 +39,7 @@ async function fetchUsers() {
   return res.json();
 }
 
-function RowActions({ u, onInvalidate }: { u: any; onInvalidate: () => void }) {
+function RowActions({ u, onInvalidate, onManageAccess }: { u: any; onInvalidate: () => void; onManageAccess: () => void }) {
   const [resetOpen, setResetOpen] = useState(false);
   const [tempPwd, setTempPwd] = useState('');
   const [suspendOpen, setSuspendOpen] = useState(false);
@@ -110,6 +111,7 @@ function RowActions({ u, onInvalidate }: { u: any; onInvalidate: () => void }) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setResetOpen(true)}>Réinitialiser le mot de passe…</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSuspendOpen(true)}>Suspendre…</DropdownMenuItem>
+          <DropdownMenuItem onClick={onManageAccess}>Gérer accès…</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Changer le rôle</DropdownMenuSubTrigger>
@@ -172,6 +174,7 @@ function RowActions({ u, onInvalidate }: { u: any; onInvalidate: () => void }) {
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['admin-users'], queryFn: fetchUsers, refetchOnWindowFocus: true });
+  const [manageUser, setManageUser] = useState<any | null>(null);
 
   useEffect(() => {
     if (!pusherClient) return;
@@ -179,10 +182,12 @@ export default function AdminUsersPage() {
     const onUpdate = () => qc.invalidateQueries({ queryKey: ['admin-users'] });
     channel.bind('created', onUpdate);
     channel.bind('updated', onUpdate);
+    channel.bind('modelAccessChanged', onUpdate);
     return () => {
       try {
         channel.unbind('created', onUpdate);
         channel.unbind('updated', onUpdate);
+        channel.unbind('modelAccessChanged', onUpdate);
         pusherClient.unsubscribe('private-admin-users');
       } catch {}
     };
@@ -212,7 +217,7 @@ export default function AdminUsersPage() {
             </TableHeader>
             <TableBody>
               {users.map((u: any) => {
-                const online = u.lastSeen && new Date(u.lastSeen).getTime() > Date.now() - 60_000;
+                const online = u.lastSeen && new Date(u.lastSeen).getTime() > Date.now() - 5000;
                 return (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.name}</TableCell>
@@ -227,7 +232,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell>{u.ipAddress || '—'}</TableCell>
                     <TableCell>{u.lastSeen ? new Date(u.lastSeen).toLocaleString('fr-FR') : '—'}</TableCell>
-                    <TableCell className="min-w-[170px]"><RowActions u={u} onInvalidate={() => qc.invalidateQueries({ queryKey: ['admin-users'] })} /></TableCell>
+                    <TableCell className="min-w-[190px]"><RowActions u={u} onInvalidate={() => qc.invalidateQueries({ queryKey: ['admin-users'] })} onManageAccess={() => setManageUser(u)} /></TableCell>
                   </TableRow>
                 );
               })}
@@ -235,6 +240,12 @@ export default function AdminUsersPage() {
           </Table>
         </div>
       </Card>
+
+      <ManageAccessDialog
+        open={!!manageUser}
+        onOpenChange={(v) => !v && setManageUser(null)}
+        user={manageUser}
+      />
     </div>
   );
 }

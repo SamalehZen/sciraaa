@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { and, desc, eq, gte, lt } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, maindb } from '@/lib/db';
 import { user, message, chat } from '@/lib/db/schema';
 import { assertAdmin } from '@/lib/auth';
 
@@ -18,13 +18,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const since = range === '7d' ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) : new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   // Basic stats
-  const totalMessages = await db
+  const totalMessages = await maindb
     .select({ id: message.id })
     .from(message)
     .innerJoin(chat, eq(message.chatId, chat.id))
     .where(eq(chat.userId, id));
 
-  const recentMessages = await db
+  const recentMessages = await maindb
     .select({ id: message.id, createdAt: message.createdAt, model: message.model, role: message.role })
     .from(message)
     .innerJoin(chat, eq(message.chatId, chat.id))
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .orderBy(desc(message.createdAt));
 
   const messages24h = range === '7d'
-    ? (await db
+    ? (await maindb
         .select({ id: message.id })
         .from(message)
         .innerJoin(chat, eq(message.chatId, chat.id))

@@ -126,6 +126,7 @@ export async function POST(req: Request) {
             outputTokens: 0,
             totalTokens: 0,
             completionTime: 0,
+            mode: 'non_streaming',
           },
         ],
       });
@@ -613,6 +614,7 @@ export async function POST(req: Request) {
               inputTokens: m.metadata?.inputTokens ?? 0,
               outputTokens: m.metadata?.outputTokens ?? 0,
               totalTokens: m.metadata?.totalTokens ?? 0,
+              mode: 'streaming',
             })),
           });
         } catch {}
