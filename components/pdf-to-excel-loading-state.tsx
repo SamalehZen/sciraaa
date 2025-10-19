@@ -5,7 +5,8 @@ import { BorderTrail } from "@/components/core/border-trail";
 import { TextShimmer } from "@/components/core/text-shimmer";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { File02Icon as FileExcelIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { File02Icon as FileExcelIcon } from "@hugeicons/core-free-icons";
+import { ResearchProcessSteps } from "@/components/research-process-steps";
 
 
 
@@ -100,24 +101,7 @@ export function PdfToExcelLoadingState({
             </div>
           </div>
           <div className="mt-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
-              {steps.map((label, idx) => {
-                const done = idx < completedCount;
-                const isActive = idx === completedCount && completedCount < steps.length;
-                return (
-                  <div key={idx} className={cn("flex items-center gap-2 text-[11px] leading-tight",
-                    done ? "text-foreground" : isActive ? "text-[#70665D] dark:text-[#C7C0B9]" : "text-muted-foreground")}
-                  >
-                    <span className={cn("inline-flex items-center justify-center rounded-sm",
-                      done ? "text-[#70665D] dark:text-[#C7C0B9]" : "text-muted-foreground")}
-                    >
-                      <HugeiconsIcon icon={Tick01Icon} size={12} strokeWidth={2} />
-                    </span>
-                    <span className={cn(isActive ? "animate-pulse" : "")}>{label}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <ResearchProcessSteps steps={steps} completedCount={completedCount} title="Research Process" />
           </div>
         </div>
       </CardContent>
