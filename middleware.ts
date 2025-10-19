@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionToken } from '@/lib/local-session';
-import { maindb } from '@/lib/db';
-import { user } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 const authRoutes = ['/sign-in', '/sign-up'];
 const protectedRoutes = ['/lookout', '/xql', '/settings'];
@@ -45,29 +42,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // Enforce admin access for admin pages and APIs
+  // Admin pages: require a session, role enforced in server layout
   const isAdminPage = pathname === adminRoot || pathname.startsWith(`${adminRoot}/`);
-  const isAdminApi = pathname === adminApiRoot || pathname.startsWith(`${adminApiRoot}/`);
-
-  if (isAdminPage || isAdminApi) {
+  if (isAdminPage) {
     if (!session?.userId) {
-      return isAdminApi
-        ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
-        : NextResponse.redirect(new URL('/sign-in', request.url));
+      return NextResponse.redirect(new URL('/sign-in', request.url));
     }
+  }
 
-    try {
-      const [u] = await maindb.select().from(user).where(eq(user.id, session.userId)).limit(1);
-      const isAdmin = !!u && u.role === 'admin' && u.status !== 'suspended' && u.status !== 'deleted';
-      if (!isAdmin) {
-        return isAdminApi
-          ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
-          : NextResponse.redirect(new URL('/sign-in', request.url));
-      }
-    } catch {
-      return isAdminApi
-        ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
-        : NextResponse.redirect(new URL('/sign-in', request.url));
+  // Admin APIs: require a session here; role enforced inside each route via assertAdmin
+  const isAdminApi = pathname === adminApiRoot || pathname.startsWith(`${adminApiRoot}/`);
+  if (isAdminApi) {
+    if (!session?.userId) {
+      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
     }
   }
 
