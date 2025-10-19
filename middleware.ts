@@ -48,12 +48,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Admin APIs: require a session here; role enforced inside each route via assertAdmin
+  // Admin APIs: defer all checks to route handlers (assertAdmin) to avoid edge/server cookie mismatch on Vercel
   const isAdminApi = pathname === adminApiRoot || pathname.startsWith(`${adminApiRoot}/`);
   if (isAdminApi) {
-    if (!session?.userId) {
-      return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-    }
+    return response;
   }
 
   // Block non-authenticated users from protected non-admin routes
