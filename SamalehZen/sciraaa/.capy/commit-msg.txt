@@ -1,0 +1,25 @@
+feat: Refonte complète dashboard admin
+
+✨ Nouvelles fonctionnalités majeures:
+- Gestion centralisée des accès à 16 agents (DB)
+- Page Top Profil avec classement utilisateurs
+- Dialog profil détaillé à 5 onglets complets
+- Visualisation et export conversations (TXT/Markdown)
+- Dashboard amélioré (5 KPIs, refresh 20s, charts horizontaux)
+
+📦 Infrastructure créée (13 fichiers):
+- Migration DB: table user_agent_access
+- 7 API endpoints (agents, ranking, profile, chats, export, settings)
+- 4 composants React (page, dialogs, hook)
+- Documentation complète (14 pages)
+
+🔄 Améliorations (6 fichiers):
+- schema.ts + queries.ts (gestion agents)
+- app-sidebar.tsx (Top Profil)
+- dashboard-charts.tsx (charts horizontaux)
+- admin/page.tsx (5 KPIs)
+- users/page.tsx (accès agents + profil)
+
+📊 Stack: Next.js 15, React 19, PostgreSQL, Drizzle, Pusher, React Query
+
+🔒 Sécurité: assertAdmin(), event logs, audit trail, Pusher notifications
