@@ -202,7 +202,7 @@ function CreateUserDialog({ open, onClose, onInvalidate }: { open: boolean; onCl
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: Password123!" />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="role">Rôle</Label>
+            <Label htmlFor="role">Wabaa</Label>
             <Select value={role} onValueChange={(v: 'user' | 'admin') => setRole(v)}>
               <SelectTrigger id="role">
                 <SelectValue />
