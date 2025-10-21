@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import Exa from 'exa-js';
 import { serverEnv } from '@/env/server';
-import { getSubtitles, getVideoDetails } from 'youtube-caption-extractor';
+import { getSubtitles } from 'youtube-caption-extractor';
 
 interface VideoDetails {
   title?: string;
