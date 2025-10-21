@@ -127,7 +127,7 @@ export function CreateUserForm({ onSuccess }: CreateUserFormProps) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/local-auth/register", {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, role }),

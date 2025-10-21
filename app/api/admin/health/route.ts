@@ -44,5 +44,12 @@ export async function GET(_req: NextRequest) {
     return { provider, avgLatency: Math.round(avg), p95: Math.round(p95), errorRate, status };
   });
 
-  return NextResponse.json({ providers });
+  const globalStatus = providers.length > 0 
+    ? providers.some(p => p.status === 'down') ? 'down' : providers.some(p => p.status === 'warn') ? 'warn' : 'ok'
+    : 'ok';
+  const avgLatency = providers.length > 0 
+    ? Math.round(providers.reduce((sum, p) => sum + p.avgLatency, 0) / providers.length)
+    : 0;
+
+  return NextResponse.json({ providers, globalStatus, avgLatency });
 }
