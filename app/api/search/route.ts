@@ -9,7 +9,7 @@ import { SMART_PDF_TO_EXCEL_PROMPT } from '@/ai/prompts/pdf-to-excel';
 import { geolocation } from '@vercel/functions';
 
 import { saveChat, saveMessages, createStreamId, getChatById, updateChatTitleById } from '@/lib/db/queries';
-import { extremeSearchTool } from '@/lib/tools';
+import { extremeSearchTool, youtubeSearchTool, datetimeTool } from '@/lib/tools';
 import type { ChatMessage } from '@/lib/types';
 import { getLightweightUser, generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
 
@@ -554,9 +554,14 @@ export async function POST(req: Request) {
       for (const name of modelNames) {
         try {
           {
-            const toolsSpec = Array.isArray(toolIds) && toolIds.includes('extreme_search')
-              ? { extreme_search: extremeSearchTool(writer) }
-              : undefined;
+            const toolsSpec = (() => {
+              if (!Array.isArray(toolIds)) return undefined;
+              const spec: Record<string, any> = {};
+              if (toolIds.includes('extreme_search')) spec.extreme_search = extremeSearchTool(writer);
+              if (toolIds.includes('youtube_search')) spec.youtube_search = youtubeSearchTool;
+              if (toolIds.includes('datetime')) spec.datetime = datetimeTool;
+              return Object.keys(spec).length ? spec : undefined;
+            })();
             result = streamText({
               model: google(name as any),
               messages: convertToModelMessages(messages),
