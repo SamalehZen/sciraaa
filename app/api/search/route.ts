@@ -411,8 +411,8 @@ export async function POST(req: Request) {
             ...(model === 'scira-google-think' || model === 'scira-google-pro-think'
               ? {
                 thinkingConfig: {
-                  thinkingBudget: 400,
-                  includeThoughts: true,
+                  thinkingBudget: 0,
+                  includeThoughts: false,
                 },
               }
               : {}),
