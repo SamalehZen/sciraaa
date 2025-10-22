@@ -27,6 +27,10 @@ export async function POST(req: NextRequest) {
     channelName = String(form.get('channel_name') || '');
   }
 
+  // Nettoyer le nom du canal pour respecter les règles Pusher
+  // Remplacer tous les caractères invalides par underscore
+  channelName = channelName.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+
   if (!socketId || !channelName) {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   }
