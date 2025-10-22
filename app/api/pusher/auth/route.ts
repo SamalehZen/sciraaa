@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers: { 'content-type': 'application/json' },
     });
-  } catch (e) {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: 'auth_failed' }, { status: 500 });
   }
 }
