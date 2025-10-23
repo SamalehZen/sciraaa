@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useHomeBackground } from "@/hooks/use-home-background";
 import {
   Select,
   SelectContent,
@@ -143,6 +144,9 @@ export default function AdminSettingsPage() {
     compactMode: false,
     animationsEnabled: true,
   });
+
+  const { variant: homeBackgroundVariant, setVariant: setHomeBackgroundVariant } = useHomeBackground();
+  const isDotScreenBackground = homeBackgroundVariant === "dotscreen";
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -889,6 +893,62 @@ export default function AdminSettingsPage() {
                           <p className="text-sm font-medium">{theme.label}</p>
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex flex-col gap-1">
+                      <Label className="flex items-center gap-2 text-sm font-medium">
+                        Arrière-plan DotScreen
+                        <Badge variant="outline" className="uppercase text-[10px] tracking-wide">
+                          Local
+                        </Badge>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Choisissez l’effet d’arrière-plan de la page d’accueil. La préférence est enregistrée dans ce navigateur uniquement.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setHomeBackgroundVariant("classic")}
+                        aria-pressed={!isDotScreenBackground}
+                        className={cn(
+                          "p-4 rounded-lg border-2 transition-all text-left hover:scale-105",
+                          !isDotScreenBackground
+                            ? "border-primary bg-primary/5"
+                            : "border-transparent bg-muted/50 hover:border-muted"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">Classique</span>
+                          {!isDotScreenBackground && <Check className="size-4" />}
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Conserve l’arrière-plan original.
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHomeBackgroundVariant("dotscreen")}
+                        aria-pressed={isDotScreenBackground}
+                        className={cn(
+                          "p-4 rounded-lg border-2 transition-all text-left hover:scale-105",
+                          isDotScreenBackground
+                            ? "border-primary bg-primary/5"
+                            : "border-transparent bg-muted/50 hover:border-muted"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">DotScreen</span>
+                          {isDotScreenBackground && <Check className="size-4" />}
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Active le shader interactif et la traînée de souris.
+                        </p>
+                      </button>
                     </div>
                   </div>
 

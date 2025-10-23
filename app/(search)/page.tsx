@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
+import { DotScreenShader } from '@/components/core/dot-screen-shader';
+import { useHomeBackground } from '@/hooks/use-home-background';
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
@@ -27,6 +29,8 @@ import { InstallPrompt } from '@/components/InstallPrompt';
 export default function Home() {
   const router = useRouter();
   const { user, isLoading } = useUser();
+  const { variant: homeBackgroundVariant } = useHomeBackground();
+  const showDotScreenBackground = homeBackgroundVariant === 'dotscreen';
 
   const initialProfiles = React.useMemo(
     () => [
@@ -59,15 +63,22 @@ export default function Home() {
   const [newIcon, setNewIcon] = React.useState('');
 
   if (isLoading) {
-    return <div className="min-h-[240px]" />;
+    return (
+      <div className="relative min-h-[240px]">
+        {showDotScreenBackground ? <DotScreenShader /> : null}
+      </div>
+    );
   }
 
   if (user) {
     return (
-      <React.Fragment>
-        <ChatInterface />
-        <InstallPrompt />
-      </React.Fragment>
+      <div className="relative min-h-screen overflow-hidden">
+        {showDotScreenBackground ? <DotScreenShader /> : null}
+        <div className="relative z-10">
+          <ChatInterface />
+          <InstallPrompt />
+        </div>
+      </div>
     );
   }
 
@@ -108,44 +119,47 @@ export default function Home() {
   };
 
   return (
-    <div className="relative">
-      <div className="fixed top-6 right-6 z-50">
-        <Button variant="secondary" size="lg" onClick={handleAddProfile}>
-          Ajouter un profil
-        </Button>
+    <div className="relative min-h-screen overflow-hidden">
+      {showDotScreenBackground ? <DotScreenShader /> : null}
+      <div className="relative z-10">
+        <div className="fixed top-6 right-6 z-50">
+          <Button variant="secondary" size="lg" onClick={handleAddProfile}>
+            Ajouter un profil
+          </Button>
+        </div>
+
+        <ProfileSelector
+          title="Bienvenue — sélectionnez un profil"
+          profiles={profiles}
+          onProfileSelect={handleSelect}
+          onAddProfile={handleAddProfile}
+          onDeleteProfile={handleDeleteProfile}
+          showAddTile
+        />
+
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ajouter un profil</DialogTitle>
+              <DialogDescription>Définissez un nom et une image optionnelle.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input placeholder="Nom du profil" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <Input
+                placeholder="URL de l’image (optionnel)"
+                value={newIcon}
+                onChange={(e) => setNewIcon(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setAddOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleCreateProfile}>Créer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <ProfileSelector
-        title="Bienvenue — sélectionnez un profil"
-        profiles={profiles}
-        onProfileSelect={handleSelect}
-        onAddProfile={handleAddProfile}
-        onDeleteProfile={handleDeleteProfile}
-        showAddTile
-      />
-
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter un profil</DialogTitle>
-            <DialogDescription>Définissez un nom et une image optionnelle.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Nom du profil" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <Input
-              placeholder="URL de l’image (optionnel)"
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateProfile}>Créer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
