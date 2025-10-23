@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { shaderMaterial, useTrailTexture } from '@react-three/drei'
 import { useTheme } from 'next-themes'
@@ -176,7 +177,7 @@ function Scene() {
   )
 }
 
-export const DotScreenShader = () => {
+const DotScreenShaderComponent = () => {
   return (
     <Canvas
       gl={{
@@ -189,3 +190,8 @@ export const DotScreenShader = () => {
     </Canvas>
   )
 }
+
+export const DotScreenShader = dynamic(() => Promise.resolve(DotScreenShaderComponent), {
+  ssr: false,
+  loading: () => null
+})
