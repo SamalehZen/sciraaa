@@ -18,7 +18,11 @@ import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 
 const BackgroundShader = dynamic(
-  () => import('@/components/home-background').then((mod) => ({ default: mod.DotScreenShader })),
+  () => import('@/components/home-background').then((mod) => {
+    return {
+      default: () => <mod.DotScreenShader />
+    }
+  }),
   {
     ssr: false,
     loading: () => null,
@@ -89,9 +93,12 @@ export default function Home() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
+        overflow: 'hidden',
       }}
     >
-      <BackgroundShader />
+      <div style={{ width: '100%', height: '100%' }}>
+        <BackgroundShader />
+      </div>
     </div>
   );
 
