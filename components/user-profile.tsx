@@ -29,6 +29,7 @@ import {
   BookIcon,
   XLogoIcon,
   InstagramLogoIcon,
+  ChartLineIcon,
 } from '@phosphor-icons/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BinocularsIcon } from '@hugeicons/core-free-icons';
@@ -103,6 +104,13 @@ const NavigationMenu = memo(() => {
           <Link href="/xql" className="w-full flex items-center gap-2">
             <XLogoIcon size={16} />
             <span>XQL</span>
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem className="cursor-pointer" asChild>
+          <Link href="/analyzer" className="w-full flex items-center gap-2">
+            <ChartLineIcon size={16} />
+            <span>✨ Data Analyzer</span>
           </Link>
         </DropdownMenuItem>
 
