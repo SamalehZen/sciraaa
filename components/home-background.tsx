@@ -1,7 +1,10 @@
 'use client'
 
+if (typeof window === 'undefined') {
+  throw new Error('[home-background] This component must only run on the client side. Check that it is dynamically imported with ssr: false.')
+}
+
 import { useMemo, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { shaderMaterial, useTrailTexture } from '@react-three/drei'
 import { useTheme } from 'next-themes'
@@ -177,7 +180,7 @@ function Scene() {
   )
 }
 
-const DotScreenShaderComponent = () => {
+export const DotScreenShader = () => {
   return (
     <Canvas
       gl={{
@@ -190,8 +193,3 @@ const DotScreenShaderComponent = () => {
     </Canvas>
   )
 }
-
-export const DotScreenShader = dynamic(() => Promise.resolve(DotScreenShaderComponent), {
-  ssr: false,
-  loading: () => null
-})

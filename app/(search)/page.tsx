@@ -16,7 +16,14 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
-import { DotScreenShader } from '@/components/home-background';
+
+const BackgroundShader = dynamic(
+  () => import('@/components/home-background').then((mod) => ({ default: mod.DotScreenShader })),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
@@ -84,7 +91,7 @@ export default function Home() {
         zIndex: 0,
       }}
     >
-      <DotScreenShader />
+      <BackgroundShader />
     </div>
   );
 
