@@ -29,6 +29,7 @@ import type {
   SearchMemoryTool,
   AddMemoryTool,
   codeContextTool,
+  docAnalysisTool,
 } from '@/lib/tools';
 
 import type { InferUITool, UIMessage } from 'ai';
@@ -138,6 +139,8 @@ type codeContextTool = InferUITool<typeof codeContextTool>;
 
 // type mcpSearchTool = InferUITool<typeof mcpSearchTool>;
 
+type docAnalysis = InferUITool<ReturnType<typeof docAnalysisTool>>;
+
 export type ChatTools = {
   stock_chart: stockChartTool;
   currency_converter: currencyConverterTool;
@@ -170,6 +173,7 @@ export type ChatTools = {
   datetime: datetimeTool;
   // mcp_search: mcpSearchTool;
   extreme_search: extremeSearch;
+  doc_analysis: docAnalysis;
   greeting: greetingTool;
 
   connectors_search: createConnectorsSearchTool;
@@ -192,6 +196,7 @@ export type CustomUIDataTypes = {
     imagesCount: number;
   };
   extreme_search: DataExtremeSearchPart['data'];
+  doc_analysis: any;
 };
 
 export type ChatMessage = UIMessage<MessageMetadata, CustomUIDataTypes, ChatTools>;
