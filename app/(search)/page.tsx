@@ -17,17 +17,10 @@ import {
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 
-const BackgroundShader = dynamic(
-  () => import('@/components/home-background').then((mod) => {
-    return {
-      default: () => <mod.DotScreenShader />
-    }
-  }),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-);
+const BackgroundShader = dynamic(() => import('@/components/home-background'), {
+  ssr: false,
+  loading: () => null,
+}) as any;
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
@@ -83,25 +76,6 @@ export default function Home() {
     );
   }
 
-  const BackgroundContainer = () => (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ width: '100%', height: '100%' }}>
-        <BackgroundShader />
-      </div>
-    </div>
-  );
-
   const handleAddProfile = () => {
     setAddOpen(true);
   };
@@ -139,8 +113,20 @@ export default function Home() {
   };
 
   return (
-    <div style={{ position: 'relative' }}>
-      <BackgroundContainer />
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      >
+        <BackgroundShader.DotScreenShader />
+      </div>
       <div style={{ position: 'relative', zIndex: 10 }}>
         <div className="fixed top-6 right-6 z-50">
           <Button variant="secondary" size="lg" onClick={handleAddProfile}>
@@ -180,6 +166,6 @@ export default function Home() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </>
   );
 }
