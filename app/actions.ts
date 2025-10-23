@@ -79,7 +79,9 @@ export async function suggestQuestions(history: any[]) {
 
   const { object } = await generateObject({
     model: scira.languageModel('scira-grok-3'),
-    system: `You are a search engine follow up query/questions generator. You MUST create EXACTLY 3 questions for the search engine based on the conversation history.
+    system: `${LANGUAGE_POLICY_FR}
+
+You are a search engine follow up query/questions generator. You MUST create EXACTLY 3 questions for the search engine based on the conversation history.
 
 ### Question Generation Guidelines:
 - Create exactly 3 questions that are open-ended and encourage further discussion
@@ -134,7 +136,9 @@ export async function checkImageModeration(images: string[]) {
 export async function generateTitleFromUserMessage({ message }: { message: UIMessage }) {
   const { text: title } = await generateText({
     model: scira.languageModel('scira-name'),
-    system: `You are an expert title generator. You are given a message and you need to generate a short title based on it.
+    system: `${LANGUAGE_POLICY_FR}
+
+You are an expert title generator. You are given a message and you need to generate a short title based on it.
 
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 80 characters long
@@ -150,7 +154,9 @@ export async function generateTitleFromUserMessage({ message }: { message: UIMes
 
 export async function enhancePrompt(raw: string) {
   try {
-    const system = `You are an expert prompt engineer. You are given a prompt and you need to enhance it.
+    const system = `${LANGUAGE_POLICY_FR}
+
+You are an expert prompt engineer. You are given a prompt and you need to enhance it.
 
 Today's Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' })}.
 
@@ -188,6 +194,15 @@ export async function generateSpeech(_text: string) {
   'use server';
   return { audio: '' };
 }
+
+// Language Policy for French - Applied to All Groups
+const LANGUAGE_POLICY_FR = `
+# Langue (OBLIGATOIRE)
+- Tu dois TOUJOURS répondre en français.
+- Tu dois aussi produire TOUT ton raisonnement ("thinking", "reasoning") en français, car il est affiché dans l'interface.
+- Utilise des titres, sections, tableaux, listes et unités en français.
+- N'alterne jamais vers l'anglais, même si des sources sont en anglais. Résume/traduis en français.
+`;
 
 // Map deprecated 'buddy' group ID to 'memory' for backward compatibility
 type LegacyGroupId = SearchGroupId | 'buddy';
@@ -1327,7 +1342,7 @@ export async function getGroupConfig(groupId: LegacyGroupId = 'web') {
       // If authenticated and using 'buddy', still use the memory_manager tool but with buddy instructions
       // The tools are the same, just different instructions
       const tools = groupTools[groupId];
-      const instructions = groupInstructions[groupId];
+      const instructions = LANGUAGE_POLICY_FR + groupInstructions[groupId];
 
       return {
         tools,
@@ -1337,7 +1352,8 @@ export async function getGroupConfig(groupId: LegacyGroupId = 'web') {
   }
 
   const tools = groupTools[groupId as keyof typeof groupTools];
-  const instructions = groupInstructions[groupId as keyof typeof groupInstructions];
+  const baseInstructions = groupInstructions[groupId as keyof typeof groupInstructions];
+  const instructions = LANGUAGE_POLICY_FR + baseInstructions;
 
   return {
     tools,
