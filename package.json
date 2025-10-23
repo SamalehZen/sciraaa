@@ -17,7 +17,7 @@
     "seed:all": "pnpm seed:admin && pnpm seed:test-data && pnpm seed:api-keys",
     "seed:reset": "pnpm db:push && pnpm seed:all"
   },
-  "dependencies": {"puppeteer-core":"^22.15.0","chrome-aws-lambda":"^10.1.0",
+  "dependencies": {"puppeteer-core":"^22.15.0","@sparticuz/chrome-aws-lambda":"^29.0.0",
     "@ai-sdk/google": "2.0.17",
     "@ai-sdk/react": "2.0.60",
     "@ai-sdk/xai": "^2.0.26",
