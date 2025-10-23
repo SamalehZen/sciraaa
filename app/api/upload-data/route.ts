@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSessionFromHeaders } from '@/lib/local-session';
 import * as XLSX from 'xlsx';
-import pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 
 const FileSchema = z.object({
   file: z
@@ -91,10 +91,12 @@ async function parseExcel(file: File): Promise<ParseResult> {
 async function parsePDF(file: File): Promise<ParseResult> {
   try {
     const buffer = await file.arrayBuffer();
-    const pdf = await pdfParse(buffer);
+    const uint8 = new Uint8Array(buffer);
+    const parser = new PDFParse({ data: uint8 });
+    const result = await parser.getText();
     
     // Extract text and try to parse as table
-    const text = pdf.text;
+    const text = result.text;
     
     // Try to detect if it's a table by looking for consistent patterns
     const lines = text.split('\n');
