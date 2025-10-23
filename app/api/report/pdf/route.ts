@@ -11,15 +11,11 @@ export async function POST(req: NextRequest) {
 
     // Attempt serverless PDF render; gracefully degrade if deps unavailable
     try {
-      const chromiumMod = await import('@sparticuz/chrome-aws-lambda');
-      const puppeteer = await import('puppeteer-core');
-      const chromium = chromiumMod.default || (chromiumMod as any);
+      const puppeteer = await import('puppeteer');
 
       const browser = await (puppeteer as any).launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless ?? true,
-        defaultViewport: chromium.defaultViewport || { width: 1280, height: 800, deviceScaleFactor: 2 },
+        headless: true,
+        defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 2 },
       });
       const page = await browser.newPage();
 
