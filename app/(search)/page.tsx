@@ -17,6 +17,11 @@ import {
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 
+const BackgroundShader = dynamic(() => import('@/components/home-background'), {
+  ssr: false,
+  loading: () => null,
+}) as any;
+
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
   loading: () => <div style={{ minHeight: 240 }} />,
@@ -108,44 +113,59 @@ export default function Home() {
   };
 
   return (
-    <div className="relative">
-      <div className="fixed top-6 right-6 z-50">
-        <Button variant="secondary" size="lg" onClick={handleAddProfile}>
-          Ajouter un profil
-        </Button>
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      >
+        <BackgroundShader.DotScreenShader />
       </div>
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <div className="fixed top-6 right-6 z-50">
+          <Button variant="secondary" size="lg" onClick={handleAddProfile}>
+            Ajouter un profil
+          </Button>
+        </div>
 
-      <ProfileSelector
-        title="Bienvenue — sélectionnez un profil"
-        profiles={profiles}
-        onProfileSelect={handleSelect}
-        onAddProfile={handleAddProfile}
-        onDeleteProfile={handleDeleteProfile}
-        showAddTile
-      />
+        <ProfileSelector
+          title="Bienvenue — sélectionnez un profil"
+          profiles={profiles}
+          onProfileSelect={handleSelect}
+          onAddProfile={handleAddProfile}
+          onDeleteProfile={handleDeleteProfile}
+          showAddTile
+        />
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter un profil</DialogTitle>
-            <DialogDescription>Définissez un nom et une image optionnelle.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Nom du profil" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <Input
-              placeholder="URL de l’image (optionnel)"
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleCreateProfile}>Créer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ajouter un profil</DialogTitle>
+              <DialogDescription>Définissez un nom et une image optionnelle.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input placeholder="Nom du profil" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <Input
+                placeholder="URL de l'image (optionnel)"
+                value={newIcon}
+                onChange={(e) => setNewIcon(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setAddOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleCreateProfile}>Créer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 }
