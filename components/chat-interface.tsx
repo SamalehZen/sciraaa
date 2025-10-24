@@ -74,47 +74,18 @@ const ChatInterface = memo(
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [settingsInitialTab, setSettingsInitialTab] = useState<string>('profile');
 
-    // Function to open settings with a specific tab
+    // Function to open settings page with a specific tab
     const handleOpenSettings = useCallback((tab: string = 'profile') => {
-      setSettingsInitialTab(tab);
-      setSettingsOpen(true);
-    }, []);
+      try {
+        router.push(`/settings?tab=${encodeURIComponent(tab)}`);
+      } catch {}
+    }, [router]);
 
-    // URL hash detection for settings dialog
-    useEffect(() => {
-      const handleHashChange = () => {
-        const hash = window.location.hash;
-        if (hash === '#settings') {
-          setSettingsOpen(true);
-        }
-      };
+    // No-op: settings handled via dedicated /settings page
+    useEffect(() => {}, []);
 
-      // Check initial hash
-      handleHashChange();
-
-      // Listen for hash changes
-      window.addEventListener('hashchange', handleHashChange);
-
-      return () => {
-        window.removeEventListener('hashchange', handleHashChange);
-      };
-    }, []);
-
-    // Update URL hash when settings dialog opens/closes
-    useEffect(() => {
-      if (settingsOpen) {
-        // Only update hash if it's not already #settings to prevent infinite loops
-        if (window.location.hash !== '#settings') {
-          window.history.pushState(null, '', '#settings');
-        }
-      } else {
-        // Remove hash if settings is closed and hash is #settings
-        if (window.location.hash === '#settings') {
-          // Use replaceState to avoid adding to browser history
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      }
-    }, [settingsOpen]);
+    // No-op: hash-based modal removed in favor of /settings page
+    useEffect(() => {}, [settingsOpen]);
 
     // Get persisted values for dialog states
     const [persistedHasShownUpgradeDialog, setPersitedHasShownUpgradeDialog] = useLocalStorage(
