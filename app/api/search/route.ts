@@ -65,7 +65,7 @@ import {
   greetingTool,
   // mcpSearchTool,
   redditSearchTool,
-  extremeSearchTool,
+  docAnalysisTool,
   createConnectorsSearchTool,
   codeContextTool,
 } from '@/lib/tools';
@@ -470,7 +470,7 @@ export async function POST(req: Request) {
             code_interpreter: codeInterpreterTool,
             track_flight: flightTrackerTool,
             datetime: datetimeTool,
-            extreme_search: extremeSearchTool(dataStream),
+            doc_analysis: docAnalysisTool(dataStream),
             greeting: greetingTool(timezone),
             code_context: codeContextTool,
           };
@@ -553,7 +553,7 @@ export async function POST(req: Request) {
                 // Track extreme search usage if used
                 if (group === 'extreme') {
                   const extremeSearchUsed = event.steps?.some((step) =>
-                    step.toolCalls?.some((toolCall) => toolCall && toolCall.toolName === 'extreme_search'),
+                    step.toolCalls?.some((toolCall) => toolCall && (toolCall.toolName === 'doc_analysis' || toolCall.toolName === 'extreme_search')),
                   );
                   if (extremeSearchUsed) {
                     await incrementExtremeSearchUsage({ userId: user.id });
