@@ -45,7 +45,7 @@ export default function ConnectorCallbackPage() {
 
         // Redirect to settings connectors tab after a short delay
         setTimeout(() => {
-          router.push('/?tab=connectors#settings');
+          router.push('/settings?tab=connectors');
         }, 2000);
       } catch (error) {
         console.error('Callback processing error:', error);
@@ -63,7 +63,7 @@ export default function ConnectorCallbackPage() {
   }, [router, provider, providerConfig]);
 
   const handleReturnToSettings = () => {
-    router.push('/?tab=connectors#settings');
+    router.push('/settings?tab=connectors');
   };
 
   return (
@@ -92,7 +92,7 @@ export default function ConnectorCallbackPage() {
 
           {status === 'error' && (
             <Button onClick={handleReturnToSettings} className="w-full">
-              Return to Settings
+              Revenir aux paramètres
             </Button>
           )}
 
