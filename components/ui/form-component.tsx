@@ -3768,6 +3768,86 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     </Tooltip>
                   )}
 
+                  {/* Analyze document button: calls doc-analysis directly with current attachments */}
+                  {attachments.length > 0 && (
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="group rounded-full transition-colors duration-200 h-8 border-0 !shadow-none hover:!bg-primary/30 hover:!border-0"
+                          onClick={async (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+
+                            // Build files list from attachments (only supported doc types)
+                            const files = attachments
+                              .map((a) => ({
+                                url: a.url,
+                                name: a.name,
+                                type: (a.contentType || a.mediaType || '').toLowerCase(),
+                                size: a.size,
+                              }))
+                              .filter((f) => {
+                                const t = f.type;
+                                return (
+                                  t === 'application/pdf' ||
+                                  t === 'text/plain' ||
+                                  t.includes('csv') ||
+                                  t === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                                  t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                                  t === 'application/vnd.ms-excel'
+                                );
+                              });
+
+                            if (files.length === 0) {
+                              toast.error('Aucun document compatible à analyser (PDF/DOCX/XLSX/CSV/TXT)');
+                              return;
+                            }
+
+                            try {
+                              const controller = new AbortController();
+                              const id = toast.loading('Analyse des documents en cours...');
+                              const res = await fetch('/api/tools/doc-analysis', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ prompt: input || '', files }),
+                                signal: controller.signal,
+                              });
+                              const data = await res.json();
+                              if (!res.ok || !data?.success) {
+                                throw new Error(data?.error || `HTTP ${res.status}`);
+                              }
+                              toast.dismiss(id);
+                              const reportUrl = data?.result?.report?.htmlUrl;
+                              if (reportUrl) {
+                                toast.success('Analyse terminée', {
+                                  action: {
+                                    label: 'Ouvrir le rapport',
+                                    onClick: () => window.open(reportUrl, '_blank'),
+                                  },
+                                });
+                              } else {
+                                toast.success('Analyse terminée');
+                              }
+                            } catch (err: any) {
+                              toast.error(`Échec de l\'analyse: ${err?.message || 'erreur inconnue'}`);
+                            }
+                          }}
+                          disabled={isEnhancing || isTypewriting || uploadQueue.length > 0 || status !== 'ready'}
+                        >
+                          <span className="block text-xs">Analyser le document</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" sideOffset={6} className="border-0 backdrop-blur-xs py-2 px-3 !shadow-none">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium text-[11px]">Analyse documentaire</span>
+                          <span className="text-[10px] text-accent leading-tight">Lance l\'outil d\'analyse sur vos fichiers joints</span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+
                   {/* Show enhance button when there's input */}
                   {(input.length > 0 || isEnhancing || isTypewriting) && (
                     <Tooltip delayDuration={300}>
