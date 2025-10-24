@@ -1312,7 +1312,9 @@ const AttachmentPreview: React.FC<{
       if (isUploadingAttachment(attachment)) {
         return attachment.file.type === 'application/pdf';
       }
-      return (attachment as Attachment).contentType === 'application/pdf';
+      const a = attachment as Attachment;
+      const ct = a.contentType || a.mediaType || '';
+      return ct === 'application/pdf';
     },
     [isUploadingAttachment],
   );
@@ -1401,13 +1403,37 @@ const AttachmentPreview: React.FC<{
               <path d="M9 15v-2h6v2"></path>
               <path d="M12 18v-5"></path>
             </svg>
-          ) : (
-            <img
-              src={(attachment as Attachment).url}
-              alt={`Preview of ${attachment.name}`}
-              className="h-full w-full object-cover"
-            />
-          )}
+          ) : (() => {
+            const a = attachment as Attachment;
+            const ct = (a.contentType || a.mediaType || '').toLowerCase();
+            const isImage = ct.startsWith('image/');
+            if (isImage) {
+              return (
+                <img
+                  src={a.url}
+                  alt={`Preview of ${attachment.name}`}
+                  className="h-full w-full object-cover"
+                />
+              );
+            }
+            return (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-blue-500"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            );
+          })()}
         </div>
       )}
       <div className="grow min-w-0">
@@ -2672,18 +2698,37 @@ const FormComponent: React.FC<FormComponentProps> = ({
         body: formData,
       });
 
+      const status = response.status;
       if (response.ok) {
         const data = await response.json();
-        console.log('Upload successful:', data);
-        return data;
+        const f = Array.isArray((data as any)?.files) ? (data as any).files[0] : null;
+        if (!f) {
+          throw new Error('Upload response missing file');
+        }
+        const normalized: Attachment = {
+          name: f.name,
+          url: f.url,
+          contentType: f.contentType || f.mediaType,
+          size: f.size,
+        };
+        console.log('Upload successful:', normalized);
+        return normalized;
       } else {
-        const errorText = await response.text();
-        console.error('Upload failed with status:', response.status, errorText);
-        throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
+        let apiMessage = '';
+        try {
+          const errJson = await response.json();
+          apiMessage = errJson?.error || JSON.stringify(errJson);
+        } catch {
+          apiMessage = await response.text();
+        }
+        const msg = `Failed to upload file: ${status}${apiMessage ? ` - ${apiMessage}` : ''}`;
+        console.error('Upload failed with status:', status, apiMessage);
+        throw new Error(msg);
       }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error uploading file:', msg);
+      toast.error(`Failed to upload ${file.name}: ${msg}`);
       throw error;
     }
   }, []);
@@ -2703,9 +2748,23 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const docxFiles: File[] = [];
+      const xlsxFiles: File[] = [];
+      const csvFiles: File[] = [];
+      const txtFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
-      const blockedPdfFiles: File[] = [];
+      const blockedForNonPro: File[] = [];
+
+      const isDocx = (file: File) =>
+        file.name.toLowerCase().endsWith('.docx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const isXlsx = (file: File) =>
+        file.name.toLowerCase().endsWith('.xlsx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel';
+      const isCsv = (file: File) => file.name.toLowerCase().endsWith('.csv') || file.type.includes('csv');
+      const isTxt = (file: File) => file.name.toLowerCase().endsWith('.txt') || file.type === 'text/plain';
 
       files.forEach((file) => {
         if (file.size > MAX_FILE_SIZE) {
@@ -2716,11 +2775,18 @@ const FormComponent: React.FC<FormComponentProps> = ({
         if (file.type.startsWith('image/')) {
           imageFiles.push(file);
         } else if (file.type === 'application/pdf') {
-          if (!isProUser) {
-            blockedPdfFiles.push(file);
-          } else {
-            pdfFiles.push(file);
-          }
+          if (!isProUser) blockedForNonPro.push(file);
+          else pdfFiles.push(file);
+        } else if (isDocx(file)) {
+          if (!isProUser) blockedForNonPro.push(file);
+          else docxFiles.push(file);
+        } else if (isXlsx(file)) {
+          if (!isProUser) blockedForNonPro.push(file);
+          else xlsxFiles.push(file);
+        } else if (isCsv(file)) {
+          csvFiles.push(file);
+        } else if (isTxt(file)) {
+          txtFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
@@ -2734,12 +2800,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
         toast.error(`Some files are not supported: ${unsupportedFiles.map((f) => f.name).join(', ')}`);
       }
 
-      if (blockedPdfFiles.length > 0) {
-        console.log(
-          'Blocked PDF files for non-Pro user:',
-          blockedPdfFiles.map((f) => f.name),
-        );
-        toast.error(`PDF uploads require Pro subscription. Upgrade to access PDF analysis.`, {
+      if (blockedForNonPro.length > 0) {
+        console.log('Blocked for non-Pro:', blockedForNonPro.map((f) => f.name));
+        toast.error('PDF, DOCX et XLSX sont réservés aux comptes Pro', {
           action: {
             label: 'Upgrade',
             onClick: () => (window.location.href = '/pricing'),
@@ -2747,8 +2810,11 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
+      const anyAllowed =
+        imageFiles.length + pdfFiles.length + docxFiles.length + xlsxFiles.length + csvFiles.length + txtFiles.length > 0;
+      if (!anyAllowed) {
         console.log('No supported files found');
+        toast.error('Formats supportés: images, PDF (Pro), DOCX/XLSX (Pro), CSV/TXT');
         event.target.value = '';
         return;
       }
@@ -2756,32 +2822,24 @@ const FormComponent: React.FC<FormComponentProps> = ({
       const currentModelData = models.find((m) => m.value === selectedModel);
       if (pdfFiles.length > 0 && (!currentModelData || !currentModelData.pdf)) {
         console.log('PDFs detected, switching to compatible model');
-
         const compatibleModel = models.find((m) => m.pdf && m.vision);
-
         if (compatibleModel) {
           console.log('Switching to compatible model:', compatibleModel.value);
           setSelectedModel(compatibleModel.value);
         } else {
           console.warn('No PDF-compatible model found');
           toast.error('PDFs are only supported by Gemini and Claude models');
-
-          if (imageFiles.length === 0) {
-            event.target.value = '';
-            return;
-          }
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
-      if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
-        validFiles = [...validFiles, ...pdfFiles];
+      let validFiles: File[] = [];
+      if (isProUser) {
+        validFiles = [...imageFiles, ...pdfFiles, ...docxFiles, ...xlsxFiles, ...csvFiles, ...txtFiles];
+      } else {
+        validFiles = [...imageFiles, ...csvFiles, ...txtFiles];
       }
 
-      console.log(
-        'Valid files for upload:',
-        validFiles.map((f) => f.name),
-      );
+      console.log('Valid files for upload:', validFiles.map((f) => f.name));
 
       const totalAttachments = attachments.length + validFiles.length;
       if (totalAttachments > MAX_FILES) {
@@ -2919,9 +2977,23 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const docxFiles: File[] = [];
+      const xlsxFiles: File[] = [];
+      const csvFiles: File[] = [];
+      const txtFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
-      const blockedPdfFiles: File[] = [];
+      const blockedForNonPro: File[] = [];
+
+      const isDocx = (file: File) =>
+        file.name.toLowerCase().endsWith('.docx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      const isXlsx = (file: File) =>
+        file.name.toLowerCase().endsWith('.xlsx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel';
+      const isCsv = (file: File) => file.name.toLowerCase().endsWith('.csv') || file.type.includes('csv');
+      const isTxt = (file: File) => file.name.toLowerCase().endsWith('.txt') || file.type === 'text/plain';
 
       allFiles.forEach((file) => {
         console.log(`Processing file: ${file.name} (${file.type})`);
@@ -2934,18 +3006,25 @@ const FormComponent: React.FC<FormComponentProps> = ({
         if (file.type.startsWith('image/')) {
           imageFiles.push(file);
         } else if (file.type === 'application/pdf') {
-          if (!isProUser) {
-            blockedPdfFiles.push(file);
-          } else {
-            pdfFiles.push(file);
-          }
+          if (!isProUser) blockedForNonPro.push(file);
+          else pdfFiles.push(file);
+        } else if (isDocx(file)) {
+          if (!isProUser) blockedForNonPro.push(file);
+          else docxFiles.push(file);
+        } else if (isXlsx(file)) {
+          if (!isProUser) blockedForNonPro.push(file);
+          else xlsxFiles.push(file);
+        } else if (isCsv(file)) {
+          csvFiles.push(file);
+        } else if (isTxt(file)) {
+          txtFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
       });
 
       console.log(
-        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
+        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, DOCX: ${docxFiles.length}, XLSX: ${xlsxFiles.length}, CSV: ${csvFiles.length}, TXT: ${txtFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
       );
 
       if (unsupportedFiles.length > 0) {
@@ -2964,12 +3043,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
         toast.error(`Some files exceed the 25MB limit: ${oversizedFiles.map((f) => f.name).join(', ')}`);
       }
 
-      if (blockedPdfFiles.length > 0) {
-        console.log(
-          'Blocked PDF files for non-Pro user:',
-          blockedPdfFiles.map((f) => f.name),
-        );
-        toast.error(`PDF uploads require Pro subscription. Upgrade to access PDF analysis.`, {
+      if (blockedForNonPro.length > 0) {
+        console.log('Blocked for non-Pro:', blockedForNonPro.map((f) => f.name));
+        toast.error('PDF, DOCX et XLSX sont réservés aux comptes Pro', {
           action: {
             label: 'Upgrade',
             onClick: () => (window.location.href = '/pricing'),
@@ -2977,8 +3053,10 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
-        toast.error('Only image and PDF files are supported');
+      const anyAllowed =
+        imageFiles.length + pdfFiles.length + docxFiles.length + xlsxFiles.length + csvFiles.length + txtFiles.length > 0;
+      if (!anyAllowed) {
+        toast.error('Formats supportés: images, PDF (Pro), DOCX/XLSX (Pro), CSV/TXT');
         return;
       }
 
@@ -2995,13 +3073,14 @@ const FormComponent: React.FC<FormComponentProps> = ({
         } else {
           console.warn('No PDF-compatible model found');
           toast.error('PDFs are only supported by Gemini and Claude models');
-          if (imageFiles.length === 0) return;
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
-      if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
-        validFiles = [...validFiles, ...pdfFiles];
+      let validFiles: File[] = [];
+      if (isProUser) {
+        validFiles = [...imageFiles, ...pdfFiles, ...docxFiles, ...xlsxFiles, ...csvFiles, ...txtFiles];
+      } else {
+        validFiles = [...imageFiles, ...csvFiles, ...txtFiles];
       }
 
       console.log(
@@ -3424,7 +3503,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     <Upload className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div className="space-y-1 text-center">
-                    <p className="text-sm font-medium text-foreground">Drop images or PDFs here</p>
+                    <p className="text-sm font-medium text-foreground">Déposez des images, PDF (Pro), DOCX/XLSX (Pro), CSV/TXT</p>
                     <p className="text-xs text-muted-foreground">Max {MAX_FILES} files (25MB per file)</p>
                   </div>
                 </div>
@@ -3463,7 +3542,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
             <div className="flex flex-row gap-2 overflow-x-auto py-2 max-h-28 z-10 px-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
               {attachments.map((attachment, index) => (
                 <AttachmentPreview
-                  key={attachment.url}
+                  key={attachment.url || `${attachment.name}-${index}`}
                   attachment={attachment}
                   onRemove={() => removeAttachment(index)}
                   isUploading={false}
@@ -3682,7 +3761,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium text-[11px]">Joindre un fichier</span>
                           <span className="text-[10px] text-accent leading-tight">
-                            {hasPdfSupport(selectedModel) ? 'Téléchargez une image ou un document PDF' : 'Téléchargez une image'}
+                            Téléchargez une image, un PDF (Pro), DOCX/XLSX (Pro), CSV/TXT
                           </span>
                         </div>
                       </TooltipContent>

@@ -9,6 +9,7 @@ const isAllowedType = (t: string) => {
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-excel', // optional: legacy XLS
     'text/csv',
     'text/plain',
     // images remain allowed for compatibility
@@ -61,8 +62,14 @@ export async function POST(request: NextRequest) {
     }));
 
     return NextResponse.json({ files: uploads, rejected: { tooLarge, badType } });
-  } catch (error) {
-    console.error('Error uploading file:', error);
+  } catch (error: any) {
+    const errMsg = (error && (error.message || String(error))) || 'Unknown error';
+    const blobTokenMissing = !process.env.BLOB_READ_WRITE_TOKEN || /BLOB|VERCEL_BLOB|token|auth/i.test(errMsg);
+    if (blobTokenMissing) {
+      console.error('Upload failed: Vercel Blob configuration missing or invalid:', errMsg);
+      return NextResponse.json({ error: 'Failed to upload file', code: 'blob_config_missing' }, { status: 500 });
+    }
+    console.error('Error uploading file:', errMsg);
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
   }
 }
