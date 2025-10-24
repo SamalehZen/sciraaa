@@ -7,6 +7,7 @@ import { put } from '@vercel/blob';
 import { runPython } from '@/lib/daytona';
 import { buildHtmlReport } from '@/lib/report/html';
 import type { Table, ChartArtifact, StatSummary } from '@/types/doc-analysis';
+import { TableSchema } from '@/types/doc-analysis';
 
 const FileMetaSchema = z.object({
   url: z.string().url(),
@@ -58,7 +59,94 @@ Produis un plan concis par fichier (FR).`,
       let confidence = 0.4;
       const ext = (f.name.split('.').pop() || '').toLowerCase();
 
-      if (['csv', 'xlsx', 'xls', 'txt'].includes(ext)) {
+      if (['pdf','docx'].includes(ext)) {
+        // 1) Essayez extraction LLM (Gemini multimodal)
+        try {
+          const { object: llm } = await generateObject({
+            model: scira.languageModel('scira-google-think'),
+            schema: z.object({
+              tables: z.array(TableSchema),
+              confidence: z.number().min(0).max(1).optional().default(0.7),
+            }),
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'file', url: f.url, mimeType: f.type } as any,
+                  {
+                    type: 'text',
+                    text: [
+                      'Tu es un extracteur de tableaux. Analyse le document joint et retourne un JSON strict:',
+                      '{ tables: [ { id, name, columns: [ { name, type, unit?, description? } ], rows: [ { col: value|null } ] } ] }',
+                      '- types normalisés: string | number | date | bool',
+                      '- garde au plus 200 lignes par table',
+                      '- valeurs vides → null',
+                      '- units si présentes',
+                      '- ne crée PAS de texte libre en dehors du JSON',
+                    ].join('\n')
+                  } as any,
+                ],
+              },
+            ],
+          });
+          const candidate: Table[] = (llm.tables || []).map((t, i) => ({ ...t, id: t.id || `${f.name}-t${i+1}` }));
+          if (candidate.length) {
+            tablesForFile = candidate;
+            confidence = llm.confidence ?? 0.7;
+          }
+        } catch {}
+        // 2) Fallback Daytona pour DOCX (python-docx) si aucune table extraite
+        if (!tablesForFile.length && ext === 'docx') {
+          const code = `
+import io, requests, json
+from docx import Document
+
+url = ${JSON.stringify(f.url)}
+content = requests.get(url).content
+
+try:
+    doc = Document(io.BytesIO(content))
+except Exception:
+    print(json.dumps({"tables": []}))
+    raise SystemExit
+
+all_tables = []
+idx = 1
+for tbl in doc.tables:
+    rows = []
+    headers = [cell.text.strip() for cell in tbl.rows[0].cells] if len(tbl.rows)>0 else []
+    for r in tbl.rows[1:201]:
+        obj = {}
+        for ci, cell in enumerate(r.cells):
+            key = headers[ci] if ci < len(headers) and headers[ci] else f"col_{ci+1}"
+            val = cell.text.strip() if cell.text.strip() else None
+            obj[key] = val
+        rows.append(obj)
+    columns = []
+    if headers:
+        for h in headers:
+            columns.append({"name": h or "col", "type": "string", "unit": None, "description": None})
+    else:
+        # infer from first row
+        if rows:
+            for k in rows[0].keys():
+                columns.append({"name": k, "type": "string", "unit": None, "description": None})
+    all_tables.append({"id": f"tbl_{idx}", "name": ${JSON.stringify(f.name)}+"_table_"+str(idx), "columns": columns, "rows": rows})
+    idx += 1
+
+print(json.dumps({"tables": all_tables}))
+`;
+          const { result } = await runPython(code, { install: ['python-docx','requests'] });
+          try {
+            const parsed = JSON.parse(String(result||'{}'));
+            const candidate: Table[] = (parsed.tables || []).map((t: any, i: number) => ({ ...t, id: t.id || `${f.name}-t${i+1}` }));
+            if (candidate.length) {
+              tablesForFile = candidate;
+              confidence = 0.6;
+            }
+          } catch {}
+        }
+      } else if (['csv', 'xlsx', 'xls', 'txt'].includes(ext)) {
         // Fallback Daytona parsing with pandas
         const code = `
 import pandas as pd
