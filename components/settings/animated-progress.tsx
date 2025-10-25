@@ -15,10 +15,10 @@ export function AnimatedProgress({ value, className }: { value: number; classNam
   }, [value]);
 
   return (
-    <div className={cn("w-full h-2 bg-secondary rounded-full overflow-hidden", className)}>
+    <div className={cn("w-full bg-secondary rounded-full overflow-hidden", "h-1.5 md:h-2", className)}>
       <div
         ref={ref}
-        className="h-full rounded-full transition-[width] duration-500 ease-out bg-gradient-to-r from-primary to-accent"
+        className="h-full rounded-full transition-[width] duration-500 ease-out bg-gradient-to-r from-primary to-accent shadow-lg"
         style={{
           width: "0%",
         }}

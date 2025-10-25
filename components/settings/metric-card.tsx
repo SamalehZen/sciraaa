@@ -16,13 +16,13 @@ export function MetricCard({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg p-4 bg-secondary/30 border border-border text-foreground", className)}>
+    <div className={cn("rounded-lg bg-secondary/40 border border-border/50 text-foreground hover:border-border/80 transition-colors", "p-3 md:p-4", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{title}</span>
-        <div className="text-foreground/80">{icon}</div>
+        <span className="text-[11px] md:text-xs text-muted-foreground font-medium">{title}</span>
+        <div className="text-foreground/70 opacity-80">{icon}</div>
       </div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
-      {subtitle ? <p className="text-[11px] text-muted-foreground mt-1">{subtitle}</p> : null}
+      <div className="text-xl md:text-2xl font-bold mt-2 text-foreground">{value}</div>
+      {subtitle ? <p className="text-[10px] md:text-[11px] text-muted-foreground/80 mt-1.5">{subtitle}</p> : null}
     </div>
   );
 }

@@ -30,17 +30,18 @@ export function SettingsHeatmap({
   };
 
   return (
-    <div className="rounded-xl bg-card border border-border p-4">
-      <h4 className="text-foreground text-sm font-semibold mb-2">Activité (12 derniers mois)</h4>
-      <TooltipProvider>
-        <ContributionGraph
-          data={data}
-          blockSize={blockSize}
-          blockMargin={2}
-          fontSize={12}
-          labels={labels}
-          className="w-full"
-        >
+    <div className="rounded-xl bg-card border border-border/50 p-3 md:p-4 hover:border-border/80 transition-colors">
+      <h4 className="text-foreground text-xs md:text-sm font-bold mb-3 md:mb-4">Activité (12 derniers mois)</h4>
+      <div className="overflow-x-auto">
+        <TooltipProvider>
+          <ContributionGraph
+            data={data}
+            blockSize={blockSize}
+            blockMargin={2}
+            fontSize={12}
+            labels={labels}
+            className="w-full min-w-max"
+          >
           <ContributionGraphCalendar className="text-muted-foreground text-xs">
             {({ activity, dayIndex, weekIndex }) => (
               <Tooltip key={`${weekIndex}-${dayIndex}`}>
@@ -102,8 +103,9 @@ export function SettingsHeatmap({
               )}
             </ContributionGraphLegend>
           </ContributionGraphFooter>
-        </ContributionGraph>
-      </TooltipProvider>
+          </ContributionGraph>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

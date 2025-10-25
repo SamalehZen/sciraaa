@@ -38,9 +38,9 @@ function ProfileSection({ user }: { user: any }) {
   const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>("scira-blur-personal-info", false);
 
   return (
-    <div className={cn("space-y-4", isMobile ? "space-y-3" : "space-y-4")}>
-      <div className={cn("flex items-center gap-4", isMobile && "gap-3")}>
-        <Avatar className={cn("h-16 w-16 shrink-0", isMobile && "h-14 w-14", blurPersonalInfo && "blur-sm")}>
+    <div className={cn("space-y-4", isMobile ? "space-y-3" : "space-y-5")}>
+      <div className={cn("flex items-start gap-4 pb-4 border-b border-border/30", isMobile && "gap-3 pb-3")}>
+        <Avatar className={cn("h-16 w-16 shrink-0 ring-2 ring-primary/20", isMobile && "h-14 w-14", blurPersonalInfo && "blur-sm")}>
           <AvatarImage src={user?.image || ""} alt={user?.name} />
           <AvatarFallback>
             {user?.name
@@ -51,28 +51,28 @@ function ProfileSection({ user }: { user: any }) {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h3 className={cn("font-semibold truncate", isMobile ? "text-base" : "text-lg", blurPersonalInfo && "blur-sm")}>
+          <h3 className={cn("font-bold truncate tracking-tight", isMobile ? "text-base" : "text-lg", blurPersonalInfo && "blur-sm")}>
             {user?.name}
           </h3>
-          <p className={cn("text-muted-foreground truncate", isMobile ? "text-xs" : "text-sm", blurPersonalInfo && "blur-sm")}>
+          <p className={cn("text-muted-foreground/80 truncate", isMobile ? "text-xs mt-0.5" : "text-sm mt-1", blurPersonalInfo && "blur-sm")}>
             {user?.email}
           </p>
         </div>
       </div>
 
-      <div className={cn("flex flex-col gap-2", isMobile && "gap-2")}>
+      <div className={cn("flex flex-col gap-2.5", isMobile && "gap-2")}>
         <Button
           variant="outline"
           size={isMobile ? "sm" : "default"}
           onClick={() => setBlurPersonalInfo(!blurPersonalInfo)}
-          className="w-full"
+          className="w-full font-medium transition-all hover:bg-secondary/80"
         >
-          {blurPersonalInfo ? "Afficher infos" : "Flouter infos"}
+          {blurPersonalInfo ? "👁️ Afficher infos" : "👁️‍🗨️ Flouter infos"}
         </Button>
         <Button
           variant="outline"
           size={isMobile ? "sm" : "default"}
-          className="w-full text-destructive hover:text-destructive"
+          className="w-full text-destructive hover:bg-destructive/10 font-medium transition-all"
           onClick={() =>
             signOut({
               fetchOptions: {
@@ -92,7 +92,7 @@ function ProfileSection({ user }: { user: any }) {
           }
         >
           <SignOutIcon className={cn("mr-1.5", isMobile ? "h-3.5 w-3.5" : "h-4 w-4")} />
-          <span className={isMobile ? "text-xs" : "text-sm"}>Déconnexion</span>
+          <span className={isMobile ? "text-xs" : "text-sm"}>Se déconnecter</span>
         </Button>
       </div>
     </div>
@@ -132,33 +132,36 @@ function UsagePageSection({ user }: { user: any }) {
 
   return (
     <div className={cn("space-y-6", isMobile && "space-y-4")}>
-      <div className={cn("rounded-xl bg-card border border-border", isMobile ? "p-4" : "p-6")}>
-        <div className={cn("text-muted-foreground mb-4", isMobile ? "text-xs" : "text-sm")}>
-          Suivi des recherches quotidiennes et mensuelles
+      <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm", isMobile ? "p-4" : "p-6")}>
+        <h3 className={cn("font-bold mb-4 text-foreground", isMobile ? "text-sm" : "text-base")}>
+          📊 Statistiques d'utilisation
+        </h3>
+        <div className={cn("text-muted-foreground/70 mb-4 pb-4 border-b border-border/30", isMobile ? "text-xs leading-relaxed" : "text-sm")}>
+          Suivi de vos recherches quotidiennes et mensuelles
         </div>
         <div className={cn("grid gap-4", isMobile ? "gap-3 grid-cols-2" : "gap-4 grid-cols-2")}>
           <MetricCard
-            title="Aujourd'hui"
+            title="🔍 Aujourd'hui"
             icon={<MagnifyingGlassIcon className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4")} />}
             value={usageLoading ? "—" : todayCount}
             subtitle="Recherches régulières"
           />
           <MetricCard
-            title="Extrême"
+            title="⚡ Extrême"
             icon={<LightningIcon className={cn(isMobile ? "h-3.5 w-3.5" : "h-4 w-4")} />}
             value={usageLoading ? "—" : extremeMonthCount}
             subtitle="Ce mois"
           />
         </div>
 
-        <div className={cn("mt-6", isMobile && "mt-4")}>
-          <div className={cn("flex items-center justify-between mb-2", isMobile ? "text-[10px]" : "text-xs", "text-muted-foreground")}>
-            <span>Limite quotidienne</span>
-            <span>{Math.round(percent)}%</span>
+        <div className={cn("mt-6 pt-4 border-t border-border/30", isMobile && "mt-4")}>
+          <div className={cn("flex items-center justify-between mb-2.5", isMobile ? "text-[11px]" : "text-xs", "text-muted-foreground font-medium")}>
+            <span>📈 Limite quotidienne</span>
+            <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-semibold">{Math.round(percent)}%</span>
           </div>
           <AnimatedProgress value={percent} />
-          <div className={cn("flex items-center justify-between mt-1.5", isMobile ? "text-[10px]" : "text-[11px]", "text-muted-foreground")}>
-            <span>
+          <div className={cn("flex items-center justify-between mt-2", isMobile ? "text-[10px]" : "text-xs", "text-muted-foreground/70")}>
+            <span className="font-medium">
               {todayCount}/{dailyLimit}
             </span>
             <span>{Math.max(0, dailyLimit - todayCount)} restant</span>
@@ -190,10 +193,10 @@ export default function SettingsPageClient() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className={cn("sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border", isMobile ? "px-4 py-4" : "px-6 sm:px-8 py-6")}>
+      <div className={cn("sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50", isMobile ? "px-3 py-3" : "px-6 sm:px-8 py-6")}>
         <div className="max-w-5xl mx-auto">
           <div className={cn("flex items-center justify-between", isMobile && "gap-2")}>
-            <h1 className={cn("font-bold", isMobile ? "text-xl" : "text-3xl")}>Paramètres</h1>
+            <h1 className={cn("font-bold tracking-tight", isMobile ? "text-lg" : "text-3xl")}>Paramètres</h1>
             <div className={cn("flex items-center gap-1", isMobile && "gap-1.5")}>
               {!isMobile && (
                 <Button asChild variant="secondary" size="sm">
@@ -213,10 +216,10 @@ export default function SettingsPageClient() {
           </div>
 
           {isMobile && (
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
               <div />
-              <Link href="/pricing" className="text-xs text-primary hover:underline font-medium">
-                Offres
+              <Link href="/pricing" className="text-xs text-primary hover:text-primary/80 underline font-semibold transition-colors">
+                🎁 Offres
               </Link>
             </div>
           )}
@@ -224,12 +227,12 @@ export default function SettingsPageClient() {
       </div>
 
       {/* Main Content */}
-      <div className={cn("max-w-5xl mx-auto", isMobile ? "px-4 py-4" : "px-6 sm:px-8 py-8")}>
+      <div className={cn("max-w-5xl mx-auto", isMobile ? "px-3 py-4" : "px-6 sm:px-8 py-8")}>
         {!isMobile && (
           <div className={cn("flex items-center justify-between mb-6", isMobile && "mb-4")}>
             <div />
-            <Link href="/pricing" className="text-sm text-primary hover:underline font-medium">
-              Lien vers offres
+            <Link href="/pricing" className="text-sm text-primary hover:text-primary/80 underline font-medium transition-colors">
+              🎁 Voir toutes les offres
             </Link>
           </div>
         )}
@@ -237,16 +240,16 @@ export default function SettingsPageClient() {
         <Tabs value={tab} onValueChange={setTab}>
           {/* Tabs Navigation */}
           <TabsList className={cn(
-            "bg-muted border border-border rounded-lg p-1 w-full",
-            isMobile ? "grid grid-cols-3 gap-1 h-auto p-1" : "grid grid-cols-6 gap-1 p-1"
+            "bg-muted/50 border border-border/50 rounded-lg w-full",
+            isMobile ? "grid grid-cols-3 gap-0.5 h-auto p-1" : "grid grid-cols-6 gap-1 p-1.5"
           )}>
             {TabsConfig.map((t) => (
               <TabsTrigger
                 key={t.value}
                 value={t.value}
                 className={cn(
-                  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded transition-colors",
-                  isMobile ? "text-xs px-2 py-2 h-auto" : "text-sm px-2 py-2 h-auto"
+                  "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm rounded-md transition-all duration-200",
+                  isMobile ? "text-[10px] px-1 py-1.5 h-auto font-medium" : "text-xs md:text-sm px-3 py-2 h-auto font-medium"
                 )}
               >
                 {isMobile ? t.label : t.labelFull || t.label}
@@ -255,9 +258,9 @@ export default function SettingsPageClient() {
           </TabsList>
 
           {/* Tabs Content */}
-          <div className={cn("mt-6 space-y-6", isMobile && "mt-4 space-y-4")}>
-            <TabsContent value="profile" className="m-0">
-              <div className={cn("rounded-xl bg-card border border-border", isMobile ? "p-4" : "p-6")}>
+          <div className={cn("mt-6 space-y-6 animate-fadeIn", isMobile && "mt-3 space-y-3")}>
+            <TabsContent value="profile" className="m-0 focus-visible:outline-none">
+              <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm", isMobile ? "p-4" : "p-6")}>
                 <ProfileSection user={user} />
               </div>
             </TabsContent>
@@ -266,33 +269,33 @@ export default function SettingsPageClient() {
               <UsagePageSection user={user} />
             </TabsContent>
 
-            <TabsContent value="subscription" className="m-0">
-              <div className={cn("rounded-xl bg-card border border-border overflow-hidden", isMobile ? "p-4" : "p-6")}>
-                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh]")}>
+            <TabsContent value="subscription" className="m-0 focus-visible:outline-none">
+              <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm overflow-hidden", isMobile ? "p-4" : "p-6")}>
+                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh] pr-2")}>
                   <SubscriptionSection subscriptionData={null} isProUser={isProUser} user={user} />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="preferences" className="m-0">
-              <div className={cn("rounded-xl bg-card border border-border overflow-hidden", isMobile ? "p-4" : "p-6")}>
-                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh]")}>
+            <TabsContent value="preferences" className="m-0 focus-visible:outline-none">
+              <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm overflow-hidden", isMobile ? "p-4" : "p-6")}>
+                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh] pr-2")}>
                   <PreferencesSection user={user} />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="connectors" className="m-0">
-              <div className={cn("rounded-xl bg-card border border-border overflow-hidden", isMobile ? "p-4" : "p-6")}>
-                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh]")}>
+            <TabsContent value="connectors" className="m-0 focus-visible:outline-none">
+              <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm overflow-hidden", isMobile ? "p-4" : "p-6")}>
+                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh] pr-2")}>
                   <ConnectorsSection user={user} />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="memories" className="m-0">
-              <div className={cn("rounded-xl bg-card border border-border overflow-hidden", isMobile ? "p-4" : "p-6")}>
-                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh]")}>
+            <TabsContent value="memories" className="m-0 focus-visible:outline-none">
+              <div className={cn("rounded-xl bg-card border border-border/50 hover:border-border/80 transition-colors shadow-sm overflow-hidden", isMobile ? "p-4" : "p-6")}>
+                <div className={cn("overflow-y-auto", isMobile && "max-h-[60vh] pr-2")}>
                   <MemoriesSection />
                 </div>
               </div>
