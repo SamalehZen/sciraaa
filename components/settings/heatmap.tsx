@@ -30,8 +30,8 @@ export function SettingsHeatmap({
   };
 
   return (
-    <div className="rounded-xl bg-[#2a2a2a] p-4">
-      <h4 className="text-white text-sm font-semibold mb-2">Activité (12 derniers mois)</h4>
+    <div className="rounded-xl bg-card border border-border p-4">
+      <h4 className="text-foreground text-sm font-semibold mb-2">Activité (12 derniers mois)</h4>
       <TooltipProvider>
         <ContributionGraph
           data={data}
@@ -41,7 +41,7 @@ export function SettingsHeatmap({
           labels={labels}
           className="w-full"
         >
-          <ContributionGraphCalendar className="text-[#a0a0a0] text-xs">
+          <ContributionGraphCalendar className="text-muted-foreground text-xs">
             {({ activity, dayIndex, weekIndex }) => (
               <Tooltip key={`${weekIndex}-${dayIndex}`}>
                 <TooltipTrigger asChild>
@@ -51,11 +51,11 @@ export function SettingsHeatmap({
                       dayIndex={dayIndex}
                       weekIndex={weekIndex}
                       className={cn(
-                        'data-[level="0"]:fill-[#1e1e1e]',
-                        'data-[level="1"]:fill-[#315d1a]',
-                        'data-[level="2"]:fill-[#4f8a28]',
-                        'data-[level="3"]:fill-[#66a430]',
-                        'data-[level="4"]:fill-[#7CB342]'
+                        'data-[level="0"]:fill-muted',
+                        'data-[level="1"]:fill-primary/30',
+                        'data-[level="2"]:fill-primary/50',
+                        'data-[level="3"]:fill-primary/70',
+                        'data-[level="4"]:fill-primary'
                       )}
                     />
                   </g>
@@ -79,18 +79,18 @@ export function SettingsHeatmap({
             )}
           </ContributionGraphCalendar>
           <ContributionGraphFooter className="pt-2 gap-2 items-center">
-            <ContributionGraphTotalCount className="text-[#a0a0a0] text-xs" />
-            <ContributionGraphLegend className="text-[#a0a0a0]">
+            <ContributionGraphTotalCount className="text-muted-foreground text-xs" />
+            <ContributionGraphLegend className="text-muted-foreground">
               {({ level }) => (
                 <svg height={10} width={10}>
                   <rect
                     className={cn(
-                      'stroke-[1px] stroke-[#333333]',
-                      'data-[level="0"]:fill-[#1e1e1e]',
-                      'data-[level="1"]:fill-[#315d1a]',
-                      'data-[level="2"]:fill-[#4f8a28]',
-                      'data-[level="3"]:fill-[#66a430]',
-                      'data-[level="4"]:fill-[#7CB342]'
+                      'stroke-[1px] stroke-border',
+                      'data-[level="0"]:fill-muted',
+                      'data-[level="1"]:fill-primary/30',
+                      'data-[level="2"]:fill-primary/50',
+                      'data-[level="3"]:fill-primary/70',
+                      'data-[level="4"]:fill-primary'
                     )}
                     data-level={level}
                     height={10}

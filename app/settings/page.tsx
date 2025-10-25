@@ -5,7 +5,7 @@ import SettingsPageClient from "./client";
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#121212]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <SettingsPageClient />
     </Suspense>
   );
