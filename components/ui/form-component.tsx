@@ -981,7 +981,12 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
         {...props}
       >
         <HugeiconsIcon icon={CpuIcon} size={24} color="currentColor" strokeWidth={2} />
-        <span className="text-xs font-medium sm:block hidden">{currentModel?.label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium sm:block hidden">{currentModel?.label}</span>
+          {currentModel && requiresProSubscription(currentModel.value) && (
+            <AnimatedProBadge className="!px-1.5 !pt-0 !pb-1 text-[10px] !leading-2" color="hsl(var(--foreground))" speed="6s" />
+          )}
+        </div>
         <ChevronsUpDown className="h-4 w-4 opacity-50" />
       </Button>
     ));
