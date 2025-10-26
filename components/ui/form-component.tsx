@@ -993,24 +993,26 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
       React.ElementRef<typeof Button>,
       React.ComponentPropsWithoutRef<typeof Button>
     >((props, ref) => (
-      <span className="relative inline-flex overflow-visible rounded-lg">
+      <span className="relative inline-flex overflow-visible rounded-lg" style={{ padding: '8px' }}>
         <div
-          className="absolute w-[400%] h-[60%] bottom-[-15px] right-[-300%] rounded-full animate-star-movement-bottom z-0 opacity-50 dark:opacity-90"
+          className="absolute w-[500%] h-[80%] bottom-[-20px] right-[-400%] rounded-full animate-star-movement-bottom z-0"
           style={{
-            background: `radial-gradient(circle, hsl(var(--primary)), transparent 15%)`,
+            background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
             animationDuration: '6s',
-            filter: 'blur(1px)',
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
           }}
         />
         <div
-          className="absolute w-[400%] h-[60%] top-[-15px] left-[-300%] rounded-full animate-star-movement-top z-0 opacity-50 dark:opacity-90"
+          className="absolute w-[500%] h-[80%] top-[-20px] left-[-400%] rounded-full animate-star-movement-top z-0"
           style={{
-            background: `radial-gradient(circle, hsl(var(--primary)), transparent 15%)`,
+            background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
             animationDuration: '6s',
-            filter: 'blur(1px)',
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-10 -m-2">
           <TriggerButton ref={ref} {...props} />
         </div>
       </span>
