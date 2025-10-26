@@ -981,24 +981,45 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
         {...props}
       >
         <HugeiconsIcon icon={CpuIcon} size={24} color="currentColor" strokeWidth={2} />
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium sm:block hidden">{currentModel?.label}</span>
-          {currentModel && requiresProSubscription(currentModel.value) && (
-            <AnimatedProBadge className="!px-1.5 !pt-0 !pb-1 text-[10px] !leading-2" color="hsl(var(--foreground))" speed="6s" />
-          )}
-        </div>
+        <span className="text-xs font-medium sm:block hidden">{currentModel?.label}</span>
         <ChevronsUpDown className="h-4 w-4 opacity-50" />
       </Button>
     ));
 
     TriggerButton.displayName = 'TriggerButton';
 
-    return (
+    // Animated wrapper for TriggerButton
+    const AnimatedTriggerButton = React.forwardRef<
+      React.ElementRef<typeof Button>,
+      React.ComponentPropsWithoutRef<typeof Button>
+    >((props, ref) => (
+      <span className="relative inline-flex overflow-hidden rounded-lg">
+        <div
+          className="absolute w-[300%] h-[50%] bottom-[-11px] right-[-250%] rounded-full animate-star-movement-bottom z-0 opacity-20 dark:opacity-70"
+          style={{
+            background: `radial-gradient(circle, hsl(var(--foreground)), transparent 10%)`,
+            animationDuration: '6s',
+          }}
+        />
+        <div
+          className="absolute w-[300%] h-[50%] top-[-10px] left-[-250%] rounded-full animate-star-movement-top z-0 opacity-20 dark:opacity-70"
+          style={{
+            background: `radial-gradient(circle, hsl(var(--foreground)), transparent 10%)`,
+            animationDuration: '6s',
+          }}
+        />
+        <div className="relative z-10">
+          <TriggerButton ref={ref} {...props} />
+        </div>
+      </span>
+    ));
+
+    AnimatedTriggerButton.displayName = 'AnimatedTriggerButton';
       <>
         {isMobile ? (
           <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
-              <TriggerButton />
+              <AnimatedTriggerButton />
             </DrawerTrigger>
             <DrawerContent className="min-h-[60vh] max-h-[80vh] flex flex-col">
               <DrawerHeader className="pb-4 flex-shrink-0">
@@ -1013,7 +1034,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
         ) : (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <TriggerButton />
+              <AnimatedTriggerButton />
             </PopoverTrigger>
             <PopoverContent
               className="w-[90vw] sm:w-[20em] max-w-[20em] p-0 font-sans rounded-lg bg-popover z-40 border !shadow-none"
