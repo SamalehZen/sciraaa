@@ -1015,6 +1015,8 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
     ));
 
     AnimatedTriggerButton.displayName = 'AnimatedTriggerButton';
+
+    return (
       <>
         {isMobile ? (
           <Drawer open={open} onOpenChange={setOpen}>
