@@ -63,6 +63,31 @@ const ProBadge = ({ className = '' }: { className?: string }) => (
   </span>
 );
 
+// Animated Pro Badge Component with Star Border Animation
+const AnimatedProBadge = ({ className = '', color = 'hsl(var(--foreground))', speed = '6s' }: { className?: string; color?: string; speed?: string }) => (
+  <span
+    className={`font-baumans relative inline-flex items-center gap-1 rounded-lg shadow-sm !border-none !outline-0 ring-offset-1 !ring-offset-background/50 overflow-hidden ${className}`}
+  >
+    <div
+      className="absolute w-[300%] h-[50%] bottom-[-11px] right-[-250%] rounded-full animate-star-movement-bottom z-0 opacity-20 dark:opacity-70"
+      style={{
+        background: `radial-gradient(circle, ${color}, transparent 10%)`,
+        animationDuration: speed,
+      }}
+    />
+    <div
+      className="absolute w-[300%] h-[50%] top-[-10px] left-[-250%] rounded-full animate-star-movement-top z-0 opacity-20 dark:opacity-70"
+      style={{
+        background: `radial-gradient(circle, ${color}, transparent 10%)`,
+        animationDuration: speed,
+      }}
+    />
+    <span className="relative z-10 bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary text-foreground px-2.5 pt-0.5 !pb-2 sm:pt-1 leading-3 dark:text-foreground inline-flex items-center gap-1 rounded-lg">
+      <span>Fix</span>
+    </span>
+  </span>
+);
+
 interface ModelSwitcherProps {
   selectedModel: string;
   setSelectedModel: (value: string) => void;
@@ -1021,7 +1046,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
                       ) : (
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="text-xl sm:text-2xl font-be-vietnam-pro">Hyper</span>
-                          <ProBadge className="!text-white !bg-white/20 !ring-white/30 font-extralight" />
+                          <AnimatedProBadge className="!text-white !bg-white/20 !ring-white/30 font-extralight" color="rgba(255, 255, 255, 0.8)" speed="6s" />
                         </div>
                       )}
                     </div>
