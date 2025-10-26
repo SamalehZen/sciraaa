@@ -993,29 +993,46 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
       React.ElementRef<typeof Button>,
       React.ComponentPropsWithoutRef<typeof Button>
     >((props, ref) => (
-      <span className="relative inline-flex overflow-visible rounded-lg" style={{ padding: '8px' }}>
-        <div
-          className="absolute w-[500%] h-[80%] bottom-[-20px] right-[-400%] rounded-full animate-star-movement-bottom z-0"
+      <motion.span 
+        className="relative inline-flex overflow-visible rounded-lg"
+        style={{ padding: '8px' }}
+      >
+        <motion.div
+          className="absolute w-[500%] h-[80%] bottom-[-20px] right-[-400%] rounded-full z-0"
           style={{
             background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
-            animationDuration: '6s',
             filter: 'blur(2px)',
             pointerEvents: 'none',
           }}
+          animate={{
+            right: ['100%', '-250%'],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
         />
-        <div
-          className="absolute w-[500%] h-[80%] top-[-20px] left-[-400%] rounded-full animate-star-movement-top z-0"
+        <motion.div
+          className="absolute w-[500%] h-[80%] top-[-20px] left-[-400%] rounded-full z-0"
           style={{
             background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
-            animationDuration: '6s',
             filter: 'blur(2px)',
             pointerEvents: 'none',
+          }}
+          animate={{
+            left: ['100%', '-250%'],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: 'linear',
           }}
         />
         <div className="relative z-10 -m-2">
           <TriggerButton ref={ref} {...props} />
         </div>
-      </span>
+      </motion.span>
     ));
 
     AnimatedTriggerButton.displayName = 'AnimatedTriggerButton';
