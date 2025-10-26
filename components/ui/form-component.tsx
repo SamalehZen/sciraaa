@@ -52,6 +52,7 @@ import { CONNECTOR_CONFIGS, CONNECTOR_ICONS, type ConnectorProvider } from '@/li
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listUserConnectorsAction } from '@/app/actions';
 import { BorderTrail } from '@/components/core/border-trail';
+import { StarBorder } from '@/components/core/star-border';
 import { pusherClient } from '@/lib/pusher-client';
 
 // Pro Badge Component
@@ -958,91 +959,36 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
       </Command>
     );
 
-    // Common trigger button component
-    const TriggerButton = React.forwardRef<
-      React.ElementRef<typeof Button>,
-      React.ComponentPropsWithoutRef<typeof Button>
-    >((props, ref) => (
-      <Button
+    // Star border trigger button with animation
+    const TriggerButton = React.forwardRef<HTMLButtonElement, any>((props, ref) => (
+      <StarBorder
         ref={ref}
-        variant="outline"
+        as="button"
         role="combobox"
         aria-expanded={open}
-        size="sm"
         className={cn(
-          'flex items-center gap-2 px-3 h-7.5 rounded-lg',
-          'border border-border',
-          'bg-background text-foreground',
-          'hover:bg-accent transition-colors',
-          'focus:!outline-none focus:!ring-0',
-          'shadow-none',
+          'py-[1px] overflow-hidden rounded-lg',
           className,
         )}
+        innerClassName="py-1.5 px-3 h-6 flex items-center gap-2 justify-center text-xs font-medium"
+        color="hsl(var(--primary))"
+        speed="6s"
         {...props}
       >
-        <HugeiconsIcon icon={CpuIcon} size={24} color="currentColor" strokeWidth={2} />
-        <span className="text-xs font-medium sm:block hidden">{currentModel?.label}</span>
-        <ChevronsUpDown className="h-4 w-4 opacity-50" />
-      </Button>
+        <HugeiconsIcon icon={CpuIcon} size={16} color="currentColor" strokeWidth={2} />
+        <span className="sm:block hidden truncate">{currentModel?.label}</span>
+        <ChevronsUpDown className="h-3 w-3 opacity-50 flex-shrink-0" />
+      </StarBorder>
     ));
 
     TriggerButton.displayName = 'TriggerButton';
-
-    // Animated wrapper for TriggerButton
-    const AnimatedTriggerButton = React.forwardRef<
-      React.ElementRef<typeof Button>,
-      React.ComponentPropsWithoutRef<typeof Button>
-    >((props, ref) => (
-      <motion.span 
-        className="relative inline-flex overflow-visible rounded-lg"
-        style={{ padding: '8px' }}
-      >
-        <motion.div
-          className="absolute w-[500%] h-[80%] bottom-[-20px] right-[-400%] rounded-full z-0"
-          style={{
-            background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
-            filter: 'blur(2px)',
-            pointerEvents: 'none',
-          }}
-          animate={{
-            right: ['100%', '-250%'],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        />
-        <motion.div
-          className="absolute w-[500%] h-[80%] top-[-20px] left-[-400%] rounded-full z-0"
-          style={{
-            background: `radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent 20%)`,
-            filter: 'blur(2px)',
-            pointerEvents: 'none',
-          }}
-          animate={{
-            left: ['100%', '-250%'],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        />
-        <div className="relative z-10 -m-2">
-          <TriggerButton ref={ref} {...props} />
-        </div>
-      </motion.span>
-    ));
-
-    AnimatedTriggerButton.displayName = 'AnimatedTriggerButton';
 
     return (
       <>
         {isMobile ? (
           <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
-              <AnimatedTriggerButton />
+              <TriggerButton />
             </DrawerTrigger>
             <DrawerContent className="min-h-[60vh] max-h-[80vh] flex flex-col">
               <DrawerHeader className="pb-4 flex-shrink-0">
@@ -1057,7 +1003,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
         ) : (
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <AnimatedTriggerButton />
+              <TriggerButton />
             </PopoverTrigger>
             <PopoverContent
               className="w-[90vw] sm:w-[20em] max-w-[20em] p-0 font-sans rounded-lg bg-popover z-40 border !shadow-none"
