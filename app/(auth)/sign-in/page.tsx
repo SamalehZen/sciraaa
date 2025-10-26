@@ -3,6 +3,7 @@
 import AuthCard from '@/components/auth-card';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function SignInPage() {
   useEffect(() => {
@@ -20,5 +21,17 @@ export default function SignInPage() {
     } catch {}
   }, []);
 
-  return <AuthCard title="Bon retour" description="Connectez-vous pour continuer vers Hyper AI" />;
+  return (
+    <div className="w-full">
+      <AuthCard title="Bon retour" description="Connectez-vous pour continuer vers Hyper AI" />
+      <div className="mt-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          Prefer a different style?{' '}
+          <Link href="/choose" className="text-primary hover:underline font-medium">
+            Choose a login design
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
 }
