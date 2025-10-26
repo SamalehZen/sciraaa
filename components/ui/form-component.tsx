@@ -993,19 +993,21 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
       React.ElementRef<typeof Button>,
       React.ComponentPropsWithoutRef<typeof Button>
     >((props, ref) => (
-      <span className="relative inline-flex overflow-hidden rounded-lg">
+      <span className="relative inline-flex overflow-visible rounded-lg">
         <div
-          className="absolute w-[300%] h-[50%] bottom-[-11px] right-[-250%] rounded-full animate-star-movement-bottom z-0 opacity-20 dark:opacity-70"
+          className="absolute w-[400%] h-[60%] bottom-[-15px] right-[-300%] rounded-full animate-star-movement-bottom z-0 opacity-50 dark:opacity-90"
           style={{
-            background: `radial-gradient(circle, hsl(var(--foreground)), transparent 10%)`,
+            background: `radial-gradient(circle, hsl(var(--primary)), transparent 15%)`,
             animationDuration: '6s',
+            filter: 'blur(1px)',
           }}
         />
         <div
-          className="absolute w-[300%] h-[50%] top-[-10px] left-[-250%] rounded-full animate-star-movement-top z-0 opacity-20 dark:opacity-70"
+          className="absolute w-[400%] h-[60%] top-[-15px] left-[-300%] rounded-full animate-star-movement-top z-0 opacity-50 dark:opacity-90"
           style={{
-            background: `radial-gradient(circle, hsl(var(--foreground)), transparent 10%)`,
+            background: `radial-gradient(circle, hsl(var(--primary)), transparent 15%)`,
             animationDuration: '6s',
+            filter: 'blur(1px)',
           }}
         />
         <div className="relative z-10">
