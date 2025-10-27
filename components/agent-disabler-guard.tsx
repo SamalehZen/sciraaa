@@ -48,6 +48,7 @@ export function AgentDisablerGuard({
       // Clear saved model
       localStorage.removeItem('scira-selected-model');
       localStorage.removeItem('scira-selected-agent');
+      localStorage.removeItem('scira-selected-group');
 
       // Dispatch event for UI to update
       window.dispatchEvent(
@@ -74,6 +75,7 @@ export function AgentDisablerGuard({
         toast.error('Agent désactivé. Conversation terminée.', { duration: 4000 });
         
         localStorage.removeItem('scira-selected-model');
+        localStorage.removeItem('scira-selected-group');
       }
     };
 
@@ -91,6 +93,7 @@ export function AgentDisablerGuard({
         toast.error('Un ou plusieurs agents ont été désactivés.', { duration: 4000 });
         
         localStorage.removeItem('scira-selected-model');
+        localStorage.removeItem('scira-selected-group');
       }
     };
 

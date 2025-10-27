@@ -29,6 +29,7 @@ export function AgentStatusMonitor({
       // Clear selected agent from localStorage or state
       localStorage.removeItem('scira-selected-model');
       localStorage.removeItem('scira-selected-agent');
+      localStorage.removeItem('scira-selected-group');
 
       // Trigger external callback if provided
       if (onAgentDisabled) {
@@ -54,6 +55,7 @@ export function AgentStatusMonitor({
     if (savedAgent && agentIds.includes(savedAgent)) {
       localStorage.removeItem('scira-selected-model');
       localStorage.removeItem('scira-selected-agent');
+      localStorage.removeItem('scira-selected-group');
     }
 
     // Dispatch event

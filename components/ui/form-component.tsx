@@ -64,6 +64,23 @@ const ProBadge = ({ className = '' }: { className?: string }) => (
   </span>
 );
 
+const FALLBACK_AGENT_ORDER = [
+  'web',
+  'chat',
+  'academic',
+  'youtube',
+  'reddit',
+  'stocks',
+  'memory',
+  'crypto',
+  'code',
+  'connectors',
+  'cyrus',
+  'libeller',
+  'nomenclature',
+  'pdfExcel',
+] as const;
+
 interface ModelSwitcherProps {
   selectedModel: string;
   setSelectedModel: (value: string) => void;
@@ -1743,6 +1760,94 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
       () => orderedVisibleGroups.find((group) => group.id === selectedGroup),
       [orderedVisibleGroups, selectedGroup],
     );
+
+    const getFallbackGroup = useCallback(() => {
+      if (orderedVisibleGroups.length === 0) {
+        return null;
+      }
+
+      for (const candidateId of FALLBACK_AGENT_ORDER) {
+        const match = orderedVisibleGroups.find((group) => group.id === candidateId);
+        if (match) {
+          return match;
+        }
+      }
+
+      return orderedVisibleGroups[0] ?? null;
+    }, [orderedVisibleGroups]);
+
+    const autoSwitchToAvailable = useCallback(
+      (reason: string) => {
+        if (isExtreme) {
+          return;
+        }
+
+        const fallback = getFallbackGroup();
+        if (!fallback) {
+          console.warn(`[AGENT-ACCESS] No fallback agent available (${reason})`);
+          return;
+        }
+
+        if (fallback.id === selectedGroup) {
+          return;
+        }
+
+        console.warn(
+          `[AGENT-ACCESS] Auto-switching from ${selectedGroup ?? 'unknown'} to ${fallback.id} (reason: ${reason})`,
+        );
+        toast.info(`Passage automatique vers ${fallback.name}`, {
+          description: "L'agent précédent n'est plus disponible.",
+        });
+        onGroupSelect(fallback);
+      },
+      [getFallbackGroup, onGroupSelect, selectedGroup, isExtreme],
+    );
+
+    useEffect(() => {
+      if (isExtreme) {
+        return;
+      }
+
+      if (!orderedVisibleGroups.length) {
+        return;
+      }
+
+      if (!selectedGroupData) {
+        autoSwitchToAvailable('selected group not visible');
+      }
+    }, [orderedVisibleGroups, selectedGroupData, autoSwitchToAvailable, isExtreme]);
+
+    useEffect(() => {
+      if (isExtreme) {
+        return;
+      }
+
+      const handleSingleAgentDisabled = (event: Event) => {
+        const detail = (event as CustomEvent)?.detail;
+        const agentId = detail?.agentId as string | undefined;
+        if (agentId && agentId === selectedGroup) {
+          autoSwitchToAvailable(`event:${agentId}`);
+        }
+      };
+
+      const handleMultipleAgentsDisabled = (event: Event) => {
+        const detail = (event as CustomEvent)?.detail;
+        const agentIds: string[] = detail?.agentIds || [];
+        if (agentIds.includes(selectedGroup)) {
+          autoSwitchToAvailable('multiple-agents-disabled');
+        }
+      };
+
+      window.addEventListener('agent-disabled', handleSingleAgentDisabled);
+      window.addEventListener('agent-became-unavailable', handleSingleAgentDisabled);
+      window.addEventListener('agents-disabled', handleMultipleAgentsDisabled);
+
+      return () => {
+        window.removeEventListener('agent-disabled', handleSingleAgentDisabled);
+        window.removeEventListener('agent-became-unavailable', handleSingleAgentDisabled);
+        window.removeEventListener('agents-disabled', handleMultipleAgentsDisabled);
+      };
+    }, [autoSwitchToAvailable, selectedGroup, isExtreme]);
 
     const handleToggleExtreme = useCallback(() => {
       if (isExtreme) {
