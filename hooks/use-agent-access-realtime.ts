@@ -67,7 +67,7 @@ export function useAgentAccessRealtime({
       }
 
       // Store last update
-      lastUpdateRef.current = disabledAgents;
+      lastUpdateRef.current = { ...lastUpdateRef.current, ...disabledAgents };
     },
     [currentAgent, onAgentDisabled, onMultipleAgentsDisabled]
   );
@@ -153,7 +153,18 @@ export function useAgentAccessRealtime({
           
           // Invalidate cache
           queryClient.invalidateQueries({ queryKey: ['agent-access', userId] });
+          queryClient
+            .refetchQueries({ queryKey: ['agent-access', userId] })
+            .then(() => {
+              console.log('[REALTIME] Agent access data refreshed from polling');
+            })
+            .catch((err) => {
+              console.error('[REALTIME] Failed to refetch after polling change:', err);
+            });
         }
+
+        // Update last known state regardless of changes to keep comparisons accurate
+        lastUpdateRef.current = currentState;
       } catch (error) {
         console.error('[REALTIME] Polling error:', error);
       }
