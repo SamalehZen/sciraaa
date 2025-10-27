@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CreateUserForm } from "@/components/admin/create-user-form";
 import { AgentAccessDialog } from "@/components/admin/agent-access-dialog";
+import { AgentAccessDialogErrorBoundary } from "@/components/admin/agent-access-dialog-error-boundary";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -572,7 +573,10 @@ export default function AdminUsersPage() {
                   onInvalidate={() =>
                     qc.invalidateQueries({ queryKey: ["admin-users"] })
                   }
-                  onManageAgents={() => setSelectedUserIdForAgents(user.id)}
+                  onManageAgents={() => {
+                    console.log('[ADMIN-USERS] Opening agent dialog for user:', user.id, user);
+                    setSelectedUserIdForAgents(user.id);
+                  }}
                 />
               )}
               pagination
@@ -584,13 +588,19 @@ export default function AdminUsersPage() {
         </motion.div>
       </div>
 
-      {selectedUserIdForAgents && (
-        <AgentAccessDialog
-          userId={selectedUserIdForAgents}
-          open={!!selectedUserIdForAgents}
-          onClose={() => setSelectedUserIdForAgents(null)}
-        />
-      )}
+      <AgentAccessDialogErrorBoundary
+        open={!!selectedUserIdForAgents}
+        onClose={() => setSelectedUserIdForAgents(null)}
+        userId={selectedUserIdForAgents || ''}
+      >
+        {selectedUserIdForAgents && (
+          <AgentAccessDialog
+            userId={selectedUserIdForAgents}
+            open={!!selectedUserIdForAgents}
+            onClose={() => setSelectedUserIdForAgents(null)}
+          />
+        )}
+      </AgentAccessDialogErrorBoundary>
     </div>
   );
 }

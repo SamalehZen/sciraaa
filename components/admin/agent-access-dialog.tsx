@@ -62,21 +62,31 @@ export function AgentAccessDialog({ userId, open, onClose }: AgentAccessDialogPr
   });
 
   const allAgentsWithAccess = useMemo(() => {
-    console.log('[AGENT-DIALOG] Building agents list, access:', access);
-    
-    if (!access || !Array.isArray(access)) {
-      console.warn('[AGENT-DIALOG] Access is not an array, using defaults');
+    try {
+      console.log('[AGENT-DIALOG] Building agents list, access:', access);
+      
+      if (!access || !Array.isArray(access)) {
+        console.warn('[AGENT-DIALOG] Access is not an array, using defaults');
+        return AVAILABLE_AGENTS.map(agentId => ({ agentId, enabled: true }));
+      }
+      
+      // Create a map of existing access records
+      const accessMap = new Map();
+      for (const item of access) {
+        if (item && typeof item === 'object' && 'agentId' in item && 'enabled' in item) {
+          accessMap.set(item.agentId, item.enabled);
+        }
+      }
+      
+      // Return all agents with their access status
+      return AVAILABLE_AGENTS.map(agentId => ({
+        agentId,
+        enabled: accessMap.get(agentId) ?? true
+      }));
+    } catch (err) {
+      console.error('[AGENT-DIALOG] Error building agents list:', err);
       return AVAILABLE_AGENTS.map(agentId => ({ agentId, enabled: true }));
     }
-    
-    // Create a map of existing access records
-    const accessMap = new Map(access.map((a: any) => [a.agentId, a.enabled]));
-    
-    // Return all agents with their access status
-    return AVAILABLE_AGENTS.map(agentId => ({
-      agentId,
-      enabled: accessMap.get(agentId) ?? true
-    }));
   }, [access]);
 
   const handleToggle = async (agentId: string, enabled: boolean) => {
