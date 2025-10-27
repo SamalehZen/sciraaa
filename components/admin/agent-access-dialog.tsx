@@ -20,7 +20,8 @@ export function AgentAccessDialog({ userId, open, onClose }: AgentAccessDialogPr
     queryKey: ['agent-access', userId],
     queryFn: async () => {
       console.log('[AGENT-DIALOG] Fetching agents for user:', userId);
-      const res = await fetch(`/api/admin/users/${userId}/agents`, {
+      const encodedUserId = encodeURIComponent(userId);
+      const res = await fetch(`/api/admin/users/${encodedUserId}/agents`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -66,7 +67,8 @@ export function AgentAccessDialog({ userId, open, onClose }: AgentAccessDialogPr
       const payload = { agents: { [agentId]: enabled } };
       console.log('[AGENT-DIALOG] Request payload:', payload);
       
-      const res = await fetch(`/api/admin/users/${userId}/agents`, {
+      const encodedUserId = encodeURIComponent(userId);
+      const res = await fetch(`/api/admin/users/${encodedUserId}/agents`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
