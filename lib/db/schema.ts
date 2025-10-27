@@ -65,7 +65,7 @@ export const chat = pgTable('chat', {
     .$defaultFn(() => uuidv4()),
   userId: text('userId')
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: 'cascade' }),
   title: text('title').notNull().default('New Chat'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
