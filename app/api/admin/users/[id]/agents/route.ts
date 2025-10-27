@@ -19,7 +19,21 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
   try {
     console.log(`[ADMIN-AGENTS] Fetching agent access for user ${userId}`);
-    const access = await getUserAgentAccess(userId);
+    let access = await getUserAgentAccess(userId);
+    
+    // If no access records exist, initialize them
+    if (!access || access.length === 0) {
+      console.log(`[ADMIN-AGENTS] No access records found for user ${userId}, initializing...`);
+      try {
+        const { initializeUserAgentAccess } = await import('@/lib/db/queries');
+        await initializeUserAgentAccess(userId);
+        access = await getUserAgentAccess(userId);
+        console.log(`[ADMIN-AGENTS] Initialized ${access.length} agents for user ${userId}`);
+      } catch (initError) {
+        console.error(`[ADMIN-AGENTS] Failed to initialize access for user ${userId}:`, initError);
+        // Continue with empty array if initialization fails
+      }
+    }
     
     return NextResponse.json({
       success: true,
@@ -28,7 +42,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
     });
   } catch (error) {
     console.error(`[ADMIN-AGENTS] Failed to get agent access for user ${userId}:`, error);
-    return NextResponse.json({ error: 'Failed to get agent access' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to get agent access', details: String(error) }, { status: 500 });
   }
 }
 
