@@ -23,7 +23,11 @@ export function useAgentAccess(userId?: string) {
         if (res.status === 401) return [];
         throw new Error('Failed to fetch agent access');
       }
-      return res.json();
+      
+      const json = await res.json();
+      
+      // Handle both new and old response formats
+      return json.data || json;
     },
     enabled: !!targetUserId,
     staleTime: 0,

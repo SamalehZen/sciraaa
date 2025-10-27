@@ -18,9 +18,16 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const userId = decodeURIComponent(params.id);
 
   try {
+    console.log(`[ADMIN-AGENTS] Fetching agent access for user ${userId}`);
     const access = await getUserAgentAccess(userId);
-    return NextResponse.json(access);
+    
+    return NextResponse.json({
+      success: true,
+      data: access,
+      count: access.length,
+    });
   } catch (error) {
+    console.error(`[ADMIN-AGENTS] Failed to get agent access for user ${userId}:`, error);
     return NextResponse.json({ error: 'Failed to get agent access' }, { status: 500 });
   }
 }
@@ -35,56 +42,85 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const body = await req.json().catch(() => ({}));
   const agents = body.agents || {};
 
+  if (Object.keys(agents).length === 0) {
+    return NextResponse.json({ error: 'No agents provided' }, { status: 400 });
+  }
+
   try {
+    console.log(`[ADMIN-AGENTS] Admin ${adminUser.id} updating agents for user ${userId}`, agents);
+
     // Update agent access in database
-    await Promise.all(
-      Object.entries(agents).map(([agentId, enabled]) =>
-        updateUserAgentAccess(userId, agentId, enabled as boolean)
-      )
+    const updatePromises = Object.entries(agents).map(([agentId, enabled]) =>
+      updateUserAgentAccess(userId, agentId, enabled as boolean)
     );
+    
+    const results = await Promise.all(updatePromises);
+    console.log(`[ADMIN-AGENTS] Database updated for ${results.length} agents`);
+
+    // Prepare event data
+    const eventData = {
+      userId,
+      agents,
+      timestamp: new Date().toISOString(),
+      adminId: adminUser.id,
+    };
 
     // Trigger Pusher events for real-time updates
+    let pusherSuccess = false;
     try {
       const channelName = `private-user-${encodeChannelUserId(userId)}`;
-      console.log(`[AGENT-ACCESS] Triggering Pusher event on channel: ${channelName}`);
+      console.log(`[ADMIN-AGENTS] Triggering Pusher on channel: ${channelName}`);
       
-      await pusher.trigger('private-admin-users', 'updated', { userId });
-      await pusher.trigger(channelName, 'agent-access-updated', { 
+      // Send to user's private channel
+      await pusher.trigger(channelName, 'agent-access-updated', eventData);
+      console.log(`[ADMIN-AGENTS] Pusher event sent to user ${userId}`);
+      
+      // Also send to admin channel
+      await pusher.trigger('private-admin-users', 'user-updated', { userId, agents });
+      console.log(`[ADMIN-AGENTS] Pusher event sent to admin channel`);
+      
+      pusherSuccess = true;
+    } catch (pusherError) {
+      console.error(`[ADMIN-AGENTS] Pusher error for user ${userId}:`, pusherError);
+      // Don't fail - polling fallback will handle it
+    }
+
+    // Log the event in database for audit
+    try {
+      const evt = {
+        id: crypto.randomUUID(),
+        category: 'user' as any,
+        type: 'agent_access_updated',
+        message: `Agent access updated by admin ${adminUser.id} for user ${userId}`,
+        metadata: { by: adminUser.id, agents, pusherSuccess },
+        userId: userId,
+        createdAt: new Date(),
+      };
+      await db.insert(event).values(evt);
+      console.log(`[ADMIN-AGENTS] Event logged for user ${userId}`);
+    } catch (logError) {
+      console.error('[ADMIN-AGENTS] Failed to log event:', logError);
+    }
+
+    // Send response
+    const disabledCount = Object.values(agents).filter((v) => v === false).length;
+    const enabledCount = Object.values(agents).filter((v) => v === true).length;
+
+    return NextResponse.json({
+      success: true,
+      message: `${enabledCount} agents enabled, ${disabledCount} agents disabled`,
+      data: {
         userId,
         agents,
-        timestamp: new Date().toISOString() 
-      });
-      
-      console.log(`[AGENT-ACCESS] Pusher event sent successfully for user ${userId}`);
-    } catch (pusherError) {
-      console.error(`[AGENT-ACCESS] Pusher error for user ${userId}:`, pusherError);
-      // Don't fail the request if Pusher fails - still important to update DB
-    }
-
-    // Log the event
-    const evt = {
-      id: crypto.randomUUID(),
-      category: 'user' as any,
-      type: 'agent_access_updated',
-      message: `Mise à jour accès agents pour utilisateur ${userId}`,
-      metadata: { by: adminUser.id, agents },
-      userId: userId,
-      createdAt: new Date(),
-    };
-    await db.insert(event).values(evt);
-
-    try {
-      await pusher.trigger('private-admin-events', 'new', evt);
-    } catch (err) {
-      console.error('[AGENT-ACCESS] Failed to trigger admin events:', err);
-    }
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Agent access updated successfully'
+        pusherTriggered: pusherSuccess,
+        timestamp: eventData.timestamp,
+      },
     });
   } catch (error) {
-    console.error('[AGENT-ACCESS] Database error:', error);
-    return NextResponse.json({ error: 'Failed to update agent access' }, { status: 500 });
+    console.error('[ADMIN-AGENTS] Database error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update agent access', details: String(error) },
+      { status: 500 }
+    );
   }
 }

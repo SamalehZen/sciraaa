@@ -14,9 +14,16 @@ export async function GET(_req: NextRequest) {
   }
 
   try {
+    console.log(`[USER-AGENTS] Fetching agent access for user ${session.user.id}`);
     const access = await getUserAgentAccess(session.user.id);
-    return NextResponse.json(access);
+    
+    return NextResponse.json({
+      success: true,
+      data: access,
+      count: access.length,
+    });
   } catch (error) {
+    console.error(`[USER-AGENTS] Failed to get agent access for user ${session.user.id}:`, error);
     return NextResponse.json({ error: 'Failed to get agent access' }, { status: 500 });
   }
 }
