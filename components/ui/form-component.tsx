@@ -1663,27 +1663,35 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
       if (!session?.user?.id) return;
       
       if (!pusherClient) {
-        console.warn('Pusher not available, relying on polling');
+        console.warn('[AGENT-ACCESS] Pusher not available, relying on polling');
         return;
       }
       
       try {
         const channelName = `private-user-${encodeChannelUserId(session.user.id)}`;
+        console.log(`[AGENT-ACCESS] Subscribing to channel: ${channelName}`);
         const channel = pusherClient.subscribe(channelName);
-        const handleUpdate = () => {
-          console.log('Agent access updated via Pusher');
+        
+        const handleUpdate = (data: any) => {
+          console.log('[AGENT-ACCESS] Agent access updated via Pusher', data);
           queryClient.invalidateQueries({ queryKey: ['agent-access', session.user.id] });
-          queryClient.refetchQueries({ queryKey: ['agent-access', session.user.id] });
+          queryClient.refetchQueries({ queryKey: ['agent-access', session.user.id] }).then(() => {
+            console.log('[AGENT-ACCESS] Data refetched successfully');
+          }).catch(err => {
+            console.error('[AGENT-ACCESS] Failed to refetch data:', err);
+          });
         };
         
         channel.bind('agent-access-updated', handleUpdate);
+        console.log('[AGENT-ACCESS] Bound to agent-access-updated event');
         
         return () => {
+          console.log(`[AGENT-ACCESS] Unsubscribing from channel: ${channelName}`);
           channel.unbind('agent-access-updated', handleUpdate);
           pusherClient.unsubscribe(channelName);
         };
       } catch (error) {
-        console.error('Pusher subscription error:', error);
+        console.error('[AGENT-ACCESS] Pusher subscription error:', error);
       }
     }, [session?.user?.id, queryClient]);
 

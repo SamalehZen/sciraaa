@@ -15,3 +15,23 @@ export const CURRENCIES = {
 } as const;
 
 export const SNAPSHOT_NAME = 'scira-analysis:1752127473';
+
+// Available agents in the system
+export const AVAILABLE_AGENTS = [
+  'web',
+  'x',
+  'academic',
+  'youtube',
+  'reddit',
+  'stocks',
+  'chat',
+  'extreme',
+  'memory',
+  'crypto',
+  'code',
+  'connectors',
+  'cyrus',
+  'libeller',
+  'nomenclature',
+  'pdfExcel'
+] as const;
