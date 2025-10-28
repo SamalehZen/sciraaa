@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { TextUIPart, UIMessagePart } from 'ai';
 import { MarkdownRenderer } from '@/components/markdown';
+import { PlainTextRenderer } from '@/components/plain-text-renderer';
 import { ChatTextHighlighter } from '@/components/chat-text-highlighter';
 import { deleteTrailingMessages } from '@/app/actions';
 import { getErrorActions, getErrorIcon, isSignInRequired, isProRequired, isRateLimited } from '@/lib/errors';
@@ -669,7 +670,7 @@ export const Message: React.FC<MessageProps> = ({
                                 onHighlight={onHighlight}
                                 removeHighlightOnClick={true}
                               >
-                                <MarkdownRenderer content={part.text} isUserMessage={true} />
+                                <PlainTextRenderer content={part.text} isUserMessage={true} />
                               </ChatTextHighlighter>
                               {message.parts?.filter((part) => part.type === 'file') &&
                                 message.parts?.filter((part) => part.type === 'file').length > 0 && (
@@ -734,7 +735,7 @@ export const Message: React.FC<MessageProps> = ({
                             onHighlight={onHighlight}
                             removeHighlightOnClick={true}
                           >
-                            <MarkdownRenderer
+                            <PlainTextRenderer
                               content={
                                 message.parts
                                   ?.map((part) => (part.type === 'text' ? part.text : ''))

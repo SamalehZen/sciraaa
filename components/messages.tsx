@@ -12,7 +12,7 @@ import { deleteTrailingMessages } from '@/app/actions';
 import { ChatMessage, CustomUIDataTypes } from '@/lib/types';
 import { UseChatHelpers } from '@ai-sdk/react';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
-import { SearchGroupId } from '@/lib/utils';
+import { SearchGroupId, cn } from '@/lib/utils';
 
 // Define interface for part, messageIndex and partIndex objects
 interface PartInfo {
@@ -370,7 +370,7 @@ const Messages: React.FC<MessagesProps> = ({
 
   return (
     <div className="space-y-0 mb-30 sm:mb-36 flex flex-col">
-      <div className="flex-grow">
+      <div className="flex-grow animate-scroll-up">
         {memoizedMessages.map((message, index) => {
           console.log(`=== RENDERING MESSAGE ${index} ===`);
           console.log('Message role:', message.role);
@@ -401,7 +401,7 @@ const Messages: React.FC<MessagesProps> = ({
 
           console.log(`📤 About to render Message component for ${message.role} message ${index}`);
           return (
-            <div key={message.id || index} className={messageClasses}>
+            <div key={message.id || index} className={cn(messageClasses, 'animate-scroll-up')}>
               <Message
                 message={message}
                 index={index}
