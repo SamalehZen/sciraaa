@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 import GitHubBadge from '@/components/github-badge';
+import StarBadge from '@/components/star-badge';
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
@@ -116,8 +117,9 @@ export default function Home() {
         </Button>
       </div>
 
-      <div className="absolute top-6 left-6 z-50">
+      <div className="absolute top-6 left-6 z-50 flex gap-3">
         <GitHubBadge />
+        <StarBadge />
       </div>
 
       <ProfileSelector
