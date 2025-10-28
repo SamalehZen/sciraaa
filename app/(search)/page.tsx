@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
+import GitHubBadge from '@/components/github-badge';
 
 const ChatInterface = dynamic(() => import('@/components/chat-interface').then((m) => m.ChatInterface), {
   ssr: true,
@@ -113,6 +114,10 @@ export default function Home() {
         <Button variant="secondary" size="lg" onClick={handleAddProfile}>
           Ajouter un profil
         </Button>
+      </div>
+
+      <div className="absolute top-6 left-6 z-50">
+        <GitHubBadge />
       </div>
 
       <ProfileSelector
