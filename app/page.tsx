@@ -4,15 +4,13 @@ import ShimmerButton from "@/components/ui/shimmer-button";
 import { cn } from "@/lib/utils";
 import { ChevronsRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import HomeHeader from "./header";
-import NewItemsLoading from "./new-items-loading";
-import WordAnimator from "./word-animator";
-import { useRouter } from "next/navigation";
+import HomeHeader from "./_landing/header";
+import NewItemsLoading from "./_landing/new-items-loading";
+import WordAnimator from "./_landing/word-animator";
 
 const HomePage = () => {
   const [localTheme, setLocalTheme] = useState<"light" | "dark">("light");
   const [blocks, setBlocks] = useState([]);
-  const router = useRouter();
 
   const activeDivs = useMemo(
     () => ({
