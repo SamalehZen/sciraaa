@@ -13,6 +13,7 @@ import { CYRUS_PROMPT, CYRUS_OUTPUT_RULES } from '@/ai/prompts/classification-cy
 import { NOMENCLATURE_DOUANIERE_PROMPT } from '@/ai/prompts/nomenclature-douaniere';
 import { LIBELLER_PROMPT } from '@/ai/prompts/correction-libeller';
 import { SMART_PDF_TO_EXCEL_PROMPT } from '@/ai/prompts/pdf-to-excel';
+import { HYPER_ARCHITECTURE, HYPER_EMOJI_POLICY } from '@/ai/prompts/hyper-architecture';
 import {
   getChatsByUserId,
   deleteChatById,
@@ -307,6 +308,17 @@ export async function generateSpeech(_text: string) {
 
 // Map deprecated 'buddy' group ID to 'memory' for backward compatibility
 type LegacyGroupId = SearchGroupId | 'buddy';
+
+const hyperArchitectureEnabled =
+  (process.env.NEXT_PUBLIC_HYPER_ARCHITECTURE || 'on').toLowerCase() !== 'off';
+
+function withHyperArchitecture(block: string) {
+  if (!hyperArchitectureEnabled) {
+    return block;
+  }
+  const normalizedBlock = block.trim();
+  return `${HYPER_ARCHITECTURE}\n\n${HYPER_EMOJI_POLICY}\n\n${normalizedBlock}`;
+}
 
 const groupTools = {
   web: [
@@ -1076,31 +1088,28 @@ code_example()
   - Do not include images in responses`,
 
   chat: `
-  You are Hyper, a helpful assistant that helps with the task asked by the user.
+  Tu es Hyper, un partenaire de conversation polyvalent qui accompagne l'utilisateur sur des demandes générales.
   Today's date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' })}.
 
-  ### Guidelines:
-  - You do not have access to any tools. You can code like a professional software engineer.
-  - Markdown is the only formatting you can use.
-  - Do not ask for clarification before giving your best response
-  - You should always use markdown formatting with tables too when needed
-  - You can use latex formatting:
-    - Use $ for inline equations
-    - Use $$ for block equations
-    - Use "USD" for currency (not $)
-    - No need to use bold or italic formatting in tables
-    - don't use the h1 heading in the markdown response
+  ### Directives essentielles
+  - Pas d'outil à appeler par défaut ; réponds directement en mobilisant ton architecture interne.
+  - Répondre en markdown structuré avec des sections adaptées au contexte.
+  - Adapter le ton et le mode cognitif retenu à chaque message pour rester pertinent.
+  - Ne pas inventer de citations ni mentionner de sources inexistantes ; citer uniquement ce qui est vérifiable.
+  - Maintenir la langue de l'utilisateur sans la modifier.
 
-  ### Response Format:
-  - Always use markdown for formatting
-  - Keep responses concise but informative
+  ### Format attendu
+  - Utiliser des titres à partir de ##, des paragraphes clairs et des tableaux lorsque cela apporte de la clarté.
+  - Fournir des explications concises mais riches en informations.
+  - Intégrer entre 2 et 6 emojis cohérents avec le ton et le mode, sans en mettre dans le code ni dans les citations.
+  - Ne pas utiliser le niveau de titre # (h1) dans les réponses.
 
-  ### Latex and Currency Formatting:
-  - ⚠️ MANDATORY: Use '$' for ALL inline equations without exception
-  - ⚠️ MANDATORY: Use '$$' for ALL block equations without exception
-  - ⚠️ NEVER use '$' symbol for currency - Always use "USD", "EUR", etc.
-  - ⚠️ MANDATORY: Make sure the latex is properly delimited at all times!!
-  - Mathematical expressions must always be properly delimited`,
+  ### Mathématiques et code
+  - Utiliser $ pour les équations en ligne et $$ pour les équations en bloc.
+  - Employer "USD", "EUR", etc. pour les monnaies au lieu du symbole $.
+  - Formater tout code avec des blocs \`\`\`language appropriés, sans emoji dans le code.
+  - Respecter les mêmes bonnes pratiques que pour une revue de code professionnelle.
+  `,
 
   extreme: `
 # Hyper AI Extreme Research Mode
@@ -1441,6 +1450,10 @@ $$
   nomenclature: NOMENCLATURE_DOUANIERE_PROMPT,
   pdfExcel: SMART_PDF_TO_EXCEL_PROMPT,
 };
+
+for (const key of Object.keys(groupInstructions) as (keyof typeof groupInstructions)[]) {
+  groupInstructions[key] = withHyperArchitecture(groupInstructions[key]);
+}
 
 export async function getGroupConfig(groupId: LegacyGroupId = 'web') {
   'use server';
