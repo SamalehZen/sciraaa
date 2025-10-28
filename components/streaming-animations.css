@@ -1,0 +1,422 @@
+/* Enhanced streaming response animations */
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.3);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blinkCursor {
+  0%, 49% {
+    border-right-color: currentColor;
+  }
+  50%, 100% {
+    border-right-color: transparent;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes expand {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 1000px;
+    opacity: 1;
+  }
+}
+
+/* Animation utility classes */
+.animate-slide-in-bottom {
+  animation: slideInFromBottom 0.5s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.4s ease-out;
+}
+
+.animate-slide-in-top {
+  animation: slideInFromTop 0.4s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-typewriter {
+  animation: typewriter 0.6s ease-out;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-expand {
+  animation: expand 0.4s ease-out;
+}
+
+/* Code block animations and styles */
+.enhanced-code-block {
+  animation: slideInFromBottom 0.4s ease-out;
+}
+
+.code-block-header {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-rgb), 0.05),
+    rgba(var(--primary-rgb), 0.02)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.code-line {
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+  position: relative;
+}
+
+.code-line:hover {
+  background-color: rgba(var(--primary-rgb), 0.08);
+}
+
+.code-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, rgba(var(--primary-rgb), 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.code-line:hover::before {
+  opacity: 1;
+}
+
+/* Markdown rendering animations */
+.markdown-body {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.markdown-body > * {
+  animation: fadeInUp 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.markdown-body > *:nth-child(1) { animation-delay: 0s; }
+.markdown-body > *:nth-child(2) { animation-delay: 0.05s; }
+.markdown-body > *:nth-child(3) { animation-delay: 0.1s; }
+.markdown-body > *:nth-child(4) { animation-delay: 0.15s; }
+.markdown-body > *:nth-child(5) { animation-delay: 0.2s; }
+.markdown-body > *:nth-child(6) { animation-delay: 0.25s; }
+.markdown-body > *:nth-child(n+7) { animation-delay: 0.3s; }
+
+/* Table animations */
+table {
+  animation: slideInFromBottom 0.5s ease-out;
+}
+
+table tr {
+  transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+table tr:hover {
+  background-color: rgba(var(--primary-rgb), 0.05);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+}
+
+table th {
+  position: relative;
+}
+
+table th::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.5), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Link animations */
+a {
+  position: relative;
+  transition: color 0.2s ease-out;
+}
+
+a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease-out;
+}
+
+a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Code inline animations */
+code {
+  position: relative;
+  transition: all 0.2s ease-out;
+}
+
+code:hover {
+  transform: translateY(-2px);
+}
+
+/* Blockquote animations */
+blockquote {
+  animation: slideInFromLeft 0.5s ease-out;
+  position: relative;
+  transition: all 0.2s ease-out;
+}
+
+blockquote:hover {
+  border-left-color: rgba(var(--primary-rgb), 0.6);
+  background-color: rgba(var(--primary-rgb), 0.1);
+}
+
+/* Heading animations */
+h1, h2, h3, h4, h5, h6 {
+  animation: slideInFromLeft 0.4s ease-out;
+  position: relative;
+}
+
+h1::after, h2::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.8), transparent);
+  animation: expand 0.6s ease-out forwards;
+}
+
+/* List item animations */
+li {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+li::marker {
+  animation: fadeInUp 0.4s ease-out;
+  color: rgba(var(--primary-rgb), 0.8);
+  font-weight: 600;
+}
+
+/* Button animations */
+button {
+  transition: all 0.2s ease-out;
+  position: relative;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+/* Copy button animation */
+.copy-button-success {
+  animation: glow 0.4s ease-out;
+}
+
+/* Streaming indicator */
+.streaming-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: rgba(var(--primary-rgb), 0.7);
+}
+
+.streaming-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(var(--primary-rgb), 0.8);
+  animation: pulse-subtle 1s ease-in-out infinite;
+}
+
+.streaming-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.streaming-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Responsive adjustments */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .code-block-header {
+    background: linear-gradient(
+      135deg,
+      rgba(var(--primary-rgb), 0.08),
+      rgba(var(--primary-rgb), 0.03)
+    );
+  }
+
+  .code-line:hover {
+    background-color: rgba(var(--primary-rgb), 0.12);
+  }
+
+  table tr:hover {
+    background-color: rgba(var(--primary-rgb), 0.08);
+  }
+
+  blockquote:hover {
+    background-color: rgba(var(--primary-rgb), 0.15);
+  }
+}
+
+/* Performance: GPU acceleration */
+.enhanced-code-block,
+.markdown-body,
+code,
+button {
+  will-change: auto;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.enhanced-code-block:hover,
+button:hover {
+  will-change: transform;
+}
