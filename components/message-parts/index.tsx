@@ -125,6 +125,9 @@ const CryptoTickers = lazy(() =>
 const YouTubeSearchResults = lazy(() =>
   import('@/components/youtube-search-results').then((module) => ({ default: module.YouTubeSearchResults })),
 );
+const HyperAfficheResults = lazy(() =>
+  import('@/components/hyperaffiche-results').then((module) => ({ default: module.HyperAfficheResults })),
+);
 const ConnectorsSearchResults = lazy(() =>
   import('@/components/connectors-search-results').then((module) => ({ default: module.ConnectorsSearchResults })),
 );
@@ -1375,6 +1378,43 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                 return (
                   <Suspense fallback={<ComponentLoader />} key={`${messageIndex}-${partIndex}-tool`}>
                     <YouTubeSearchResults results={(part as any).output as any} />
+                  </Suspense>
+                );
+            }
+            break;
+
+          case 'tool-hyperaffiche_generate':
+          case 'tool-hyperaffiche_edit':
+          case 'tool-hyperaffiche_compose':
+            switch (part.state) {
+              case 'input-streaming':
+                return (
+                  <div key={`${messageIndex}-${partIndex}-tool`} className="text-sm text-neutral-500">
+                    Preparing image generation...
+                  </div>
+                );
+              case 'input-available':
+                const toolNameMatch = part.type.match(/tool-hyperaffiche_(\w+)/);
+                const toolType = toolNameMatch ? toolNameMatch[1] as 'generate' | 'edit' | 'compose' : 'generate';
+                const toolLabels = {
+                  generate: 'Generating image...',
+                  edit: 'Editing image...',
+                  compose: 'Composing images...',
+                };
+                return (
+                  <Suspense key={`${messageIndex}-${partIndex}-tool`} fallback={<ComponentLoader />}>
+                    <HyperAfficheResults isLoading={true} result={{} as any} />
+                  </Suspense>
+                );
+              case 'output-available':
+                const toolMatch = part.type.match(/tool-hyperaffiche_(\w+)/);
+                const displayToolType = toolMatch ? toolMatch[1] as 'generate' | 'edit' | 'compose' : 'generate';
+                return (
+                  <Suspense fallback={<ComponentLoader />} key={`${messageIndex}-${partIndex}-tool`}>
+                    <HyperAfficheResults
+                      result={(part as any).output as any}
+                      toolName={displayToolType}
+                    />
                   </Suspense>
                 );
             }

@@ -17,6 +17,7 @@ import {
   HierarchyIcon,
   MagicWandIcon,
   File02Icon,
+  Image02Icon,
 } from '@hugeicons/core-free-icons';
 
 export function cn(...inputs: ClassValue[]) {
@@ -39,7 +40,8 @@ export type SearchGroupId =
   | 'cyrus'
   | 'libeller'
   | 'nomenclature'
-  | 'pdfExcel';
+  | 'pdfExcel'
+  | 'hyperaffiche';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {
@@ -146,6 +148,13 @@ export function getSearchGroups(searchProvider: SearchProvider = 'parallel') {
       name: 'Recherche YouTube',
       description: 'Recherche de vidéos YouTube via Exa',
       icon: YoutubeIcon,
+      show: true,
+    },
+    {
+      id: 'hyperaffiche' as const,
+      name: 'HyperAffiche',
+      description: 'Génération et modification d\'images avec Gemini AI',
+      icon: Image02Icon,
       show: true,
     },
     {

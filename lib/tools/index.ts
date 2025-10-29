@@ -8,6 +8,11 @@ export { trendingMoviesTool } from './trending-movies';
 export { trendingTvTool } from './trending-tv';
 export { academicSearchTool } from './academic-search';
 export { youtubeSearchTool } from './youtube-search';
+export { 
+  hyperafficheGenerateTool,
+  hyperafficheEditTool,
+  hyperafficheComposeTool 
+} from './hyperaffiche';
 export { retrieveTool } from './retrieve';
 export { weatherTool } from './weather';
 export { codeInterpreterTool } from './code-interpreter';
