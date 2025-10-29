@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Modality, GenerateContentResponse } from '@google/genai';
 import { serverEnv } from '@/env/server';
 
 interface ImageGenerationResult {
@@ -31,12 +31,14 @@ export const hyperafficheGenerateTool = tool({
       };
 
       if (responseModalities === 'Image') {
-        config.responseModalities = ['Image'];
+        config.responseModalities = [Modality.IMAGE];
       }
 
-      const response = await ai.models.generateContent({
+      const textPart = { text: prompt };
+
+      const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: prompt,
+        contents: { parts: [textPart] },
         config: config,
       });
 
@@ -47,17 +49,19 @@ export const hyperafficheGenerateTool = tool({
         aspectRatio: aspectRatio,
       };
 
-      for (const part of response.candidates[0].content.parts) {
-        if (part.text) {
-          result.textContent = part.text;
-        } else if (part.inlineData) {
-          result.imageData = part.inlineData.data;
-          result.mimeType = part.inlineData.mimeType || 'image/png';
+      const generatedPart = response.candidates?.[0]?.content?.parts?.[0];
+      if (generatedPart) {
+        if (generatedPart.text) {
+          result.textContent = generatedPart.text;
+        }
+        if (generatedPart.inlineData) {
+          result.imageData = generatedPart.inlineData.data;
+          result.mimeType = generatedPart.inlineData.mimeType || 'image/png';
         }
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating image:', error);
       throw new Error(`Failed to generate image: ${error.message}`);
     }
@@ -78,24 +82,26 @@ export const hyperafficheEditTool = tool({
         apiKey: serverEnv.GOOGLE_GENERATIVE_AI_API_KEY,
       });
 
-      const contents = [
-        {
-          inlineData: {
-            mimeType: mimeType,
-            data: imageData,
-          },
+      const imagePart = {
+        inlineData: {
+          data: imageData,
+          mimeType: mimeType,
         },
-        { text: prompt },
-      ];
+      };
 
-      const config: any = {};
+      const textPart = { text: prompt };
+
+      const config: any = {
+        responseModalities: [Modality.IMAGE],
+      };
+
       if (aspectRatio) {
         config.imageConfig = { aspectRatio };
       }
 
-      const response = await ai.models.generateContent({
+      const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: contents,
+        contents: { parts: [imagePart, textPart] },
         config: config,
       });
 
@@ -106,17 +112,19 @@ export const hyperafficheEditTool = tool({
         aspectRatio: aspectRatio,
       };
 
-      for (const part of response.candidates[0].content.parts) {
-        if (part.text) {
-          result.textContent = part.text;
-        } else if (part.inlineData) {
-          result.imageData = part.inlineData.data;
-          result.mimeType = part.inlineData.mimeType || 'image/png';
+      const generatedPart = response.candidates?.[0]?.content?.parts?.[0];
+      if (generatedPart) {
+        if (generatedPart.text) {
+          result.textContent = generatedPart.text;
+        }
+        if (generatedPart.inlineData) {
+          result.imageData = generatedPart.inlineData.data;
+          result.mimeType = generatedPart.inlineData.mimeType || 'image/png';
         }
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error editing image:', error);
       throw new Error(`Failed to edit image: ${error.message}`);
     }
@@ -139,20 +147,20 @@ export const hyperafficheComposeTool = tool({
         apiKey: serverEnv.GOOGLE_GENERATIVE_AI_API_KEY,
       });
 
-      const contents = [
-        ...images.map(img => ({
-          inlineData: {
-            mimeType: img.mimeType,
-            data: img.imageData,
-          },
-        })),
-        { text: prompt },
-      ];
+      const imageParts = images.map(img => ({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.imageData,
+        },
+      }));
 
-      const response = await ai.models.generateContent({
+      const textPart = { text: prompt };
+
+      const response: GenerateContentResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: contents,
+        contents: { parts: [...imageParts, textPart] },
         config: {
+          responseModalities: [Modality.IMAGE],
           imageConfig: {
             aspectRatio: aspectRatio,
           },
@@ -166,17 +174,19 @@ export const hyperafficheComposeTool = tool({
         aspectRatio: aspectRatio,
       };
 
-      for (const part of response.candidates[0].content.parts) {
-        if (part.text) {
-          result.textContent = part.text;
-        } else if (part.inlineData) {
-          result.imageData = part.inlineData.data;
-          result.mimeType = part.inlineData.mimeType || 'image/png';
+      const generatedPart = response.candidates?.[0]?.content?.parts?.[0];
+      if (generatedPart) {
+        if (generatedPart.text) {
+          result.textContent = generatedPart.text;
+        }
+        if (generatedPart.inlineData) {
+          result.imageData = generatedPart.inlineData.data;
+          result.mimeType = generatedPart.inlineData.mimeType || 'image/png';
         }
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error composing images:', error);
       throw new Error(`Failed to compose images: ${error.message}`);
     }
