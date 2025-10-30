@@ -2112,7 +2112,7 @@ export function SettingsDialog({
       <DialogContent className="!max-w-4xl !w-full max-h-[85vh] !p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-4 !m-0">
           <DialogTitle className="text-xl font-medium tracking-normal flex items-center gap-2">
-            <HyperLogo className="size-6" color="currentColor" />
+            <HyperLogo className="size-6" />
             Paramètres
           </DialogTitle>
         </DialogHeader>

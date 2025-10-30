@@ -65,7 +65,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                 textAlign: 'center',
               }}
             >
-              <HyperLogo width={120} height={120} color="#ffffff" />
+              <HyperLogo width={120} height={120} />
               <div
                 style={{
                   fontSize: 56,
@@ -195,7 +195,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
             >
               {/* Left: brand and tagline */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <HyperLogo width={28} height={28} color="#ffffff" />
+                <HyperLogo width={28} height={28} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ fontSize: 18, color: '#ffffff', fontFamily: 'BeVietnamPro', fontWeight: 800 }}>
                     Hyper AI
