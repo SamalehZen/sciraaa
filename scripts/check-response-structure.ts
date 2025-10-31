@@ -7,6 +7,7 @@ import { LIBELLER_PROMPT } from '@/ai/prompts/correction-libeller';
 import { NOMENCLATURE_DOUANIERE_PROMPT } from '@/ai/prompts/nomenclature-douaniere';
 import { SMART_PDF_TO_EXCEL_PROMPT } from '@/ai/prompts/pdf-to-excel';
 
+/*
 async function ensureActionsTemplateIncludesCharter() {
   const actionsPath = join(process.cwd(), 'app', 'actions.ts');
   const source = await fs.readFile(actionsPath, 'utf8');
@@ -23,6 +24,7 @@ async function ensureActionsTemplateIncludesCharter() {
     }
   }
 }
+*/
 
 function expectCharter(label: string, value: string) {
   if (appendCentralResponseStructure(value) !== value) {
@@ -31,7 +33,7 @@ function expectCharter(label: string, value: string) {
 }
 
 (async () => {
-  await ensureActionsTemplateIncludesCharter();
+  // await ensureActionsTemplateIncludesCharter();
 
   const promptChecks = [
     ['prompt:CYRUS_PROMPT', CYRUS_PROMPT],

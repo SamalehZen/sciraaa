@@ -1443,9 +1443,7 @@ $$
   pdfExcel: SMART_PDF_TO_EXCEL_PROMPT,
 };
 
-const groupInstructions = Object.fromEntries(
-  Object.entries(rawGroupInstructions).map(([key, value]) => [key, appendCentralResponseStructure(value)]),
-) as typeof rawGroupInstructions;
+const groupInstructions = rawGroupInstructions;
 
 export async function getGroupConfig(groupId: LegacyGroupId = 'web') {
   'use server';
