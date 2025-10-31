@@ -232,6 +232,33 @@ const UserProfile = memo(
     // Use passed Pro status instead of calculating it
     const hasActiveSubscription = isProUser;
 
+    const handleSignOut = async () => {
+      setSigningOut(true);
+      toast.loading('Signing out...');
+      try {
+        await signOut({
+          fetchOptions: {
+            onSuccess: () => {
+              setSigningOut(false);
+              localStorage.clear();
+              toast.success('Signed out successfully');
+              toast.dismiss();
+              window.location.href = '/new';
+            },
+            onError: () => {
+              setSigningOut(false);
+              toast.error('Failed to sign out');
+              window.location.reload();
+            },
+          },
+        });
+      } catch (error) {
+        setSigningOut(false);
+        toast.error('Failed to sign out');
+        console.error('Sign out error:', error);
+      }
+    };
+
     if (isPending && !user) {
       return (
         <div className="h-8 w-8 flex items-center justify-center">
@@ -354,28 +381,7 @@ const UserProfile = memo(
 
               <DropdownMenuItem
                 className="cursor-pointer w-full flex items-center justify-between gap-2"
-                onClick={() =>
-                  signOut({
-                    fetchOptions: {
-                      onRequest: () => {
-                        setSigningOut(true);
-                        toast.loading('Signing out...');
-                      },
-                      onSuccess: () => {
-                        setSigningOut(false);
-                        localStorage.clear();
-                        toast.success('Signed out successfully');
-                        toast.dismiss();
-                        window.location.href = '/new';
-                      },
-                      onError: () => {
-                        setSigningOut(false);
-                        toast.error('Failed to sign out');
-                        window.location.reload();
-                      },
-                    },
-                  })
-                }
+                onClick={handleSignOut}
               >
                 <span>Sign Out</span>
                 <SignOutIcon className="size-4" />
