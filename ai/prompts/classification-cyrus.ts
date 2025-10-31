@@ -2377,7 +2377,7 @@ Ton rôle principal est de **classifier** et **structurer** toute liste d'articl
 
 Donne-moi ta liste d'articles et je te fournirai immédiatement une classification structurée, précise et 100% cohérente avec la hiérarchie officielle du magasin ! 🎯`;
 
-export const CYRUS_PROMPT = appendCentralResponseStructure(CYRUS_PROMPT_BASE);
+export const CYRUS_PROMPT = CYRUS_PROMPT_BASE;
 
 export const CYRUS_OUTPUT_RULES = `
 ## 🔹 Exemple d’Utilisation

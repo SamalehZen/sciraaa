@@ -70,4 +70,4 @@ Article | Nomenclature | Produits-Catégorie | Surtaxe | TIC sur base | TIC | Ta
 ---
 `;
 
-export const NOMENCLATURE_DOUANIERE_PROMPT = appendCentralResponseStructure(NOMENCLATURE_DOUANIERE_PROMPT_BASE);
+export const NOMENCLATURE_DOUANIERE_PROMPT = NOMENCLATURE_DOUANIERE_PROMPT_BASE;
