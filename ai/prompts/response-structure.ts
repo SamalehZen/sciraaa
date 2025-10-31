@@ -104,6 +104,9 @@ export function getCentralResponseStructure(): string {
 }
 
 export function appendCentralResponseStructure(prompt: string): string {
+  // DEACTIVATED: The central response structure is temporarily disabled.
+  // To reactivate, uncomment the following lines.
+  /*
   const structure = getCentralResponseStructure();
   if (prompt.includes(CENTRAL_RESPONSE_STRUCTURE_MARKER)) {
     return prompt;
@@ -111,4 +114,6 @@ export function appendCentralResponseStructure(prompt: string): string {
 
   const trimmedPrompt = prompt.trimEnd();
   return `${trimmedPrompt}\n\n${structure}`;
+  */
+  return prompt;
 }
