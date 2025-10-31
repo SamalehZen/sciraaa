@@ -233,29 +233,24 @@ const UserProfile = memo(
     const hasActiveSubscription = isProUser;
 
     const handleSignOut = async () => {
+      if (signingOut) return;
+
       setSigningOut(true);
       toast.loading('Signing out...');
+
       try {
-        await signOut({
-          fetchOptions: {
-            onSuccess: () => {
-              setSigningOut(false);
-              localStorage.clear();
-              toast.success('Signed out successfully');
-              toast.dismiss();
-              window.location.href = '/new';
-            },
-            onError: () => {
-              setSigningOut(false);
-              toast.error('Failed to sign out');
-              window.location.reload();
-            },
-          },
-        });
+        await signOut();
+        toast.dismiss();
+        toast.success('Signed out successfully');
+        localStorage.clear();
+        window.location.href = '/new';
       } catch (error) {
-        setSigningOut(false);
+        toast.dismiss();
         toast.error('Failed to sign out');
         console.error('Sign out error:', error);
+        window.location.reload();
+      } finally {
+        setSigningOut(false);
       }
     };
 

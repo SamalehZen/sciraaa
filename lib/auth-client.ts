@@ -7,7 +7,35 @@ export const signIn = {
   },
 } as any;
 
-export const signOut = async () => {};
+type SignOutOptions = {
+  fetchOptions?: {
+    onRequest?: () => void;
+    onSuccess?: () => void;
+    onError?: (error?: unknown) => void;
+  };
+};
+
+export const signOut = async (options?: SignOutOptions): Promise<void> => {
+  options?.fetchOptions?.onRequest?.();
+
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to sign out');
+    }
+
+    options?.fetchOptions?.onSuccess?.();
+  } catch (error) {
+    options?.fetchOptions?.onError?.(error);
+    throw error;
+  }
+};
 export const signUp = async () => {
   throw new Error('Sign up disabled');
 };

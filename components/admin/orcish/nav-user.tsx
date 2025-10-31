@@ -42,23 +42,20 @@ export function NavUser({
   const router = useRouter()
 
   const handleSignOut = async () => {
-    await signOut({
-      fetchOptions: {
-        onRequest: () => {
-          toast.loading('Signing out...')
-        },
-        onSuccess: () => {
-          localStorage.clear()
-          toast.success('Signed out successfully')
-          toast.dismiss()
-          window.location.href = '/new'
-        },
-        onError: () => {
-          toast.error('Failed to sign out')
-          window.location.reload()
-        },
-      },
-    })
+    toast.loading('Signing out...')
+
+    try {
+      await signOut()
+      toast.dismiss()
+      toast.success('Signed out successfully')
+      localStorage.clear()
+      window.location.href = '/new'
+    } catch (error) {
+      toast.dismiss()
+      toast.error('Failed to sign out')
+      window.location.reload()
+      console.error('Sign out error:', error)
+    }
   }
 
   return (
