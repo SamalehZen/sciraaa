@@ -4,6 +4,9 @@ import {
   IconLogout,
   IconUserCircle,
 } from "@tabler/icons-react"
+import { useRouter } from "next/navigation"
+import { signOut } from "@/lib/auth-client"
+import { toast } from "sonner"
 
 import {
   Avatar,
@@ -36,6 +39,27 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut({
+      fetchOptions: {
+        onRequest: () => {
+          toast.loading('Signing out...')
+        },
+        onSuccess: () => {
+          localStorage.clear()
+          toast.success('Signed out successfully')
+          toast.dismiss()
+          window.location.href = '/new'
+        },
+        onError: () => {
+          toast.error('Failed to sign out')
+          window.location.reload()
+        },
+      },
+    })
+  }
 
   return (
     <SidebarMenu>
@@ -80,13 +104,13 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/admin/settings')}>
                 <IconUserCircle />
                 Compte
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
               <IconLogout />
               Déconnexion
             </DropdownMenuItem>
