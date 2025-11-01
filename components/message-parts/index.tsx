@@ -86,6 +86,7 @@ const XSearch = lazy(() => import('@/components/x-search'));
 const ExtremeSearch = lazy(() =>
   import('@/components/extreme-search').then((module) => ({ default: module.ExtremeSearch })),
 );
+const DocAnalysis = lazy(() => import('@/components/doc-analysis'));
 const CryptoCoinsData = lazy(() =>
   import('@/components/crypto-coin-data').then((module) => ({ default: module.CoinData })),
 );
@@ -1097,6 +1098,28 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                           (annotation) => annotation.type === 'data-extreme_search',
                         ) as DataExtremeSearchPart[]) || []
                       }
+                    />
+                  </Suspense>
+                );
+            }
+            break;
+
+          case 'tool-doc_analysis':
+            switch (part.state) {
+              case 'input-streaming':
+                return (
+                  <div key={`${messageIndex}-${partIndex}-tool`} className="text-sm text-neutral-500">
+                    Préparation de l’analyse documentaire...
+                  </div>
+                );
+              case 'input-available':
+              case 'output-available':
+                return (
+                  <Suspense fallback={<ComponentLoader />} key={`${messageIndex}-${partIndex}-tool`}>
+                    {/* @ts-ignore */}
+                    <DocAnalysis
+                      toolInvocation={{ toolName: 'doc_analysis', input: (part as any).input, result: (part as any).output as any }}
+                      annotations={(annotations?.filter((a) => a.type === 'data-doc_analysis') as any) || []}
                     />
                   </Suspense>
                 );

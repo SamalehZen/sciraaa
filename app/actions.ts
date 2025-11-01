@@ -336,7 +336,7 @@ const groupTools = {
   libeller: [] as const,
   nomenclature: [] as const,
   pdfExcel: [] as const,
-  extreme: ['extreme_search'] as const,
+  extreme: ['doc_analysis'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,
   connectors: ['connectors_search', 'datetime'] as const,

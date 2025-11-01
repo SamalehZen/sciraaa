@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "check:charter": "tsx scripts/check-response-structure.ts",
@@ -18,7 +18,7 @@
     "seed:all": "pnpm seed:admin && pnpm seed:test-data && pnpm seed:api-keys",
     "seed:reset": "pnpm db:push && pnpm seed:all"
   },
-  "dependencies": {
+  "dependencies": {"puppeteer":"^22.15.0",
     "@ai-sdk/google": "2.0.17",
     "@ai-sdk/react": "2.0.60",
     "@ai-sdk/xai": "^2.0.26",

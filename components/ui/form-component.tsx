@@ -1261,8 +1261,8 @@ const StopIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-const MAX_FILES = 4;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILES = 8;
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const MAX_INPUT_CHARS = 50000;
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -1298,7 +1298,7 @@ const AttachmentPreview: React.FC<{
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes < 1024) return bytes + ' bytes';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB' + (bytes > MAX_FILE_SIZE ? ' (exceeds 5MB limit)' : '');
+    else return (bytes / 1048576).toFixed(1) + ' MB' + (bytes > MAX_FILE_SIZE ? ' (exceeds 25MB limit)' : '');
   }, []);
 
   const isUploadingAttachment = useCallback(
@@ -2974,7 +2974,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
           'Oversized files:',
           oversizedFiles.map((f) => `${f.name} (${f.size} bytes)`),
         );
-        toast.error(`Some files exceed the 5MB limit: ${oversizedFiles.map((f) => f.name).join(', ')}`);
+        toast.error(`Some files exceed the 25MB limit: ${oversizedFiles.map((f) => f.name).join(', ')}`);
       }
 
       if (blockedPdfFiles.length > 0) {
@@ -3143,7 +3143,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
           'Oversized files:',
           oversizedFiles.map((f) => `${f.name} (${f.size} bytes)`),
         );
-        toast.error(`Some files exceed the 5MB limit: ${oversizedFiles.map((f) => f.name || 'unnamed').join(', ')}`);
+        toast.error(`Some files exceed the 25MB limit: ${oversizedFiles.map((f) => f.name || 'unnamed').join(', ')}`);
 
         const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
         if (validFiles.length === 0) return;
@@ -3438,7 +3438,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                   </div>
                   <div className="space-y-1 text-center">
                     <p className="text-sm font-medium text-foreground">Drop images or PDFs here</p>
-                    <p className="text-xs text-muted-foreground">Max {MAX_FILES} files (5MB per file)</p>
+                    <p className="text-xs text-muted-foreground">Max {MAX_FILES} files (25MB per file)</p>
                   </div>
                 </div>
               </motion.div>
