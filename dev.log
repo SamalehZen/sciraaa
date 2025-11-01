@@ -1,0 +1,46 @@
+
+> hyper@0.1.0 dev /app
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3002 instead.
+   ▲ Next.js 15.6.0-canary.47 (Turbopack)
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.0.2:3002
+   - Experiments (use with caution):
+     · optimizePackageImports
+     · serverActions
+     · staleTimes
+     ⨯ useCache
+
+ ✓ Starting...
+❌ Invalid environment variables: [
+  {
+    expected: 'string',
+    code: 'invalid_type',
+    path: [ 'GOOGLE_GENERATIVE_AI_API_KEY' ],
+    message: 'Invalid input: expected string, received undefined'
+  },
+  {
+    expected: 'string',
+    code: 'invalid_type',
+    path: [ 'DATABASE_URL' ],
+    message: 'Invalid input: expected string, received undefined'
+  },
+  {
+    expected: 'string',
+    code: 'invalid_type',
+    path: [ 'REDIS_URL' ],
+    message: 'Invalid input: expected string, received undefined'
+  },
+  {
+    expected: 'string',
+    code: 'invalid_type',
+    path: [ 'BLOB_READ_WRITE_TOKEN' ],
+    message: 'Invalid input: expected string, received undefined'
+  }
+]
+Unhandled Rejection: Error: Invalid environment variables
+    at <unknown> (env/server.ts:5:64)
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 705ms
+ ✓ Ready in 3s
