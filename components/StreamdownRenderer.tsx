@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { parseIncompleteMarkdown } from 'streamdown';
+import { Streamdown } from 'streamdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -43,22 +43,20 @@ export function StreamdownRenderer({ stream }: StreamdownRendererProps) {
     consumeStream();
   }, [stream]);
 
-  // Render the incomplete Markdown content.
-  const renderedMarkdown = parseIncompleteMarkdown(markdown, {
-    remarkPlugins: [remarkGfm, remarkMath],
-    rehypePlugins: [rehypeKatex],
-    shiki: {
-      theme: shikiTheme,
-    },
-    // Allow relative links and images for security.
-    allowedImagePrefixes: ['/'],
-    allowedLinkPrefixes: ['/'],
-    mermaid: {},
-  });
-
+  // Use the Streamdown component to render the markdown.
+  // It is a drop-in replacement for react-markdown and accepts similar props.
   return (
     <div className="prose dark:prose-invert">
-      {renderedMarkdown}
+      <Streamdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        shiki={{
+          theme: shikiTheme,
+        }}
+        mermaid={{}}
+      >
+        {markdown}
+      </Streamdown>
     </div>
   );
 }
