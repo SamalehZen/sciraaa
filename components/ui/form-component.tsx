@@ -1651,11 +1651,16 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
     // Get search provider from localStorage with reactive updates
     const [searchProvider] = useLocalStorage<SearchProvider>('hyper-search-provider', 'parallel');
 
-    // Get dynamic search groups based on the selected search provider
-    const dynamicSearchGroups = useMemo(() => getSearchGroups(searchProvider), [searchProvider]);
-
     // Get agent access from database
     const { data: agentAccess, refetch: refetchAgentAccess } = useAgentAccess();
+    const hiddenAgents = useMemo(
+      () => (agentAccess?.filter((a: any) => !a.enabled).map((a: any) => a.agentId) || []),
+      [agentAccess],
+    );
+
+    // Get dynamic search groups based on the selected search provider
+    const dynamicSearchGroups = useMemo(() => getSearchGroups(searchProvider, hiddenAgents), [searchProvider, hiddenAgents]);
+
     const queryClient = useQueryClient();
 
     // Listen for real-time agent access updates via Pusher

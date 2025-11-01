@@ -37,6 +37,9 @@ import {
   updateLookout,
   updateLookoutStatus,
   deleteLookout,
+  getUserAgentAccess,
+  updateUserAgentAccess,
+  initializeUserAgentAccess,
 } from '@/lib/db/queries';
 import { getDiscountConfig } from '@/lib/discount';
 import { isAnonymousUser } from '@/lib/utils';
@@ -1764,6 +1767,51 @@ export async function getDiscountConfigAction() {
     return {
       enabled: false,
     };
+  }
+}
+
+export async function getUserAgentAccessAction() {
+  'use server';
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'Authentication required', data: [] };
+    }
+    const accessData = await getUserAgentAccess(user.id);
+    return { success: true, data: accessData };
+  } catch (error) {
+    console.error('Error getting user agent access:', error);
+    return { success: false, error: 'Failed to get user agent access', data: [] };
+  }
+}
+
+export async function updateUserAgentAccessAction(agentId: string, enabled: boolean) {
+  'use server';
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'Authentication required' };
+    }
+    await updateUserAgentAccess(user.id, agentId, enabled);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating user agent access:', error);
+    return { success: false, error: 'Failed to update user agent access' };
+  }
+}
+
+export async function resetUserAgentAccessAction() {
+  'use server';
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'Authentication required' };
+    }
+    await initializeUserAgentAccess(user.id);
+    return { success: true };
+  } catch (error) {
+    console.error('Error resetting user agent access:', error);
+    return { success: false, error: 'Failed to reset user agent access' };
   }
 }
 
