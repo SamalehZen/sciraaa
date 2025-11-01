@@ -289,6 +289,7 @@ export const userAgentAccess = pgTable('user_agent_access', {
     .references(() => user.id, { onDelete: 'cascade' }),
   agentId: text('agent_id').notNull(),
   enabled: boolean('enabled').notNull().default(true),
+  masked: boolean('masked').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

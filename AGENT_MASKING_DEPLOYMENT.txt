@@ -1,0 +1,123 @@
+# Guide de déploiement - Fonctionnalité de masquage d'agents
+
+## Problème résolu
+Les agents n'étaient pas masqués car:
+1. La fonction `getUserAgentAccess` ne retournait pas le champ `masked`
+2. L'endpoint `/api/user/agent-mask` n'avait pas de handler GET
+3. Le cache n'était pas correctement invalidé après modification
+
+## Étapes de déploiement
+
+### 1. Appliquer la migration de base de données
+
+```bash
+# Vérifier si la colonne existe
+psql -d votre_database -f drizzle/check_masked_column.sql
+
+# Si la colonne n'existe pas, appliquer la migration
+psql -d votre_database -f drizzle/migrations/0011_add_agent_masking.sql
+
+# Mettre à jour les données existantes
+psql -d votre_database -f drizzle/migrations/0012_update_existing_masked_data.sql
+```
+
+### 2. Redémarrer l'application
+
+```bash
+# Development
+npm run dev
+
+# Production
+npm run build
+npm start
+```
+
+### 3. Tester la fonctionnalité
+
+1. **Côté Admin:**
+   - Aller dans Admin > Users
+   - Cliquer sur un utilisateur
+   - Aller dans l'onglet "Masques"
+   - Cliquer sur "Gérer les masques"
+   - Masquer un agent (cliquer sur l'icône Eye)
+   - Vérifier que l'agent disparaît de l'interface utilisateur
+
+2. **Côté Utilisateur:**
+   - Aller dans l'interface de recherche
+   - Vérifier que les agents masqués n'apparaissent pas dans la liste déroulante
+
+### 4. Vérification en base de données
+
+```sql
+-- Vérifier les agents masqués pour un utilisateur
+SELECT agent_id, enabled, masked, updated_at
+FROM user_agent_access
+WHERE user_id = 'YOUR_USER_ID'
+ORDER BY agent_id;
+
+-- Compter les agents masqués par utilisateur
+SELECT 
+  user_id, 
+  COUNT(CASE WHEN masked = true THEN 1 END) as masked_count,
+  COUNT(*) as total_agents
+FROM user_agent_access
+GROUP BY user_id;
+```
+
+## API Endpoints
+
+### Utilisateur
+- `GET /api/user/agent-mask` - Récupérer les agents avec leurs statuts
+- `PUT /api/user/agent-mask` - Masquer/afficher un agent
+  ```json
+  {
+    "agentId": "youtube",
+    "masked": true
+  }
+  ```
+
+### Admin
+- `PUT /api/admin/users/[userId]/agents-mask` - Masquer/afficher un agent pour un utilisateur
+  ```json
+  {
+    "agentId": "youtube",
+    "masked": true
+  }
+  ```
+
+## Résolution de problèmes
+
+### Les agents ne se masquent pas
+1. Vérifier que la migration a été appliquée:
+   ```sql
+   SELECT column_name FROM information_schema.columns 
+   WHERE table_name = 'user_agent_access' AND column_name = 'masked';
+   ```
+
+2. Vérifier les logs du serveur pour les erreurs
+
+3. Vider le cache du navigateur et rafraîchir la page
+
+4. Vérifier la console du navigateur pour les erreurs API
+
+### Les agents réapparaissent après rafraîchissement
+1. Vérifier que le champ `masked` est bien sauvegardé en base:
+   ```sql
+   SELECT * FROM user_agent_access WHERE user_id = 'YOUR_USER_ID';
+   ```
+
+2. Vérifier que le cache React Query est correctement invalidé
+
+## Rollback
+
+Si vous devez annuler la migration:
+
+```sql
+-- Supprimer la colonne masked
+ALTER TABLE user_agent_access DROP COLUMN masked;
+```
+
+Puis revertir le code avec:
+```bash
+git revert <commit_hash>
+```

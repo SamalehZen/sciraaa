@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Download, MessageSquare, Settings } from 'lucide-react';
+import { Download, MessageSquare, Settings, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ConversationViewerDialog } from './conversation-viewer-dialog';
+import { AgentMaskDialog } from './agent-mask-dialog';
 import { toast } from 'sonner';
 
 interface UserProfileDialogProps {
@@ -23,6 +24,7 @@ interface UserProfileDialogProps {
 export function UserProfileDialog({ userId, open, onClose }: UserProfileDialogProps) {
   const queryClient = useQueryClient();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [maskDialogOpen, setMaskDialogOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', userId],
@@ -115,11 +117,12 @@ export function UserProfileDialog({ userId, open, onClose }: UserProfileDialogPr
             </div>
           ) : (
             <Tabs defaultValue="statistics" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="statistics">Statistiques</TabsTrigger>
                 <TabsTrigger value="agents">Agents Utilisés</TabsTrigger>
                 <TabsTrigger value="conversations">Conversations</TabsTrigger>
                 <TabsTrigger value="access">Gestion Accès</TabsTrigger>
+                <TabsTrigger value="masks">Masques</TabsTrigger>
                 <TabsTrigger value="settings">Paramètres</TabsTrigger>
               </TabsList>
 
@@ -250,6 +253,23 @@ export function UserProfileDialog({ userId, open, onClose }: UserProfileDialogPr
                 </Card>
               </TabsContent>
 
+              <TabsContent value="masks" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Gestion des Masques Agents</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Masquez les agents pour les rendre invisibles dans l'interface utilisateur
+                    </p>
+                    <Button onClick={() => setMaskDialogOpen(true)}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Gérer les masques
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
               <TabsContent value="settings" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -281,6 +301,12 @@ export function UserProfileDialog({ userId, open, onClose }: UserProfileDialogPr
       {selectedChatId && (
         <ConversationViewerDialog chatId={selectedChatId} open={!!selectedChatId} onClose={() => setSelectedChatId(null)} />
       )}
+
+      <AgentMaskDialog
+        userId={userId}
+        open={maskDialogOpen}
+        onOpenChange={setMaskDialogOpen}
+      />
     </>
   );
 }
