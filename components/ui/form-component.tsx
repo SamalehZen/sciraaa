@@ -1661,8 +1661,6 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
     // Get dynamic search groups based on the selected search provider
     const dynamicSearchGroups = useMemo(() => getSearchGroups(searchProvider, hiddenAgents), [searchProvider, hiddenAgents]);
 
-    // Get agent access from database
-    const { data: agentAccess, refetch: refetchAgentAccess } = useAgentAccess();
     const queryClient = useQueryClient();
 
     // Listen for real-time agent access updates via Pusher
