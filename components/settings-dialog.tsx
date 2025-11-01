@@ -27,6 +27,9 @@ import {
   deleteConnectorAction,
   manualSyncConnectorAction,
   getConnectorSyncStatusAction,
+  getUserAgentAccessAction,
+  updateUserAgentAccessAction,
+  resetUserAgentAccessAction,
 } from '@/app/actions';
 import { SEARCH_LIMITS } from '@/lib/constants';
 import {
@@ -326,7 +329,40 @@ function PreferencesSection({
 
   // Agents reordering (drag-and-drop)
   const { data: session } = useLocalSession();
-  const [hiddenAgents, setHiddenAgents] = useLocalStorage<string[]>('hyper-hidden-agents', []);
+  const { data: agentAccessData, refetch: refetchAgentAccess } = useQuery({
+    queryKey: ['userAgentAccess', user?.id],
+    queryFn: getUserAgentAccessAction,
+    enabled: !!user,
+  });
+
+  const hiddenAgents = useMemo(
+    () => (agentAccessData?.data?.filter((a: any) => !a.enabled).map((a: any) => a.agentId) || []),
+    [agentAccessData],
+  );
+
+  const updateAgentAccessMutation = useMutation({
+    mutationFn: ({ agentId, enabled }: { agentId: string; enabled: boolean }) =>
+      updateUserAgentAccessAction(agentId, enabled),
+    onSuccess: () => {
+      refetchAgentAccess();
+      toast.success('Agent visibility updated');
+    },
+    onError: () => {
+      toast.error('Failed to update agent visibility');
+    },
+  });
+
+  const resetAgentAccessMutation = useMutation({
+    mutationFn: resetUserAgentAccessAction,
+    onSuccess: () => {
+      refetchAgentAccess();
+      toast.success('All agents have been re-enabled');
+    },
+    onError: () => {
+      toast.error('Failed to re-enable all agents');
+    },
+  });
+
   const dynamicGroups = useMemo(() => getSearchGroups(searchProvider, hiddenAgents), [searchProvider, hiddenAgents]);
   const reorderVisibleGroups = useMemo(
     () =>
@@ -393,10 +429,8 @@ function PreferencesSection({
     }
   };
 
-  const handleToggleAgentVisibility = (agentId: string) => {
-    setHiddenAgents((prev) =>
-      prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId],
-    );
+  const handleToggleAgentVisibility = (agentId: string, enabled: boolean) => {
+    updateAgentAccessMutation.mutate({ agentId, enabled });
   };
 
   function SortableAgentCard({ id }: { id: SearchGroupId }) {
@@ -570,7 +604,7 @@ function PreferencesSection({
               </div>
             </div>
             {hiddenAgents.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setHiddenAgents([])}>
+              <Button variant="ghost" size="sm" onClick={() => resetAgentAccessMutation.mutate()}>
                 Réactiver tout
               </Button>
             )}
@@ -593,7 +627,7 @@ function PreferencesSection({
                     </div>
                     <Switch
                       checked={!hiddenAgents.includes(group.id)}
-                      onCheckedChange={() => handleToggleAgentVisibility(group.id)}
+                      onCheckedChange={(checked) => handleToggleAgentVisibility(group.id, checked)}
                     />
                   </div>
                 </div>
