@@ -28,7 +28,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Chart03Icon } from '@hugeicons/core-free-icons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MarkdownRenderer } from '@/components/markdown';
+import { StreamdownRenderer } from '@/components/streamdown-renderer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Currency symbol mapping with modern design tokens
@@ -1264,8 +1264,8 @@ export const InteractiveStockChart = React.memo(
                                                [&_table]:min-w-full [&_table]:w-auto [&_table]:table [&_table]:border-collapse
                                                [&_td]:px-2 [&_td]:py-1 [&_td]:border [&_td]:border-border/30
                                                [&_th]:px-2 [&_th]:py-1 [&_th]:border [&_th]:border-border/30 [&_th]:bg-muted/30"
-                                            >
-                                              <MarkdownRenderer content={filing.content} />
+>
+                                              <StreamdownRenderer content={filing.content} />
                                             </div>
                                           </div>
                                         </ScrollArea>

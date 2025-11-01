@@ -2,7 +2,7 @@ import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
 import isEqual from 'fast-deep-equal';
 import { ReasoningUIPart, DataUIPart, isToolUIPart } from 'ai';
 import { ReasoningPartView } from '@/components/reasoning-part';
-import { MarkdownRenderer } from '@/components/markdown';
+import { StreamdownRenderer } from '@/components/streamdown-renderer';
 import { ChatTextHighlighter } from '@/components/chat-text-highlighter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -283,7 +283,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
         <div key={`${messageIndex}-${partIndex}-text`} className="mt-2">
           <div>
             <ChatTextHighlighter onHighlight={onHighlight} removeHighlightOnClick={true}>
-              <MarkdownRenderer content={part.text} />
+              <StreamdownRenderer content={part.text} isStreaming={status === 'streaming'} />
             </ChatTextHighlighter>
           </div>
 
