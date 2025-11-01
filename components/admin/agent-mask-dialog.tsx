@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +57,7 @@ export function AgentMaskDialog({
   onOpenChange,
 }: AgentMaskDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const queryClient = useQueryClient();
 
   const { data: agents = [], refetch } = useQuery({
     queryKey: ["agent-access", userId],
@@ -88,11 +89,14 @@ export function AgentMaskDialog({
       return res.json();
     },
     onSuccess: () => {
-      toast.success("Agent mask updated");
+      toast.success("Agent masqué avec succès");
       refetch();
+      // Invalider le cache pour forcer le rafraîchissement partout
+      queryClient.invalidateQueries({ queryKey: ["agent-access", userId] });
+      queryClient.invalidateQueries({ queryKey: ["agent-access"] });
     },
     onError: () => {
-      toast.error("Failed to update agent mask");
+      toast.error("Erreur lors du masquage de l'agent");
     },
   });
 

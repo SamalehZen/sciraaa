@@ -985,6 +985,7 @@ export async function getUserAgentAccess(userId: string) {
     return rows.map((row) => ({
       ...row,
       enabled: !!row.enabled,
+      masked: !!row.masked,
     }));
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to get user agent access');
