@@ -1769,6 +1769,17 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
       [orderedVisibleGroups, selectedGroup],
     );
 
+    useEffect(() => {
+      if (!selectedGroup) return;
+      const isStillVisible = orderedVisibleGroups.some((group) => group.id === selectedGroup);
+      if (isStillVisible) return;
+
+      const fallback = orderedVisibleGroups[0] ?? dynamicSearchGroups[0];
+      if (fallback) {
+        onGroupSelect(fallback);
+      }
+    }, [orderedVisibleGroups, selectedGroup, onGroupSelect, dynamicSearchGroups]);
+
     const handleToggleExtreme = useCallback(() => {
       if (isExtreme) {
         // Switch back to web mode
