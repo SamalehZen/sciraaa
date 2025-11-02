@@ -57,7 +57,7 @@ export function getWebSearchDescription(provider: SearchProvider = 'parallel'): 
   return `Recherchez sur tout Internet avec ${providerName}`;
 }
 
-function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
+export function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
   return [
     {
       id: 'web' as const,
