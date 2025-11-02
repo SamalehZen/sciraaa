@@ -2,6 +2,7 @@
 import * as React from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import OrganizationHero from '@/components/organization-hero';
 import { useUser } from '@/contexts/user-context';
 import { ProfileSelector } from '@/components/ui/profile-selector';
 import { Button } from '@/components/ui/button';
@@ -108,20 +109,17 @@ export default function Home() {
   };
 
   return (
-    <div className="relative">
-      <div className="fixed top-6 right-6 z-50">
-        <Button variant="secondary" size="lg" onClick={handleAddProfile}>
-          Ajouter un profil
-        </Button>
-      </div>
+    <>
+      <OrganizationHero />
 
       <ProfileSelector
-        title="Bienvenue — sélectionnez un profil"
+        title="Sélectionnez un profil pour démarrer"
         profiles={profiles}
         onProfileSelect={handleSelect}
         onAddProfile={handleAddProfile}
         onDeleteProfile={handleDeleteProfile}
         showAddTile
+        className="pt-24 pb-24"
       />
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -146,6 +144,6 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
