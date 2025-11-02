@@ -86,6 +86,42 @@
   }
 }
 
+@keyframes marquee-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes moving-banner {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes cpu-animation-path {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
 @theme {
   --animate-accordion-down: accordion-down 300ms ease-out;
   --animate-accordion-up: accordion-up 300ms ease-out;
@@ -231,6 +267,127 @@
     --tweet-color-blue-secondary-hover: rgba(59, 130, 246, 0.1) !important;
     --tweet-icon-color: #71717a !important;
     --tweet-icon-color-hover: #a1a1aa !important;
+  }
+}
+
+@layer utilities {
+  .animate-marquee {
+    animation: marquee-horizontal var(--duration, 40s) linear infinite;
+  }
+
+  .animate-marquee-vertical {
+    animation: marquee-vertical var(--duration, 40s) linear infinite;
+  }
+
+  .rainbow-banner-gradient-1 {
+    mask-image: linear-gradient(to bottom, white, transparent), radial-gradient(circle at top center, white, transparent);
+    mask-composite: intersect;
+    animation: moving-banner 16s linear infinite reverse;
+    --start: rgba(0, 87, 255, 0.5);
+    --mid: rgba(255, 0, 166, 0.77);
+    --end: rgba(255, 77, 0, 0.4);
+    --via: rgba(164, 255, 68, 0.4);
+    background-image: repeating-linear-gradient(
+      60deg,
+      var(--end),
+      var(--start) 2%,
+      var(--start) 5%,
+      transparent 8%,
+      transparent 14%,
+      var(--via) 18%,
+      var(--via) 22%,
+      var(--mid) 28%,
+      var(--mid) 30%,
+      var(--via) 34%,
+      var(--via) 36%,
+      transparent,
+      var(--end) calc(50% - 12px)
+    );
+    background-size: 200% 100%;
+    mix-blend-mode: difference;
+  }
+
+  .rainbow-banner-gradient-2 {
+    mask-image: linear-gradient(to bottom, white, transparent), radial-gradient(circle at top center, white, transparent);
+    mask-composite: intersect;
+    animation: moving-banner 20s linear infinite;
+    --start: rgba(255, 120, 120, 0.5);
+    --mid: rgba(36, 188, 255, 0.4);
+    --end: rgba(64, 0, 255, 0.51);
+    --via: rgba(255, 89, 0, 0.56);
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--end),
+      var(--start) 4%,
+      var(--start) 8%,
+      transparent 9%,
+      transparent 14%,
+      var(--mid) 16%,
+      var(--mid) 20%,
+      transparent,
+      var(--via) 36%,
+      var(--via) 40%,
+      transparent 42%,
+      var(--end) 46%,
+      var(--end) calc(50% - 16.8px)
+    );
+    background-size: 200% 100%;
+    mix-blend-mode: color-dodge;
+  }
+
+  .cpu-architecture {
+    offset-anchor: 10px 0px;
+    animation-name: cpu-animation-path;
+    animation-iteration-count: infinite;
+    animation-timing-function: cubic-bezier(0.75, -0.01, 0, 0.99);
+  }
+
+  .cpu-line-1 {
+    offset-path: path("M 10 20 h 79.5 q 5 0 5 5 v 30");
+    animation-duration: 5s;
+    animation-delay: 1s;
+  }
+
+  .cpu-line-2 {
+    offset-path: path("M 180 10 h -69.7 q -5 0 -5 5 v 40");
+    animation-delay: 6s;
+    animation-duration: 2s;
+  }
+
+  .cpu-line-3 {
+    offset-path: path("M 130 20 v 21.8 q 0 5 -5 5 h -25");
+    animation-delay: 4s;
+    animation-duration: 6s;
+  }
+
+  .cpu-line-4 {
+    offset-path: path("M 170 80 v -21.8 q 0 -5 -5 -5 h -65");
+    animation-delay: 3s;
+    animation-duration: 3s;
+  }
+
+  .cpu-line-5 {
+    offset-path: path("M 135 65 h 15 q 5 0 5 5 v 10 q 0 5 -5 5 h -39.8 q -5 0 -5 -5 v -35");
+    animation-delay: 9s;
+    animation-duration: 4s;
+  }
+
+  .cpu-line-6 {
+    offset-path: path("M 94.8 95 v -46");
+    animation-delay: 3s;
+    animation-duration: 7s;
+  }
+
+  .cpu-line-7 {
+    offset-path: path("M 88 88 v -15 q 0 -5 -5 -5 h -10 q -5 0 -5 -5 v -5 q 0 -5 5 -5 h 28");
+    animation-delay: 4s;
+    animation-duration: 4s;
+  }
+
+  .cpu-line-8 {
+    offset-path: path("M 30 30 h 25 q 5 0 5 5 v 6.5 q 0 5 5 5 h 35");
+    animation-delay: 3s;
+    animation-duration: 3s;
   }
 }
 
