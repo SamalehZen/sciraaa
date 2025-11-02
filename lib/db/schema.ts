@@ -295,6 +295,18 @@ export const userAgentAccess = pgTable('user_agent_access', {
 
 export type UserAgentAccess = InferSelectModel<typeof userAgentAccess>;
 
+export const appSettings = pgTable('app_settings', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  key: text('key').notNull().unique(),
+  value: json('value').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export type AppSettings = InferSelectModel<typeof appSettings>;
+
 export const geminiApiKeys = pgTable(
   'gemini_api_keys',
   {

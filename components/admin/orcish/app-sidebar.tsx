@@ -61,6 +61,11 @@ const data = {
       icon: IconTrophy,
     },
     {
+      title: "Agents",
+      url: "/admin/agents",
+      icon: IconSettings,
+    },
+    {
       title: "Journaux",
       url: "/admin/logs",
       icon: IconReport,

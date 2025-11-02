@@ -1652,13 +1652,19 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
     const [searchProvider] = useLocalStorage<SearchProvider>('hyper-search-provider', 'parallel');
 
     // Get hidden agents from localStorage
-    const [hiddenAgents] = useLocalStorage<string[]>('hyper-hidden-agents', []);
-
-    // Get dynamic search groups based on the selected search provider
-    const dynamicSearchGroups = useMemo(() => getSearchGroups(searchProvider, hiddenAgents), [searchProvider, hiddenAgents]);
+    const [localHiddenAgents] = useLocalStorage<string[]>('hyper-hidden-agents', []);
 
     // Get agent access from database
-    const { data: agentAccess, refetch: refetchAgentAccess } = useAgentAccess();
+    const { data: agentAccessData, refetch: refetchAgentAccess } = useAgentAccess();
+    const agentAccess = agentAccessData?.access || [];
+    const globalHiddenAgents = agentAccessData?.globalHidden || [];
+    const isAdmin = agentAccessData?.isAdmin || false;
+
+    // Get dynamic search groups based on the selected search provider
+    const dynamicSearchGroups = useMemo(
+      () => getSearchGroups(searchProvider, localHiddenAgents, globalHiddenAgents, isAdmin),
+      [searchProvider, localHiddenAgents, globalHiddenAgents, isAdmin]
+    );
     const queryClient = useQueryClient();
 
     // Listen for real-time agent access updates via Pusher
@@ -1690,25 +1696,49 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
       }
     }, [session?.user?.id, queryClient]);
 
+    // Listen for global agent settings updates via Pusher
+    useEffect(() => {
+      if (!pusherClient) return;
+      
+      try {
+        const channel = pusherClient.subscribe('private-global-settings');
+        const handleGlobalUpdate = () => {
+          console.log('Global agents updated via Pusher');
+          queryClient.invalidateQueries({ queryKey: ['agent-access'] });
+          queryClient.refetchQueries({ queryKey: ['agent-access'] });
+        };
+        
+        channel.bind('agents-updated', handleGlobalUpdate);
+        
+        return () => {
+          channel.unbind('agents-updated', handleGlobalUpdate);
+          pusherClient.unsubscribe('private-global-settings');
+        };
+      } catch (error) {
+        console.error('Pusher global settings subscription error:', error);
+      }
+    }, [queryClient]);
+
     // Memoize visible groups calculation
     const visibleGroups = useMemo(
       () =>
         dynamicSearchGroups.filter((group) => {
           if (!group.show) return false;
           if ('requireAuth' in group && group.requireAuth && !session) return false;
-          // Don't filter out Pro-only groups, show them with Pro indicator
           if (group.id === 'extreme') return false; // Exclude extreme from dropdown
-          
-          // Filter based on agent access from database
+
+          // Pour les utilisateurs normaux : filtrer les agents masqués globalement
+          if (!isAdmin && globalHiddenAgents.includes(group.id)) return false;
+
+          // Filter based on agent access from database (admin control per user)
           if (agentAccess && agentAccess.length > 0) {
             const access = agentAccess.find((a: any) => a.agentId === group.id);
-            // If access record exists and is disabled, hide the agent
             if (access && access.enabled === false) return false;
           }
           
           return true;
         }),
-      [dynamicSearchGroups, session, agentAccess],
+      [dynamicSearchGroups, session, agentAccess, globalHiddenAgents, isAdmin],
     );
 
     const visibleGroupIds = useMemo(() => visibleGroups.map((g) => g.id), [visibleGroups]);

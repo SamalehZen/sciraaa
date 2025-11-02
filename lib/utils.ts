@@ -178,10 +178,24 @@ function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
   ] as const;
 }
 
-// Function to get search groups with dynamic descriptions, filtered by user preferences
-export function getSearchGroups(searchProvider: SearchProvider = 'parallel', hiddenAgents: string[] = []) {
+// Function to get search groups with dynamic descriptions, filtered by global + user preferences
+export function getSearchGroups(
+  searchProvider: SearchProvider = 'parallel',
+  hiddenAgents: string[] = [],
+  globalHiddenAgents: string[] = [],
+  isAdmin: boolean = false
+) {
   const allGroups = getBaseSearchGroups(searchProvider);
-  return allGroups.filter(group => !hiddenAgents.includes(group.id));
+  
+  // Pour les admins : afficher tous les agents (ils peuvent voir même ceux masqués globalement)
+  if (isAdmin) {
+    return allGroups.filter(group => !hiddenAgents.includes(group.id));
+  }
+  
+  // Pour les utilisateurs : filtrer d'abord par agents masqués globalement, puis par préférences locales
+  return allGroups.filter(group => 
+    !globalHiddenAgents.includes(group.id) && !hiddenAgents.includes(group.id)
+  );
 }
 
 // Keep the static searchGroups for backward compatibility

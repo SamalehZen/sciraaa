@@ -15,6 +15,7 @@ import {
   payment,
   lookout,
   userAgentAccess,
+  appSettings,
 } from './schema';
 import { ChatSDKError } from '../errors';
 import { db, maindb } from './index';
@@ -1032,5 +1033,51 @@ export async function initializeUserAgentAccess(userId: string) {
     return await db.insert(userAgentAccess).values(values).onConflictDoNothing();
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to initialize user agent access');
+  }
+}
+
+// Get global agent settings (hidden agents list)
+export async function getGlobalHiddenAgents(): Promise<string[]> {
+  try {
+    const result = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, 'global_hidden_agents'))
+      .limit(1);
+    
+    if (!result || result.length === 0) {
+      return [];
+    }
+    
+    return (result[0].value as string[]) || [];
+  } catch (error) {
+    console.error('Failed to get global hidden agents:', error);
+    return [];
+  }
+}
+
+// Update global agent settings (admin only)
+export async function updateGlobalHiddenAgents(hiddenAgents: string[]) {
+  try {
+    const { generateId } = await import('ai');
+    return await db
+      .insert(appSettings)
+      .values({
+        id: generateId(),
+        key: 'global_hidden_agents',
+        value: hiddenAgents as any,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [appSettings.key],
+        set: {
+          value: hiddenAgents as any,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to update global hidden agents');
   }
 }

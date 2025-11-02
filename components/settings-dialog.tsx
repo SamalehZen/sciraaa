@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useAgentAccess } from '@/hooks/use-agent-access';
 import {
   getUserMessageCount,
   getSubDetails,
@@ -39,7 +40,7 @@ import {
   RobotIcon,
 } from '@phosphor-icons/react';
 
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -327,16 +328,24 @@ function PreferencesSection({
   // Agents reordering (drag-and-drop)
   const { data: session } = useLocalSession();
   const [hiddenAgents, setHiddenAgents] = useLocalStorage<string[]>('hyper-hidden-agents', []);
-  const dynamicGroups = useMemo(() => getSearchGroups(searchProvider, hiddenAgents), [searchProvider, hiddenAgents]);
+  const { data: agentAccessData } = useAgentAccess();
+  const globalHiddenAgents = agentAccessData?.globalHidden || [];
+  const isAdmin = agentAccessData?.isAdmin || false;
+  const dynamicGroups = useMemo(
+    () => getSearchGroups(searchProvider, hiddenAgents, globalHiddenAgents, isAdmin),
+    [searchProvider, hiddenAgents, globalHiddenAgents, isAdmin]
+  );
   const reorderVisibleGroups = useMemo(
     () =>
       dynamicGroups.filter((group) => {
         if (!group.show) return false;
         if ('requireAuth' in group && group.requireAuth && !session) return false;
         if (group.id === 'extreme') return false;
+        // Pour les utilisateurs normaux, ne pas montrer les agents masqués globalement
+        if (!isAdmin && globalHiddenAgents.includes(group.id)) return false;
         return true;
       }),
-    [dynamicGroups, session],
+    [dynamicGroups, session, isAdmin, globalHiddenAgents],
   );
   const reorderVisibleIds = useMemo(() => reorderVisibleGroups.map((g) => g.id), [reorderVisibleGroups]);
 
@@ -566,7 +575,15 @@ function PreferencesSection({
               </div>
               <div>
                 <h4 className="font-semibold text-sm">Masquer les Agents</h4>
-                <p className="text-xs text-muted-foreground">Contrôlez les agents qui apparaissent dans le menu</p>
+                <p className="text-xs text-muted-foreground">
+                  Contrôlez les agents qui apparaissent dans le menu
+                  {isAdmin && (
+                    <Badge variant="outline" className="ml-2">
+                      <InfoIcon className="h-3 w-3 mr-1" />
+                      Vous êtes admin - vous voyez tous les agents
+                    </Badge>
+                  )}
+                </p>
               </div>
             </div>
             {hiddenAgents.length > 0 && (
