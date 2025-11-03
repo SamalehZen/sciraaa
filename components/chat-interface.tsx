@@ -287,6 +287,107 @@ const ChatInterface = memo(
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
 
+    const streamingDataReceivedRef = useRef(false);
+    const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const currentRequestUserMessageIdRef = useRef<string | null>(null);
+    const forceImmediateFallbackRef = useRef(false);
+    const fallbackInFlightRef = useRef(false);
+
+    const isNoStreamActive = useCallback(() => {
+      try {
+        const until = localStorage.getItem('scira:noStreamUntil');
+        if (!until) return false;
+        const ts = Date.parse(until);
+        return !Number.isNaN(ts) && Date.now() < ts;
+      } catch {
+        return false;
+      }
+    }, []);
+
+    const setNoStream24h = useCallback(() => {
+      try {
+        const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        localStorage.setItem('scira:noStreamUntil', until);
+      } catch {}
+    }, []);
+
+    const buildFullRequestBody = useCallback(
+      (msgs: ChatMessage[]) => ({
+        id: chatId,
+        messages: msgs,
+        model: selectedModelRef.current,
+        group: selectedGroupRef.current,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
+        searchProvider: searchProviderRef.current,
+        selectedConnectors: selectedConnectorsRef.current,
+        ...(initialChatId ? { chat_id: initialChatId } : {}),
+      }),
+      [chatId, initialChatId],
+    );
+
+    const fetchFullResponse = useCallback(
+      async (msgs: ChatMessage[]) => {
+        const body = buildFullRequestBody(msgs);
+        const res = await fetch('/api/search/full', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || 'Request failed');
+        }
+        const data = (await res.json()) as ChatMessage;
+        return data;
+      },
+      [buildFullRequestBody],
+    );
+
+    const applyAssistantMessage = useCallback(
+      (assistant: ChatMessage) => {
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1] as any;
+          if (last && last.role === 'assistant') {
+            next[next.length - 1] = assistant as any;
+            return next as any;
+          }
+          return [...next, assistant] as any;
+        });
+      },
+      [setMessages],
+    );
+
+    const triggerFallbackNow = useCallback(
+      async (reason: 'timeout' | 'persist') => {
+        if (fallbackInFlightRef.current) return;
+        fallbackInFlightRef.current = true;
+        try {
+          stop();
+          const assistant = await fetchFullResponse(messages as any);
+          applyAssistantMessage(assistant);
+          if (reason === 'timeout' && !isNoStreamActive()) {
+            setNoStream24h();
+          }
+        } catch (e: any) {
+          console.error('No-stream fallback failed', e);
+          toast.error('Failed to load full response.', {
+            description: e?.message || String(e),
+          });
+        } finally {
+          if (fallbackTimerRef.current) {
+            clearTimeout(fallbackTimerRef.current);
+            fallbackTimerRef.current = null;
+          }
+          streamingDataReceivedRef.current = false;
+          forceImmediateFallbackRef.current = false;
+          fallbackInFlightRef.current = false;
+        }
+      },
+      [messages, fetchFullResponse, applyAssistantMessage, stop, isNoStreamActive, setNoStream24h],
+    );
+
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
       id: chatId,
       transport: new DefaultChatTransport({
@@ -313,6 +414,11 @@ const ChatInterface = memo(
       onData: (dataPart) => {
         console.log('onData<Client>', dataPart);
         setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+        streamingDataReceivedRef.current = true;
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
       },
       onFinish: ({ message }) => {
         console.log('onFinish<Client>', message.parts);
@@ -455,6 +561,32 @@ const ChatInterface = memo(
       }
     }, [status]);
 
+    useEffect(() => {
+      if (status === 'submitted') {
+        const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+        currentRequestUserMessageIdRef.current = (lastUser as any)?.id ?? null;
+        streamingDataReceivedRef.current = false;
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
+        if (forceImmediateFallbackRef.current || isNoStreamActive()) {
+          setTimeout(() => triggerFallbackNow('persist'), 0);
+        } else {
+          fallbackTimerRef.current = setTimeout(() => {
+            if (!streamingDataReceivedRef.current) {
+              triggerFallbackNow('timeout');
+            }
+          }, 6000);
+        }
+      } else if (status === 'ready') {
+        if (fallbackTimerRef.current) {
+          clearTimeout(fallbackTimerRef.current);
+          fallbackTimerRef.current = null;
+        }
+        forceImmediateFallbackRef.current = false;
+      }
+    }, [status, messages, isNoStreamActive, triggerFallbackNow]);
 
     useEffect(() => {
       if (user && status === 'streaming' && messages.length > 0) {
@@ -464,16 +596,26 @@ const ChatInterface = memo(
       }
     }, [user, status, router, chatId, initialChatId, messages.length]);
 
+    const sendMessageWithFallback = useCallback(
+      (msg: Parameters<typeof sendMessage>[0]) => {
+        if (isNoStreamActive()) {
+          forceImmediateFallbackRef.current = true;
+        }
+        return sendMessage(msg as any);
+      },
+      [sendMessage, isNoStreamActive],
+    );
+
     useEffect(() => {
       if (!initializedRef.current && initialState.query && !messages.length && !initialChatId) {
         initializedRef.current = true;
         console.log('[initial query]:', initialState.query);
-        sendMessage({
+        sendMessageWithFallback({
           parts: [{ type: 'text', text: initialState.query }],
           role: 'user',
         });
       }
-    }, [initialState.query, sendMessage, setInput, messages.length, initialChatId]);
+    }, [initialState.query, sendMessageWithFallback, setInput, messages.length, initialChatId]);
 
     // Generate suggested questions when opening a chat directly
     useEffect(() => {
@@ -799,7 +941,7 @@ const ChatInterface = memo(
                 setMessages={(messages) => {
                   setMessages(messages as ChatMessage[]);
                 }}
-                sendMessage={sendMessage}
+                sendMessage={sendMessageWithFallback}
                 regenerate={regenerate}
                 suggestedQuestions={chatState.suggestedQuestions}
                 setSuggestedQuestions={(questions) => dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions })}
@@ -846,7 +988,7 @@ const ChatInterface = memo(
                   inputRef={inputRef}
                   stop={stop}
                   messages={messages as ChatMessage[]}
-                  sendMessage={sendMessage}
+                  sendMessage={sendMessageWithFallback}
                   selectedModel={selectedModel}
                   setSelectedModel={handleModelChange}
                   resetSuggestedQuestions={resetSuggestedQuestions}
