@@ -45,6 +45,12 @@ import { useDataStream } from './data-stream-provider';
 import { DefaultChatTransport } from 'ai';
 import { ChatMessage } from '@/lib/types';
 
+// Animation component imports
+import LightRays from '@/components/ui/LightRays';
+import Particles from '@/components/ui/Particles';
+import ParticleEffectOverlay from '@/components/ui/ParticleEffectOverlay';
+import { AnimatePresence, motion } from 'framer-motion';
+
 interface ChatInterfaceProps {
   initialChatId?: string;
   initialMessages?: any[];
@@ -70,6 +76,12 @@ const ChatInterface = memo(
     const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
       'hyper-custom-instructions-enabled',
       true,
+    );
+
+    // Track which chats have shown the welcome animation
+    const [animatedChats, setAnimatedChats] = useLocalStorage<Record<string, boolean>>(
+      'hyper-animated-chats',
+      {},
     );
 
     // Settings dialog state management with URL hash support
@@ -194,6 +206,34 @@ const ChatInterface = memo(
 
     // Generate a consistent ID for new chats
     const chatId = useMemo(() => initialChatId ?? uuidv4(), [initialChatId]);
+
+    // Determine if current chat should show animation
+    const shouldShowAnimation = useMemo(() => {
+      return (
+        messages.length === 0 &&
+        !chatState.hasSubmitted &&
+        !animatedChats[chatId]
+      );
+    }, [messages.length, chatState.hasSubmitted, animatedChats, chatId]);
+
+    // State to control animation visibility with fade-out
+    const [showAnimations, setShowAnimations] = useState(shouldShowAnimation);
+
+    // Update animation visibility when conditions change
+    useEffect(() => {
+      setShowAnimations(shouldShowAnimation);
+    }, [shouldShowAnimation]);
+
+    // Hide animations after first message submission
+    useEffect(() => {
+      if (chatState.hasSubmitted && showAnimations) {
+        setAnimatedChats((prev) => ({
+          ...prev,
+          [chatId]: true,
+        }));
+        setShowAnimations(false);
+      }
+    }, [chatState.hasSubmitted, showAnimations, chatId, setAnimatedChats]);
 
     // Pro users bypass all limit checks - much cleaner!
     const shouldBypassLimits = shouldBypassLimitsForModel(selectedModel);
@@ -721,6 +761,54 @@ const ChatInterface = memo(
               : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
           }`}
         >
+          {/* Animation Layer - Only for new chats before first message */}
+          <AnimatePresence mode="wait">
+            {showAnimations && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, ease: 'easeInOut' }}
+                className="fixed inset-0 z-[5] pointer-events-none"
+                style={{ zIndex: 5 }}
+              >
+                {/* Layer 1: LightRays */}
+                <div className="absolute inset-0 z-[6]">
+                  <LightRays
+                    raysOrigin="top-center"
+                    raysSpeed={1}
+                    rayLength={2.5}
+                    lightSpread={1.2}
+                    pulsating={true}
+                    fadeDistance={1.0}
+                    saturation={0.8}
+                    followMouse={false}
+                    noiseAmount={0.05}
+                    distortion={0.1}
+                  />
+                </div>
+
+                {/* Layer 2: Particles */}
+                <div className="absolute inset-0 z-[6]">
+                  <Particles
+                    particleCount={300}
+                    particleBaseSize={80}
+                    particleSpread={12}
+                    speed={0.12}
+                    alphaParticles={true}
+                    moveParticlesOnHover={false}
+                    disableRotation={false}
+                    cameraDistance={20}
+                    sizeRandomness={1.2}
+                  />
+                </div>
+
+                {/* Layer 3: Gradient Overlays */}
+                <ParticleEffectOverlay className="z-[7]" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
             {status === 'ready' && messages.length === 0 && (
               <div className="text-center m-0 mb-2">
