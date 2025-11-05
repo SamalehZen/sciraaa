@@ -168,6 +168,7 @@ const ChatInterface = memo(
     );
 
     const lastSubmittedQueryRef = useRef(initialState.query);
+    const isInitialScreen = status === 'ready' && messages.length === 0;
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null!);
     const inputRef = useRef<HTMLTextAreaElement>(null!);
@@ -686,7 +687,7 @@ const ChatInterface = memo(
 
     return (
       <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground relative">
-        {((messages.length === 0 && animationMounted) || isFadingOut) && (
+        {((isInitialScreen && animationMounted) || isFadingOut) && (
           <div
             className={cn(
               'absolute inset-0 pointer-events-none transition-opacity duration-500 z-0',
@@ -723,70 +724,73 @@ const ChatInterface = memo(
             />
           </div>
         )}
-        <div className="relative z-10 flex flex-col w-full h-full self-stretch">
-          <StreamingStatus 
-          isStreaming={status === 'streaming'} 
-          isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
-          statusMessage={status === 'waiting' ? 'Preparing response...' : undefined}
-        />
-        <Navbar
-          isDialogOpen={chatState.anyDialogOpen}
-          chatId={initialChatId || (messages.length > 0 ? chatId : null)}
-          selectedVisibilityType={chatState.selectedVisibilityType}
-          onVisibilityChange={handleVisibilityChange}
-          status={status}
-          user={user || null}
-          onHistoryClick={() => dispatch({ type: 'SET_COMMAND_DIALOG_OPEN', payload: true })}
-          isOwner={isOwner}
-          subscriptionData={subscriptionData}
-          isProUser={isUserPro}
-          isProStatusLoading={proStatusLoading}
-          isCustomInstructionsEnabled={isCustomInstructionsEnabled}
-          setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-          settingsOpen={settingsOpen}
-          setSettingsOpen={setSettingsOpen}
-          settingsInitialTab={settingsInitialTab}
-        />
+        <div className="relative z-10 flex flex-col items-center w-full h-full">
+          <div className="w-full">
+            <StreamingStatus 
+              isStreaming={status === 'streaming'} 
+              isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
+              statusMessage={status === 'waiting' ? 'Preparing response...' : undefined}
+            />
+            <Navbar
+              isDialogOpen={chatState.anyDialogOpen}
+              chatId={initialChatId || (messages.length > 0 ? chatId : null)}
+              selectedVisibilityType={chatState.selectedVisibilityType}
+              onVisibilityChange={handleVisibilityChange}
+              status={status}
+              user={user || null}
+              onHistoryClick={() => dispatch({ type: 'SET_COMMAND_DIALOG_OPEN', payload: true })}
+              isOwner={isOwner}
+              subscriptionData={subscriptionData}
+              isProUser={isUserPro}
+              isProStatusLoading={proStatusLoading}
+              isCustomInstructionsEnabled={isCustomInstructionsEnabled}
+              setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
+              settingsOpen={settingsOpen}
+              setSettingsOpen={setSettingsOpen}
+              settingsInitialTab={settingsInitialTab}
+            />
 
-        {/* Chat Dialogs Component */}
-        <ChatDialogs
-          commandDialogOpen={chatState.commandDialogOpen}
-          setCommandDialogOpen={(open) => dispatch({ type: 'SET_COMMAND_DIALOG_OPEN', payload: open })}
-          showSignInPrompt={chatState.showSignInPrompt}
-          setShowSignInPrompt={(open) => dispatch({ type: 'SET_SHOW_SIGNIN_PROMPT', payload: open })}
-          hasShownSignInPrompt={chatState.hasShownSignInPrompt}
-          setHasShownSignInPrompt={(value) => {
-            dispatch({ type: 'SET_HAS_SHOWN_SIGNIN_PROMPT', payload: value });
-            setPersitedHasShownSignInPrompt(value);
-          }}
-          showUpgradeDialog={chatState.showUpgradeDialog}
-          setShowUpgradeDialog={(open) => dispatch({ type: 'SET_SHOW_UPGRADE_DIALOG', payload: open })}
-          hasShownUpgradeDialog={chatState.hasShownUpgradeDialog}
-          setHasShownUpgradeDialog={(value) => {
-            dispatch({ type: 'SET_HAS_SHOWN_UPGRADE_DIALOG', payload: value });
-            setPersitedHasShownUpgradeDialog(value);
-          }}
-          showLookoutAnnouncement={chatState.showAnnouncementDialog}
-          setShowLookoutAnnouncement={(open) => dispatch({ type: 'SET_SHOW_ANNOUNCEMENT_DIALOG', payload: open })}
-          hasShownLookoutAnnouncement={chatState.hasShownAnnouncementDialog}
-          setHasShownLookoutAnnouncement={(value) => {
-            dispatch({ type: 'SET_HAS_SHOWN_ANNOUNCEMENT_DIALOG', payload: value });
-            setPersitedHasShownLookoutAnnouncement(value);
-          }}
-          user={user}
-          setAnyDialogOpen={(open) => dispatch({ type: 'SET_ANY_DIALOG_OPEN', payload: open })}
-        />
+            {/* Chat Dialogs Component */}
+            <ChatDialogs
+              commandDialogOpen={chatState.commandDialogOpen}
+              setCommandDialogOpen={(open) => dispatch({ type: 'SET_COMMAND_DIALOG_OPEN', payload: open })}
+              showSignInPrompt={chatState.showSignInPrompt}
+              setShowSignInPrompt={(open) => dispatch({ type: 'SET_SHOW_SIGNIN_PROMPT', payload: open })}
+              hasShownSignInPrompt={chatState.hasShownSignInPrompt}
+              setHasShownSignInPrompt={(value) => {
+                dispatch({ type: 'SET_HAS_SHOWN_SIGNIN_PROMPT', payload: value });
+                setPersitedHasShownSignInPrompt(value);
+              }}
+              showUpgradeDialog={chatState.showUpgradeDialog}
+              setShowUpgradeDialog={(open) => dispatch({ type: 'SET_SHOW_UPGRADE_DIALOG', payload: open })}
+              hasShownUpgradeDialog={chatState.hasShownUpgradeDialog}
+              setHasShownUpgradeDialog={(value) => {
+                dispatch({ type: 'SET_HAS_SHOWN_UPGRADE_DIALOG', payload: value });
+                setPersitedHasShownUpgradeDialog(value);
+              }}
+              showLookoutAnnouncement={chatState.showAnnouncementDialog}
+              setShowLookoutAnnouncement={(open) => dispatch({ type: 'SET_SHOW_ANNOUNCEMENT_DIALOG', payload: open })}
+              hasShownLookoutAnnouncement={chatState.hasShownAnnouncementDialog}
+              setHasShownLookoutAnnouncement={(value) => {
+                dispatch({ type: 'SET_HAS_SHOWN_ANNOUNCEMENT_DIALOG', payload: value });
+                setPersitedHasShownLookoutAnnouncement(value);
+              }}
+              user={user}
+              setAnyDialogOpen={(open) => dispatch({ type: 'SET_ANY_DIALOG_OPEN', payload: open })}
+            />
+          </div>
 
 
-        <div
-          className={`w-full p-2 sm:p-4 relative ${
-            status === 'ready' && messages.length === 0
-              ? 'flex-1 !flex !flex-col !items-center !justify-center' // Center everything when no messages
-              : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
-          }`}
-        >
+          <div
+            className={cn(
+              'w-full p-2 sm:p-4 relative',
+              isInitialScreen
+                ? 'flex-1 flex flex-col items-center justify-center pt-12'
+                : 'mt-20 sm:mt-16 flex flex-col',
+            )}
+          >
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
-            {status === 'ready' && messages.length === 0 && (
+            {isInitialScreen && (
               <div className="text-center m-0 mb-2">
                 <div className="inline-flex items-center gap-3">
                   <h1 className="text-4xl sm:text-5xl !mb-0 text-foreground dark:text-foreground font-be-vietnam-pro! font-light tracking-tighter">
@@ -803,7 +807,7 @@ const ChatInterface = memo(
             )}
 
             {/* Show initial limit exceeded message */}
-            {status === 'ready' && messages.length === 0 && isLimitBlocked && (
+            {isInitialScreen && isLimitBlocked && (
               <div className="mt-16 mx-auto max-w-sm">
                 <div className="bg-card backdrop-blur-xl border border-border/40 rounded-2xl shadow-2xl overflow-hidden">
                   {/* Header Section */}
