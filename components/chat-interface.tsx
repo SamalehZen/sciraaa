@@ -207,34 +207,6 @@ const ChatInterface = memo(
     // Generate a consistent ID for new chats
     const chatId = useMemo(() => initialChatId ?? uuidv4(), [initialChatId]);
 
-    // Determine if current chat should show animation
-    const shouldShowAnimation = useMemo(() => {
-      return (
-        messages.length === 0 &&
-        !chatState.hasSubmitted &&
-        !animatedChats[chatId]
-      );
-    }, [messages.length, chatState.hasSubmitted, animatedChats, chatId]);
-
-    // State to control animation visibility with fade-out
-    const [showAnimations, setShowAnimations] = useState(shouldShowAnimation);
-
-    // Update animation visibility when conditions change
-    useEffect(() => {
-      setShowAnimations(shouldShowAnimation);
-    }, [shouldShowAnimation]);
-
-    // Hide animations after first message submission
-    useEffect(() => {
-      if (chatState.hasSubmitted && showAnimations) {
-        setAnimatedChats((prev) => ({
-          ...prev,
-          [chatId]: true,
-        }));
-        setShowAnimations(false);
-      }
-    }, [chatState.hasSubmitted, showAnimations, chatId, setAnimatedChats]);
-
     // Pro users bypass all limit checks - much cleaner!
     const shouldBypassLimits = shouldBypassLimitsForModel(selectedModel);
     const hasExceededLimit =
@@ -440,6 +412,34 @@ const ChatInterface = memo(
       },
       messages: initialMessages || [],
     });
+
+    // Determine if current chat should show animation
+    const shouldShowAnimation = useMemo(() => {
+      return (
+        messages.length === 0 &&
+        !chatState.hasSubmitted &&
+        !animatedChats[chatId]
+      );
+    }, [messages.length, chatState.hasSubmitted, animatedChats, chatId]);
+
+    // State to control animation visibility with fade-out
+    const [showAnimations, setShowAnimations] = useState(shouldShowAnimation);
+
+    // Update animation visibility when conditions change
+    useEffect(() => {
+      setShowAnimations(shouldShowAnimation);
+    }, [shouldShowAnimation]);
+
+    // Hide animations after first message submission
+    useEffect(() => {
+      if (chatState.hasSubmitted && showAnimations) {
+        setAnimatedChats((prev) => ({
+          ...prev,
+          [chatId]: true,
+        }));
+        setShowAnimations(false);
+      }
+    }, [chatState.hasSubmitted, showAnimations, chatId, setAnimatedChats]);
 
     // Handle text highlighting and quoting
     const handleHighlight = useCallback(
