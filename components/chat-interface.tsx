@@ -723,7 +723,7 @@ const ChatInterface = memo(
             />
           </div>
         )}
-        <div className="relative z-10 flex flex-col items-center w-full h-full">
+        <div className="relative z-10 flex flex-col w-full h-full self-stretch">
           <StreamingStatus 
           isStreaming={status === 'streaming'} 
           isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
