@@ -20,6 +20,7 @@ import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 import { ChatDialogs } from '@/components/chat-dialogs';
 import Messages from '@/components/messages';
 import LightRays from '@/components/light-rays';
+import ParticleEffectOverlay from '@/components/particle-effect-overlay';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
@@ -689,23 +690,26 @@ const ChatInterface = memo(
         {((messages.length === 0 && animationMounted) || isFadingOut) && (
           <div
             className={cn(
-              'absolute inset-0 pointer-events-none z-0 transition-opacity duration-500',
+              'absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500',
               isFadingOut ? 'opacity-0' : 'opacity-100',
             )}
           >
-            <LightRays
-              raysOrigin="top-center"
-              raysSpeed={0.8}
-              lightSpread={1.2}
-              rayLength={1.5}
-              pulsating={false}
-              fadeDistance={1.2}
-              saturation={1.0}
-              followMouse={false}
-              noiseAmount={0.05}
-              distortion={0.1}
-              className="w-full h-full"
-            />
+            <div className="relative w-full h-full">
+              <LightRays
+                raysOrigin="top-center"
+                raysSpeed={0.8}
+                lightSpread={1.2}
+                rayLength={1.5}
+                pulsating={false}
+                fadeDistance={1.2}
+                saturation={1.0}
+                followMouse={false}
+                noiseAmount={0.05}
+                distortion={0.1}
+                className="w-full h-full"
+              />
+              <ParticleEffectOverlay className="pointer-events-none" />
+            </div>
           </div>
         )}
         <StreamingStatus 
