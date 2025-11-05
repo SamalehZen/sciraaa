@@ -19,8 +19,7 @@ import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 // Component imports
 import { ChatDialogs } from '@/components/chat-dialogs';
 import Messages from '@/components/messages';
-import LightRays from '@/components/light-rays';
-import ParticleEffectOverlay from '@/components/particle-effect-overlay';
+import { AnimatedEffects } from '@/components/animated-effects';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
@@ -694,22 +693,34 @@ const ChatInterface = memo(
               isFadingOut ? 'opacity-0' : 'opacity-100',
             )}
           >
-            <div className="relative w-full h-full">
-              <LightRays
-                raysOrigin="top-center"
-                raysSpeed={0.8}
-                lightSpread={1.2}
-                rayLength={1.5}
-                pulsating={false}
-                fadeDistance={1.2}
-                saturation={1.0}
-                followMouse={false}
-                noiseAmount={0.05}
-                distortion={0.1}
-                className="w-full h-full"
-              />
-              <ParticleEffectOverlay className="pointer-events-none" />
-            </div>
+            <AnimatedEffects
+              isVisible={!isFadingOut}
+              duration={0.5}
+              className="pointer-events-none"
+              lightRaysProps={{
+                raysOrigin: 'top-center',
+                raysSpeed: 0.8,
+                lightSpread: 1.2,
+                rayLength: 1.5,
+                pulsating: false,
+                fadeDistance: 1.2,
+                saturation: 1.0,
+                followMouse: false,
+                noiseAmount: 0.05,
+                distortion: 0.1,
+              }}
+              particlesProps={{
+                particleCount: 240,
+                particleSpread: 12,
+                speed: 0.06,
+                alphaParticles: true,
+                particleBaseSize: 60,
+                sizeRandomness: 0.45,
+                cameraDistance: 22,
+                moveParticlesOnHover: false,
+                disableRotation: false,
+              }}
+            />
           </div>
         )}
         <div className="relative z-10 flex flex-col items-center w-full h-full">

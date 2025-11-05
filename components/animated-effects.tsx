@@ -11,6 +11,7 @@ interface AnimatedEffectsProps {
   duration?: number;
   lightRaysProps?: React.ComponentProps<typeof LightRays>;
   particlesProps?: React.ComponentProps<typeof Particles>;
+  className?: string;
 }
 
 const AnimatedEffects: React.FC<AnimatedEffectsProps> = ({
@@ -18,12 +19,13 @@ const AnimatedEffects: React.FC<AnimatedEffectsProps> = ({
   duration = 5,
   lightRaysProps = {},
   particlesProps = {},
+  className = "",
 }) => {
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="absolute inset-0"
+          className={`absolute inset-0 ${className}`.trim()}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
