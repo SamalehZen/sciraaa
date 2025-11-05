@@ -168,7 +168,6 @@ const ChatInterface = memo(
     );
 
     const lastSubmittedQueryRef = useRef(initialState.query);
-    const isInitialScreen = status === 'ready' && messages.length === 0;
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null!);
     const inputRef = useRef<HTMLTextAreaElement>(null!);
@@ -402,6 +401,8 @@ const ChatInterface = memo(
       },
       messages: initialMessages || [],
     });
+
+    const isInitialScreen = status === 'ready' && messages.length === 0;
 
     // Handle text highlighting and quoting
     const handleHighlight = useCallback(
