@@ -690,7 +690,7 @@ const ChatInterface = memo(
         {((messages.length === 0 && animationMounted) || isFadingOut) && (
           <div
             className={cn(
-              'absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500',
+              'absolute inset-0 pointer-events-none transition-opacity duration-500 z-0',
               isFadingOut ? 'opacity-0' : 'opacity-100',
             )}
           >
@@ -712,7 +712,8 @@ const ChatInterface = memo(
             </div>
           </div>
         )}
-        <StreamingStatus 
+        <div className="relative z-10 flex flex-col items-center w-full h-full">
+          <StreamingStatus 
           isStreaming={status === 'streaming'} 
           isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
           statusMessage={status === 'waiting' ? 'Preparing response...' : undefined}
@@ -977,8 +978,9 @@ const ChatInterface = memo(
           )}
         </div>
       </div>
-    );
-  },
+    </div>
+  );
+},
 );
 
 // Add a display name for the memoized component for better debugging
