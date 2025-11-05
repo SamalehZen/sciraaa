@@ -1,6 +1,7 @@
 export interface ChatState {
   // UI state
   hasSubmitted: boolean;
+  showInitialAnimation: boolean;
   hasManuallyScrolled: boolean;
   showUpgradeDialog: boolean;
   showSignInPrompt: boolean;
@@ -39,6 +40,7 @@ export type ChatAction =
   | { type: 'SET_SUGGESTED_QUESTIONS'; payload: string[] }
   | { type: 'SET_ATTACHMENTS'; payload: Attachment[] }
   | { type: 'SET_VISIBILITY_TYPE'; payload: 'public' | 'private' }
+  | { type: 'HIDE_INITIAL_ANIMATION' }
   | { type: 'RESET_SUGGESTED_QUESTIONS' }
   | { type: 'RESET_UI_STATE' };
 
@@ -86,6 +88,9 @@ export const chatReducer = (state: ChatState, action: ChatAction): ChatState => 
     case 'RESET_SUGGESTED_QUESTIONS':
       return { ...state, suggestedQuestions: [] };
 
+    case 'HIDE_INITIAL_ANIMATION':
+      return { ...state, showInitialAnimation: false };
+
     case 'RESET_UI_STATE':
       return {
         ...state,
@@ -108,6 +113,7 @@ export const createInitialState = (
   hasShownAnnouncementDialog: boolean = false,
 ): ChatState => ({
   hasSubmitted: false,
+  showInitialAnimation: true,
   hasManuallyScrolled: false,
   showUpgradeDialog: false,
   showSignInPrompt: false,

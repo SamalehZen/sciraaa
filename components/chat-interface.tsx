@@ -19,6 +19,7 @@ import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 // Component imports
 import { ChatDialogs } from '@/components/chat-dialogs';
 import Messages from '@/components/messages';
+import LightRays from '@/components/light-rays';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
 import FormComponent from '@/components/ui/form-component';
@@ -455,6 +456,13 @@ const ChatInterface = memo(
       }
     }, [status]);
 
+    // Hide initial animation after first submission
+    useEffect(() => {
+      if (chatState.hasSubmitted && chatState.showInitialAnimation) {
+        dispatch({ type: 'HIDE_INITIAL_ANIMATION' });
+      }
+    }, [chatState.hasSubmitted, chatState.showInitialAnimation]);
+
 
     useEffect(() => {
       if (user && status === 'streaming' && messages.length > 0) {
@@ -721,6 +729,24 @@ const ChatInterface = memo(
               : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
           }`}
         >
+          {chatState.showInitialAnimation && messages.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-full h-full max-w-4xl max-h-[600px]">
+                <LightRays
+                  raysOrigin="top-center"
+                  raysSpeed={0.8}
+                  lightSpread={1.2}
+                  rayLength={1.5}
+                  pulsating={false}
+                  fadeDistance={1.2}
+                  saturation={1.0}
+                  followMouse={false}
+                  noiseAmount={0.05}
+                  distortion={0.1}
+                />
+              </div>
+            </div>
+          )}
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
             {status === 'ready' && messages.length === 0 && (
               <div className="text-center m-0 mb-2">
