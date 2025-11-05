@@ -483,7 +483,7 @@ void main() {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full bg-background pointer-events-none z-[3] overflow-hidden relative ${className}`.trim()}
+      className={`w-full h-full pointer-events-none overflow-hidden relative ${className}`.trim()}
     />
   );
 };

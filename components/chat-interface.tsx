@@ -463,6 +463,24 @@ const ChatInterface = memo(
       }
     }, [chatState.hasSubmitted, chatState.showInitialAnimation]);
 
+    // Manage fade-out before unmounting animation
+    const [animationMounted, setAnimationMounted] = useState(chatState.showInitialAnimation);
+    const [isFadingOut, setIsFadingOut] = useState(false);
+
+    useEffect(() => {
+      if (!chatState.showInitialAnimation && animationMounted) {
+        setIsFadingOut(true);
+        const t = setTimeout(() => {
+          setAnimationMounted(false);
+          setIsFadingOut(false);
+        }, 500);
+        return () => clearTimeout(t);
+      }
+      if (chatState.showInitialAnimation && !animationMounted) {
+        setAnimationMounted(true);
+      }
+    }, [chatState.showInitialAnimation, animationMounted]);
+
 
     useEffect(() => {
       if (user && status === 'streaming' && messages.length > 0) {
@@ -667,7 +685,29 @@ const ChatInterface = memo(
     );
 
     return (
-      <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground">
+      <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground relative">
+        {((messages.length === 0 && animationMounted) || isFadingOut) && (
+          <div
+            className={cn(
+              'absolute inset-0 pointer-events-none z-0 transition-opacity duration-500',
+              isFadingOut ? 'opacity-0' : 'opacity-100',
+            )}
+          >
+            <LightRays
+              raysOrigin="top-center"
+              raysSpeed={0.8}
+              lightSpread={1.2}
+              rayLength={1.5}
+              pulsating={false}
+              fadeDistance={1.2}
+              saturation={1.0}
+              followMouse={false}
+              noiseAmount={0.05}
+              distortion={0.1}
+              className="w-full h-full"
+            />
+          </div>
+        )}
         <StreamingStatus 
           isStreaming={status === 'streaming'} 
           isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
@@ -729,24 +769,6 @@ const ChatInterface = memo(
               : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
           }`}
         >
-          {chatState.showInitialAnimation && messages.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-full h-full max-w-4xl max-h-[600px]">
-                <LightRays
-                  raysOrigin="top-center"
-                  raysSpeed={0.8}
-                  lightSpread={1.2}
-                  rayLength={1.5}
-                  pulsating={false}
-                  fadeDistance={1.2}
-                  saturation={1.0}
-                  followMouse={false}
-                  noiseAmount={0.05}
-                  distortion={0.1}
-                />
-              </div>
-            </div>
-          )}
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
             {status === 'ready' && messages.length === 0 && (
               <div className="text-center m-0 mb-2">
