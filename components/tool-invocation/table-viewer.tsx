@@ -136,7 +136,15 @@ function exportToCsv(columns: TableViewerColumn[], rows: Record<string, unknown>
   URL.revokeObjectURL(url);
 }
 
-export function TableViewer({ title, description, columns, data }: TableViewerProps) {
+export function TableViewer({ title, description, columns: rawColumns, data: rawData }: TableViewerProps) {
+  const trimmedTitle = title.trim();
+  const columns = Array.isArray(rawColumns) ? rawColumns : [];
+  const data = Array.isArray(rawData) ? rawData : [];
+  const missingParts: string[] = [];
+  if (!trimmedTitle.length) missingParts.push('title');
+  if (columns.length === 0) missingParts.push('columns');
+  if (data.length === 0) missingParts.push('data');
+
   const [search, setSearch] = useState('');
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -199,18 +207,41 @@ export function TableViewer({ title, description, columns, data }: TableViewerPr
     setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
   };
 
+  if (missingParts.length > 0) {
+    const errorText = `Table input missing: ${missingParts.join(' ')}`.trim();
+    return (
+      <Card className="bg-card">
+        <CardHeader className="gap-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                {trimmedTitle ? `Interactive Table · ${trimmedTitle}` : 'Interactive Table'}
+                <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Table</Badge>
+              </CardTitle>
+              {description ? <CardDescription>{description}</CardDescription> : null}
+            </div>
+            <JsonViewPopup data={{ title, description, columns: rawColumns, data: rawData }} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">{errorText}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-card">
       <CardHeader className="gap-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              Interactive Table · {title}
+              Interactive Table · {trimmedTitle}
               <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Table</Badge>
             </CardTitle>
             {description ? <CardDescription>{description}</CardDescription> : null}
           </div>
-          <JsonViewPopup data={{ title, description, columns, data }} />
+          <JsonViewPopup data={{ title: trimmedTitle, description, columns, data }} />
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Input
@@ -247,10 +278,10 @@ export function TableViewer({ title, description, columns, data }: TableViewerPr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => exportToCsv(visibleColumnsArray, processedData, title)}>
+              <DropdownMenuItem onClick={() => exportToCsv(visibleColumnsArray, processedData, trimmedTitle)}>
                 <Download className="mr-2 h-4 w-4" /> CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportToExcel(visibleColumnsArray, processedData, title)}>
+              <DropdownMenuItem onClick={() => exportToExcel(visibleColumnsArray, processedData, trimmedTitle)}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel
               </DropdownMenuItem>
             </DropdownMenuContent>

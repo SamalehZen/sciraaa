@@ -8,7 +8,7 @@ export const createPieChartTool = createTool({
       .array(
         z.object({
           label: z.string().min(1),
-          value: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number()),
+          value: z.coerce.number(),
         }),
       )
       .min(1),

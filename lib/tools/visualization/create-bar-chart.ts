@@ -11,7 +11,7 @@ export const createBarChartTool = createTool({
           series: z.array(
             z.object({
               seriesName: z.string().min(1),
-              value: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number()),
+              value: z.coerce.number(),
             }),
           ).min(1),
         }),

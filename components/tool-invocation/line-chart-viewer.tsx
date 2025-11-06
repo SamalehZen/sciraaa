@@ -59,9 +59,14 @@ function ensureUniqueLabel(label: string, existing: Set<string>) {
 const palette = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
 
 export function LineChartViewer({ title, data, description, yAxisLabel }: LineChartViewerProps) {
+  const trimmedTitle = title.trim();
+  const sanitizedData = Array.isArray(data) ? data : [];
+  const hasSeriesData = sanitizedData.length > 0 && sanitizedData.every((item) => Array.isArray(item.series) && item.series.length > 0);
+  const hasTitle = trimmedTitle.length > 0;
+
   const normalisedData = useMemo(() => {
     const xSet = new Set<string>();
-    return data.map((item) => {
+    return sanitizedData.map((item) => {
       const label = ensureUniqueLabel(item.xAxisLabel, xSet);
       const seriesSet = new Set<string>();
       const series = item.series.map((entry) => ({
@@ -73,7 +78,7 @@ export function LineChartViewer({ title, data, description, yAxisLabel }: LineCh
         series,
       };
     });
-  }, [data]);
+  }, [sanitizedData]);
 
   const seriesNames = normalisedData[0]?.series.map((item) => item.seriesName) ?? [];
 
@@ -101,17 +106,35 @@ export function LineChartViewer({ title, data, description, yAxisLabel }: LineCh
     });
   }, [normalisedData]);
 
+  if (!hasTitle || !hasSeriesData) {
+    const errorText = !hasTitle ? 'Missing title for line chart' : 'No data provided for line chart';
+    return (
+      <Card className="bg-card">
+        <CardHeader className="flex items-start justify-between gap-3">
+          <CardTitle className="text-base">Line Chart</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Line</Badge>
+            <JsonViewPopup data={{ title, data, description, yAxisLabel }} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">{errorText}</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-card">
       <CardHeader className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-base">Line Chart · {title}</CardTitle>
+            <CardTitle className="text-base">Line Chart · {trimmedTitle}</CardTitle>
             {description ? <CardDescription>{description}</CardDescription> : null}
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Line</Badge>
-            <JsonViewPopup data={{ title, data, description, yAxisLabel }} />
+            <JsonViewPopup data={{ title: trimmedTitle, data: sanitizedData, description, yAxisLabel }} />
           </div>
         </div>
       </CardHeader>

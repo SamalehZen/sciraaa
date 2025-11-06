@@ -46,14 +46,19 @@ function formatLargeNumber(value: number) {
 }
 
 export function PieChartViewer({ title, data, description, unit, prefix = 'Pie Chart · ', jsonView = true }: PieChartViewerProps) {
-  const total = useMemo(() => data.reduce((sum, item) => sum + item.value, 0), [data]);
+  const trimmedTitle = title.trim();
+  const sanitizedData = Array.isArray(data) ? data : [];
+  const hasTitle = trimmedTitle.length > 0;
+  const hasData = sanitizedData.length > 0;
+
+  const total = useMemo(() => sanitizedData.reduce((sum, item) => sum + item.value, 0), [sanitizedData]);
 
   const chartConfig = useMemo(() => {
     const config: ChartConfig = {};
     if (unit) {
       config.value = { label: unit };
     }
-    data.forEach((item, index) => {
+    sanitizedData.forEach((item, index) => {
       const key = sanitizeCssVariableName(item.label);
       config[key] = {
         label: item.label,
@@ -61,25 +66,44 @@ export function PieChartViewer({ title, data, description, unit, prefix = 'Pie C
       };
     });
     return config;
-  }, [data, unit]);
+  }, [sanitizedData, unit]);
 
   const chartData = useMemo(() => {
-    return data.map((item) => ({
+    return sanitizedData.map((item) => ({
       name: item.label,
       label: item.label,
       value: item.value,
       fill: `var(--color-${sanitizeCssVariableName(item.label)})`,
     }));
-  }, [data]);
+  }, [sanitizedData]);
+
+  if (!hasTitle || !hasData) {
+    const errorText = !hasTitle ? 'Missing title for pie chart' : 'No data provided for pie chart';
+    return (
+      <Card className="bg-card">
+        <CardHeader className="items-center pb-0 gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            {prefix}
+            {trimmedTitle || 'Pie Chart'}
+            <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Pie</Badge>
+            {jsonView ? <JsonViewPopup data={{ title, data, description, unit }} /> : null}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="w-full">
+          <div className="text-sm text-muted-foreground text-center">{errorText}</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-card">
       <CardHeader className="items-center pb-0 gap-2">
         <CardTitle className="flex items-center gap-2 text-base">
           {prefix}
-          {title}
+          {trimmedTitle}
           <Badge variant="secondary" className="uppercase text-[10px] tracking-wide">Pie</Badge>
-          {jsonView ? <JsonViewPopup data={{ title, data, description, unit }} /> : null}
+          {jsonView ? <JsonViewPopup data={{ title: trimmedTitle, data: sanitizedData, description, unit }} /> : null}
         </CardTitle>
         {description ? <CardDescription className="text-center">{description}</CardDescription> : null}
       </CardHeader>

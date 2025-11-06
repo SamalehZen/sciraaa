@@ -5,7 +5,7 @@ export const createTableTool = createTool({
   description:
     'Create an interactive table with data. The table will automatically have sorting, filtering, and search functionality.',
   inputSchema: z.object({
-    title: z.string().describe('Table title'),
+    title: z.string().min(1).describe('Table title'),
     description: z.string().nullable().describe('Optional table description'),
     columns: z
       .array(
