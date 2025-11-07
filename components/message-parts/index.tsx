@@ -246,6 +246,9 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
     const [isExporting, setIsExporting] = useState<'pdf' | 'markdown' | null>(null);
 
     const downloadBlob = useCallback((blob: Blob, filename: string) => {
+      if (typeof window === 'undefined') {
+        throw new Error('Export disponible uniquement depuis le navigateur');
+      }
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -258,7 +261,12 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
 
     const exportToPdf = useCallback(
       async (text: string, filename: string) => {
-        const { PDFDocument, StandardFonts } = await import('pdf-lib');
+        const pdfModule = await import('pdf-lib');
+        const PDFDocument = pdfModule.PDFDocument ?? pdfModule.default?.PDFDocument;
+        const StandardFonts = pdfModule.StandardFonts ?? pdfModule.default?.StandardFonts;
+        if (!PDFDocument || !StandardFonts) {
+          throw new Error('Bibliothèque PDF indisponible');
+        }
         const pdfDoc = await PDFDocument.create();
         const margin = 40;
         const fontSize = 12;
@@ -335,15 +343,32 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
           setIsExporting(format);
           if (format === 'pdf') {
             await exportToPdf(part.text, `${baseName}.pdf`);
+            console.info('[MessagePartRenderer] Export PDF réussi', {
+              chatId: chatId ?? null,
+              messageIndex,
+              textLength: part.text.length,
+            });
             toast.success('PDF exporté');
           } else {
             const blob = new Blob([part.text], { type: 'text/markdown;charset=utf-8' });
             downloadBlob(blob, `${baseName}.md`);
+            console.info('[MessagePartRenderer] Export Markdown réussi', {
+              chatId: chatId ?? null,
+              messageIndex,
+              textLength: part.text.length,
+            });
             toast.success('Markdown exporté');
           }
         } catch (error) {
-          console.error('Erreur export:', error);
-          toast.error('Échec de l’export');
+          const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erreur inconnue';
+          console.error('[MessagePartRenderer] Échec export', {
+            format,
+            chatId: chatId ?? null,
+            messageIndex,
+            textLength: part.text?.length ?? 0,
+            error,
+          });
+          toast.error(`Échec de l’export (${format.toUpperCase()}) : ${errorMessage}`);
         } finally {
           setIsExporting(null);
         }
