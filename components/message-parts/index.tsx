@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Wave } from '@foobar404/wave';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ShareButton } from '@/components/share';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -51,6 +52,8 @@ import {
   Code,
   Copy,
   Download,
+  FileDown,
+  FileText,
 } from 'lucide-react';
 import {
   RedditLogoIcon,
@@ -240,6 +243,114 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
     annotations,
     selectedGroup,
   }) => {
+    const [isExporting, setIsExporting] = useState<'pdf' | 'markdown' | null>(null);
+
+    const downloadBlob = useCallback((blob: Blob, filename: string) => {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    }, []);
+
+    const exportToPdf = useCallback(
+      async (text: string, filename: string) => {
+        const { PDFDocument, StandardFonts } = await import('pdf-lib');
+        const pdfDoc = await PDFDocument.create();
+        const margin = 40;
+        const fontSize = 12;
+        const lineHeight = fontSize * 1.5;
+        let page = pdfDoc.addPage();
+        let { height } = page.getSize();
+        let maxWidth = page.getWidth() - margin * 2;
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const normalizedLines = text
+          .replace(/\r\n/g, '\n')
+          .split('\n')
+          .reduce<string[]>((acc, paragraph, idx, arr) => {
+            if (paragraph.trim() === '') {
+              acc.push('');
+              return acc;
+            }
+            const words = paragraph.split(/\s+/);
+            let currentLine = '';
+            words.forEach((word) => {
+              const candidate = currentLine ? `${currentLine} ${word}` : word;
+              if (font.widthOfTextAtSize(candidate, fontSize) <= maxWidth) {
+                currentLine = candidate;
+              } else {
+                if (currentLine) acc.push(currentLine);
+                currentLine = word;
+              }
+            });
+            if (currentLine) acc.push(currentLine);
+            if (idx < arr.length - 1) acc.push('');
+            return acc;
+          }, []);
+
+        let cursorY = height - margin;
+        normalizedLines.forEach((line) => {
+          if (cursorY < margin) {
+            page = pdfDoc.addPage();
+            height = page.getHeight();
+            maxWidth = page.getWidth() - margin * 2;
+            cursorY = height - margin;
+          }
+          if (line === '') {
+            cursorY -= lineHeight;
+            return;
+          }
+          page.drawText(line, {
+            x: margin,
+            y: cursorY,
+            size: fontSize,
+            font,
+          });
+          cursorY -= lineHeight;
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        downloadBlob(blob, filename);
+      },
+      [downloadBlob],
+    );
+
+    const handleExport = useCallback(
+      async (format: 'pdf' | 'markdown') => {
+        if (!part.text || !part.text.trim()) {
+          toast.error('Aucun contenu à exporter');
+          return;
+        }
+        if (isExporting) {
+          return;
+        }
+        const timestamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+/, '');
+        const safeChatId = chatId ? chatId.replace(/[^a-z0-9-_]/gi, '') : '';
+        const baseName = `${safeChatId ? `${safeChatId}-` : ''}reponse-ai-${messageIndex + 1}-${timestamp}`;
+        try {
+          setIsExporting(format);
+          if (format === 'pdf') {
+            await exportToPdf(part.text, `${baseName}.pdf`);
+            toast.success('PDF exporté');
+          } else {
+            const blob = new Blob([part.text], { type: 'text/markdown;charset=utf-8' });
+            downloadBlob(blob, `${baseName}.md`);
+            toast.success('Markdown exporté');
+          }
+        } catch (error) {
+          console.error('Erreur export:', error);
+          toast.error('Échec de l’export');
+        } finally {
+          setIsExporting(null);
+        }
+      },
+      [part.text, isExporting, chatId, messageIndex, exportToPdf, downloadBlob],
+    );
+
     // Handle text parts
     if (part.type === 'text') {
       // Check if there are any reasoning parts in the message
@@ -404,6 +515,41 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                     className="rounded-full"
                   />
                 )}
+                <DropdownMenu>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-4 rounded-full bg-[#7c5a45] text-white uppercase tracking-[0.2em] font-semibold gap-2 shadow-none hover:bg-[#6a4f3f] focus-visible:ring-[#7c5a45]/40 focus-visible:ring-offset-0 disabled:opacity-80 disabled:pointer-events-none dark:bg-[#8c6750] dark:hover:bg-[#755441]"
+                            disabled={isExporting !== null || !part.text?.trim()}
+                            aria-label="Exporter la réponse"
+                          >
+                            {isExporting ? (
+                              <Spinner className="size-4 text-white" />
+                            ) : (
+                              <Download className="size-4" />
+                            )}
+                            <span className="text-xs">Export</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Exporter</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <DropdownMenuContent align="start" sideOffset={8} className="min-w-[180px]">
+                    <DropdownMenuItem onSelect={() => handleExport('pdf')} disabled={isExporting === 'pdf'}>
+                      <FileDown className="size-4" />
+                      Exporter en PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleExport('markdown')} disabled={isExporting === 'markdown'}>
+                      <FileText className="size-4" />
+                      Exporter en Markdown
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
