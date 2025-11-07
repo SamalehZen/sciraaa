@@ -275,15 +275,35 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
         let { height } = page.getSize();
         let maxWidth = page.getWidth() - margin * 2;
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const unsupportedCharacters = new Set<string>();
+
+        const sanitizeText = (value: string) => {
+          if (!value) {
+            return value;
+          }
+          let sanitized = '';
+          for (const char of Array.from(value)) {
+            try {
+              font.encodeText(char);
+              sanitized += char;
+            } catch {
+              unsupportedCharacters.add(char);
+              sanitized += '?';
+            }
+          }
+          return sanitized;
+        };
+
         const normalizedLines = text
           .replace(/\r\n/g, '\n')
           .split('\n')
           .reduce<string[]>((acc, paragraph, idx, arr) => {
-            if (paragraph.trim() === '') {
+            const sanitizedParagraph = sanitizeText(paragraph);
+            if (sanitizedParagraph.trim() === '') {
               acc.push('');
               return acc;
             }
-            const words = paragraph.split(/\s+/);
+            const words = sanitizedParagraph.split(/\s+/);
             let currentLine = '';
             words.forEach((word) => {
               const candidate = currentLine ? `${currentLine} ${word}` : word;
@@ -323,6 +343,8 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         downloadBlob(blob, filename);
+
+        return unsupportedCharacters;
       },
       [downloadBlob],
     );
@@ -342,13 +364,24 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
         try {
           setIsExporting(format);
           if (format === 'pdf') {
-            await exportToPdf(part.text, `${baseName}.pdf`);
+            const unsupportedCharacters = await exportToPdf(part.text, `${baseName}.pdf`);
+            const hasUnsupported = unsupportedCharacters.size > 0;
             console.info('[MessagePartRenderer] Export PDF réussi', {
               chatId: chatId ?? null,
               messageIndex,
               textLength: part.text.length,
+              unsupportedCharacters: Array.from(unsupportedCharacters),
             });
-            toast.success('PDF exporté');
+            if (hasUnsupported) {
+              console.warn('[MessagePartRenderer] Caractères remplacés pendant export PDF', {
+                chatId: chatId ?? null,
+                messageIndex,
+                unsupportedCharacters: Array.from(unsupportedCharacters),
+              });
+            }
+            toast.success(
+              hasUnsupported ? 'PDF exporté (certains caractères spéciaux ont été remplacés)' : 'PDF exporté',
+            );
           } else {
             const blob = new Blob([part.text], { type: 'text/markdown;charset=utf-8' });
             downloadBlob(blob, `${baseName}.md`);
