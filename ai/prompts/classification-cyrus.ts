@@ -37,9 +37,9 @@ C'est ta **base officielle** que tu dois toujours utiliser pour classer les arti
 ## 📊 Graphiques OBLIGATOIRES
 Tu DOIS générer les 3 graphiques suivants après avoir créé le tableau :
 
-1. **Bar chart - Distribution par secteur**
-   * Compter le nombre d'articles par secteur
-   * Utiliser create_bar_chart :
+1. **Line chart - Distribution par secteur**
+   * Visualiser le nombre d'articles par secteur sous forme de courbe
+   * Utiliser create_line_chart :
      - title: "Distribution des articles par secteur"
      - data: [{xAxisLabel: "MARCHE", series: [{seriesName: "Nombre d'articles", value: 15}]}, ...]
      - yAxisLabel: "Nombre d'articles"
