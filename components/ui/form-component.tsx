@@ -1262,8 +1262,27 @@ const StopIcon = ({ size = 16 }: { size?: number }) => {
 };
 
 const MAX_FILES = 4;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_INPUT_CHARS = 50000;
+
+const EXCEL_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-excel.sheet.macroenabled.12',
+  'application/vnd.ms-excel.template.macroenabled.12',
+  'application/vnd.ms-excel.sheet.binary.macroenabled.12',
+]);
+
+const EXCEL_EXTENSIONS = ['.xlsx', '.xls', '.xlsm', '.xlsb', '.xltx', '.xltm'];
+
+const isExcelFile = (file: File): boolean => {
+  const mimeType = file.type?.toLowerCase() ?? '';
+  if (EXCEL_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+  const filename = file.name?.toLowerCase() ?? '';
+  return EXCEL_EXTENSIONS.some((ext) => filename.endsWith(ext));
+};
 
 const fileToDataURL = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -1298,7 +1317,7 @@ const AttachmentPreview: React.FC<{
   const formatFileSize = useCallback((bytes: number): string => {
     if (bytes < 1024) return bytes + ' bytes';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB' + (bytes > MAX_FILE_SIZE ? ' (exceeds 5MB limit)' : '');
+    else return (bytes / 1048576).toFixed(1) + ' MB' + (bytes > MAX_FILE_SIZE ? ' (exceeds 20MB limit)' : '');
   }, []);
 
   const isUploadingAttachment = useCallback(
@@ -2719,6 +2738,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const excelFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
       const blockedPdfFiles: File[] = [];
@@ -2737,6 +2757,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
           } else {
             pdfFiles.push(file);
           }
+        } else if (isExcelFile(file)) {
+          excelFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
@@ -2763,7 +2785,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
+      if (imageFiles.length === 0 && pdfFiles.length === 0 && excelFiles.length === 0) {
         console.log('No supported files found');
         event.target.value = '';
         return;
@@ -2789,7 +2811,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
+      let validFiles: File[] = [...imageFiles, ...excelFiles];
       if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
         validFiles = [...validFiles, ...pdfFiles];
       }
@@ -2935,6 +2957,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const excelFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
       const blockedPdfFiles: File[] = [];
@@ -2955,13 +2978,15 @@ const FormComponent: React.FC<FormComponentProps> = ({
           } else {
             pdfFiles.push(file);
           }
+        } else if (isExcelFile(file)) {
+          excelFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
       });
 
       console.log(
-        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
+        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, Excels: ${excelFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
       );
 
       if (unsupportedFiles.length > 0) {
@@ -2977,7 +3002,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
           'Oversized files:',
           oversizedFiles.map((f) => `${f.name} (${f.size} bytes)`),
         );
-        toast.error(`Some files exceed the 5MB limit: ${oversizedFiles.map((f) => f.name).join(', ')}`);
+        toast.error(`Some files exceed the 20MB limit: ${oversizedFiles.map((f) => f.name).join(', ')}`);
       }
 
       if (blockedPdfFiles.length > 0) {
@@ -2993,8 +3018,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
-        toast.error('Only image and PDF files are supported');
+      if (imageFiles.length === 0 && pdfFiles.length === 0 && excelFiles.length === 0) {
+        toast.error('Only image, PDF, or Excel files are supported');
         return;
       }
 
@@ -3015,7 +3040,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
+      let validFiles: File[] = [...imageFiles, ...excelFiles];
       if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
         validFiles = [...validFiles, ...pdfFiles];
       }
@@ -3146,7 +3171,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
           'Oversized files:',
           oversizedFiles.map((f) => `${f.name} (${f.size} bytes)`),
         );
-        toast.error(`Some files exceed the 5MB limit: ${oversizedFiles.map((f) => f.name || 'unnamed').join(', ')}`);
+        toast.error(`Some files exceed the 20MB limit: ${oversizedFiles.map((f) => f.name || 'unnamed').join(', ')}`);
 
         const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
         if (validFiles.length === 0) return;
