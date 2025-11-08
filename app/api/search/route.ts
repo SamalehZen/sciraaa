@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   getLightweightUser,
 } from '@/app/actions';
+import { parseExcelFile, excelDataToMarkdown } from '@/lib/parse-xlsx';
 import {
   convertToModelMessages,
   streamText,
@@ -93,6 +94,17 @@ let globalStreamContext: ResumableStreamContext | null = null;
 // Shared config promise to avoid duplicate calls
 let configPromise: Promise<any>;
 
+const EXCEL_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-excel.sheet.macroenabled.12',
+  'application/vnd.ms-excel.template.macroenabled.12',
+  'application/vnd.ms-excel.sheet.binary.macroenabled.12',
+]);
+
+const EXCEL_EXTENSIONS = ['.xlsx', '.xls', '.xlsm', '.xlsb', '.xltx', '.xltm'];
+const MAX_EXCEL_ROWS_PER_SHEET = 100;
+
 export function getStreamContext() {
   if (!globalStreamContext) {
     try {
@@ -115,7 +127,7 @@ export function getStreamContext() {
 export async function POST(req: Request) {
   const requestStartTime = Date.now();
   const {
-    messages,
+    messages: rawMessages,
     model,
     group,
     timezone,
@@ -125,6 +137,18 @@ export async function POST(req: Request) {
     searchProvider,
     selectedConnectors,
   } = await req.json();
+
+  const rawMessagesTyped = rawMessages as ChatMessage[];
+  const processedMessages =
+    group === 'stockAnalysis'
+      ? await transformStockAnalysisMessages(rawMessagesTyped)
+      : rawMessagesTyped;
+  const lastProcessedMessage = processedMessages[processedMessages.length - 1];
+  const lastRawMessage = rawMessagesTyped[rawMessagesTyped.length - 1];
+
+  if (!lastProcessedMessage || !lastRawMessage) {
+    return new ChatSDKError('bad_request:api', 'No messages provided').toResponse();
+  }
   const { latitude, longitude } = geolocation(req);
   const streamId = 'stream-' + uuidv7();
 
@@ -198,7 +222,7 @@ export async function POST(req: Request) {
         after(async () => {
           try {
             const title = await generateTitleFromUserMessage({
-              message: messages[messages.length - 1],
+              message: rawMessagesTyped[rawMessagesTyped.length - 1],
             });
             await updateChatTitleById({ chatId: id, title });
           } catch (error) {
@@ -303,10 +327,10 @@ export async function POST(req: Request) {
         await saveMessages({
           messages: [{
             chatId: id,
-            id: messages[messages.length - 1].id,
-            role: 'user',
-            parts: messages[messages.length - 1].parts,
-            attachments: messages[messages.length - 1].experimental_attachments ?? [],
+            id: lastProcessedMessage.id,
+            role: lastProcessedMessage.role,
+            parts: lastProcessedMessage.parts,
+            attachments: lastRawMessage.experimental_attachments ?? [],
             createdAt: new Date(),
             model: resolvedModel,
             inputTokens: 0,
@@ -324,7 +348,7 @@ export async function POST(req: Request) {
 
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(processedMessages),
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
@@ -574,5 +598,110 @@ export async function POST(req: Request) {
   // Return streaming response with headers optimized for firewall/proxy compatibility
   return createStreamResponse(
     stream.pipeThrough(new JsonToSseTransformStream())
+  );
+}
+
+function isExcelMimeType(mime?: string) {
+  if (!mime) return false;
+  return EXCEL_MIME_TYPES.has(mime.toLowerCase());
+}
+
+function hasExcelExtension(value?: string) {
+  if (!value) return false;
+  const lower = value.toLowerCase();
+  return EXCEL_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+function isExcelFilePart(part: any): boolean {
+  if (!part || part.type !== 'file') {
+    return false;
+  }
+
+  const mime = (part.mediaType || part.contentType || '').toLowerCase();
+  if (isExcelMimeType(mime)) {
+    return true;
+  }
+
+  if (hasExcelExtension(part.name)) {
+    return true;
+  }
+
+  if (hasExcelExtension(part.url)) {
+    return true;
+  }
+
+  return false;
+}
+
+function getExcelMime(part: any): string {
+  return (part?.mediaType || part?.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') as string;
+}
+
+async function transformStockAnalysisMessages(messages: ChatMessage[]): Promise<ChatMessage[]> {
+  return Promise.all(
+    messages.map(async (message) => {
+      const originalParts = message.parts as ChatMessage['parts'] | undefined;
+      if (!originalParts || originalParts.length === 0) {
+        return message;
+      }
+
+      const transformedParts = [] as ChatMessage['parts'];
+
+      for (const part of originalParts) {
+        if (isExcelFilePart(part)) {
+          try {
+            const excelData = await parseExcelFile(part.url);
+            const truncatedSheets = excelData.sheets.map((sheet) => ({
+              name: sheet.name,
+              headers: sheet.headers,
+              rowCount: sheet.rowCount,
+              columnCount: sheet.columnCount,
+              rowsPreview: sheet.rows.slice(0, MAX_EXCEL_ROWS_PER_SHEET),
+            }));
+
+            const totalRows = excelData.sheets.reduce((sum, sheet) => sum + sheet.rowCount, 0);
+            const maxColumns = excelData.sheets.reduce((max, sheet) => Math.max(max, sheet.columnCount), 0);
+            const markdownSummary = excelDataToMarkdown(excelData);
+            const jsonPreview = JSON.stringify(truncatedSheets, null, 2);
+
+            const excelText = [
+              '[[EXCEL_DATASET]]',
+              `Nom du fichier: ${part.name ?? 'Fichier Excel'}`,
+              `Type MIME: ${getExcelMime(part)}`,
+              `Lien du fichier original: ${part.url}`,
+              `Total feuilles: ${excelData.sheets.length}`,
+              `Total lignes (toutes feuilles): ${totalRows}`,
+              `Colonnes max détectées: ${maxColumns}`,
+              '',
+              'Résumé Markdown:',
+              markdownSummary,
+              '',
+              `Prévisualisation JSON (max ${MAX_EXCEL_ROWS_PER_SHEET} lignes par feuille):`,
+              jsonPreview,
+              '',
+              'Note: Les données JSON sont tronquées pour limiter la taille. Utilise cette prévisualisation et le résumé pour ton analyse.',
+            ].join('\n');
+
+            transformedParts.push({
+              type: 'text',
+              text: excelText,
+            } as ChatMessage['parts'][number]);
+          } catch (error) {
+            console.error('Error parsing Excel file for stock analysis:', error);
+            throw new ChatSDKError(
+              'bad_request:file',
+              `Impossible de lire le fichier Excel ${part.name ?? ''}. Vérifie que le format est supporté et réessaie.`,
+            );
+          }
+        } else {
+          transformedParts.push(part);
+        }
+      }
+
+      return {
+        ...message,
+        parts: transformedParts,
+      };
+    }),
   );
 }
