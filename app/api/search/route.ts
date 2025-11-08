@@ -646,9 +646,11 @@ async function transformStockAnalysisMessages(messages: ChatMessage[]): Promise<
       }
 
       const transformedParts = [] as ChatMessage['parts'];
+      let excelFound = false;
 
       for (const part of originalParts) {
         if (isExcelFilePart(part)) {
+          excelFound = true;
           try {
             const excelData = await parseExcelFile(part.url);
             const truncatedSheets = excelData.sheets.map((sheet) => ({
@@ -696,6 +698,14 @@ async function transformStockAnalysisMessages(messages: ChatMessage[]): Promise<
         } else {
           transformedParts.push(part);
         }
+      }
+
+      if (excelFound) {
+        transformedParts.push({
+          type: 'text',
+          text:
+            "Merci d'analyser les données Excel ci-dessus et de produire immédiatement un rapport complet conforme aux règles de l'agent Analyse-Stock (Résumé exécutif, Vue d'ensemble avec table interactive, Analyses détaillées avec graphiques pertinents et diagramme Mermaid, Insights et recommandations).",
+        } as ChatMessage['parts'][number]);
       }
 
       return {
