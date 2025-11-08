@@ -7,24 +7,26 @@ import { getSessionFromHeaders } from '@/lib/local-session';
 const FileSchema = z.object({
   file: z
     .instanceof(Blob)
-    .refine((file) => file.size <= 10 * 1024 * 1024, {
-      message: 'File size should be 10MB or less',
+    .refine((file) => file.size <= 20 * 1024 * 1024, {
+      message: 'File size should be 20MB or less',
     })
     .refine(
       (file) => {
         const t = file.type || '';
         const allowedTypes = [
           'image/jpeg',
-          'image/jpg', 
+          'image/jpg',
           'image/png',
           'image/gif',
           'image/webp',
-          'application/pdf'
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+          'application/vnd.ms-excel', // .xls
         ];
         return allowedTypes.includes(t);
       },
       {
-        message: 'File type must be JPEG, PNG, GIF, WebP, or PDF',
+        message: 'File type must be JPEG, PNG, GIF, WebP, PDF, XLSX or XLS',
       },
     ),
 });

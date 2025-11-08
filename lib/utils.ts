@@ -39,7 +39,8 @@ export type SearchGroupId =
   | 'cyrus'
   | 'libeller'
   | 'nomenclature'
-  | 'pdfExcel';
+  | 'pdfExcel'
+  | 'stockAnalysis';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {
@@ -173,6 +174,13 @@ function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
       name: 'PDF → Excel',
       description: 'Extraction de tableaux depuis des PDFs (Markdown) + export .xlsx',
       icon: File02Icon,
+      show: true,
+    },
+    {
+      id: 'stockAnalysis' as const,
+      name: 'Analyse-Stock',
+      description: 'Analyse approfondie de fichiers Excel de stock avec rapports et graphiques',
+      icon: AppleStocksIcon,
       show: true,
     },
   ] as const;

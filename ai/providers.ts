@@ -775,9 +775,9 @@ export function shouldBypassRateLimits(modelValue: string, user: any): boolean {
 export function getAcceptedFileTypes(modelValue: string, isProUser: boolean): string {
   const model = getModelConfig(modelValue);
   if (model?.pdf && isProUser) {
-    return 'image/*,.pdf';
+    return 'image/*,.pdf,.xlsx,.xls';
   }
-  return 'image/*';
+  return 'image/*,.xlsx,.xls';
 }
 
 // Legacy arrays for backward compatibility (deprecated - use helper functions instead)

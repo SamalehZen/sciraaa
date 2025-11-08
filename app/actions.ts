@@ -13,6 +13,7 @@ import { CYRUS_PROMPT, CYRUS_OUTPUT_RULES } from '@/ai/prompts/classification-cy
 import { NOMENCLATURE_DOUANIERE_PROMPT } from '@/ai/prompts/nomenclature-douaniere';
 import { LIBELLER_PROMPT } from '@/ai/prompts/correction-libeller';
 import { SMART_PDF_TO_EXCEL_PROMPT } from '@/ai/prompts/pdf-to-excel';
+import { ANALYSE_STOCK_FULL_PROMPT } from '@/ai/prompts/analyse-stock';
 import { appendCentralResponseStructure } from '@/ai/prompts/response-structure';
 import {
   getChatsByUserId,
@@ -343,6 +344,7 @@ const groupTools = {
   libeller: ['create_table', 'create_bar_chart', 'create_pie_chart'] as const,
   nomenclature: ['create_table', 'create_bar_chart', 'create_pie_chart'] as const,
   pdfExcel: ['create_table', 'create_bar_chart', 'create_pie_chart', 'create_line_chart'] as const,
+  stockAnalysis: ['create_table', 'create_bar_chart', 'create_line_chart', 'create_pie_chart', 'create_mermaid_diagram', 'datetime'] as const,
   extreme: ['extreme_search'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,
@@ -1455,9 +1457,10 @@ $$
   libeller: LIBELLER_PROMPT,
   nomenclature: NOMENCLATURE_DOUANIERE_PROMPT,
   pdfExcel: SMART_PDF_TO_EXCEL_PROMPT,
+  stockAnalysis: ANALYSE_STOCK_FULL_PROMPT,
 };
 
-const charteredGroups = ['cyrus', 'libeller', 'nomenclature', 'pdfExcel'] as const;
+const charteredGroups = ['cyrus', 'libeller', 'nomenclature', 'pdfExcel', 'stockAnalysis'] as const;
 
 const groupInstructions = Object.fromEntries(
   Object.entries(rawGroupInstructions).map(([key, value]) => [

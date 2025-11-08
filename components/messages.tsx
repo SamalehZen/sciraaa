@@ -8,6 +8,7 @@ import { CyrusLoadingState } from '@/components/cyrus-loading-state';
 import { NomenclatureLoadingState } from '@/components/nomenclature-loading-state';
 import { CorrectionLibellerLoadingState } from '@/components/correction-libeller-loading-state';
 import { PdfToExcelLoadingState } from '@/components/pdf-to-excel-loading-state';
+import { StockAnalysisLoadingState } from '@/components/stock-analysis-loading-state';
 import { deleteTrailingMessages } from '@/app/actions';
 import { ChatMessage, CustomUIDataTypes } from '@/lib/types';
 import { UseChatHelpers } from '@ai-sdk/react';
@@ -294,6 +295,10 @@ const Messages: React.FC<MessagesProps> = ({
     return (status === 'submitted' || status === 'streaming') && selectedGroup === 'pdfExcel' && !hasActiveToolInvocations;
   }, [status, selectedGroup, hasActiveToolInvocations]);
 
+  const shouldShowStockAnalysisLoader = useMemo(() => {
+    return (status === 'submitted' || status === 'streaming') && selectedGroup === 'stockAnalysis' && !hasActiveToolInvocations;
+  }, [status, selectedGroup, hasActiveToolInvocations]);
+
   // Compute index of the most recent assistant message; only that one should keep min-height
   const lastAssistantIndex = useMemo(() => {
     for (let i = memoizedMessages.length - 1; i >= 0; i -= 1) {
@@ -486,8 +491,19 @@ const Messages: React.FC<MessagesProps> = ({
         </div>
       )}
 
-      {/* Default loading animation when not in Cyrus, Nomenclature, Libeller, or PdfExcel condition */}
-      {!shouldShowCyrusLoader && !shouldShowNomenclatureLoader && !shouldShowLibellerLoader && !shouldShowPdfExcelLoader && shouldShowLoading && (
+      {/* StockAnalysis loader only during streaming/submitted in stockAnalysis group and no active tools */}
+      {shouldShowStockAnalysisLoader && (
+        <div
+          className={`flex items-start ${shouldReserveLoaderMinHeight ? 'min-h-[calc(100vh-18rem)]' : ''} !m-0 !p-0`}
+        >
+          <div className="w-full !m-0 !p-0">
+            <StockAnalysisLoadingState />
+          </div>
+        </div>
+      )}
+
+      {/* Default loading animation when not in Cyrus, Nomenclature, Libeller, PdfExcel or StockAnalysis condition */}
+      {!shouldShowCyrusLoader && !shouldShowNomenclatureLoader && !shouldShowLibellerLoader && !shouldShowPdfExcelLoader && !shouldShowStockAnalysisLoader && shouldShowLoading && (
         <div
           className={`flex items-start ${shouldReserveLoaderMinHeight ? 'min-h-[calc(100vh-18rem)]' : ''} !m-0 !p-0`}
         >

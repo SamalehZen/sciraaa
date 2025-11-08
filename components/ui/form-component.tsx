@@ -3440,8 +3440,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     <Upload className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div className="space-y-1 text-center">
-                    <p className="text-sm font-medium text-foreground">Drop images or PDFs here</p>
-                    <p className="text-xs text-muted-foreground">Max {MAX_FILES} files (5MB per file)</p>
+                    <p className="text-sm font-medium text-foreground">Déposez des images, PDFs ou fichiers Excel ici</p>
+                    <p className="text-xs text-muted-foreground">Max {MAX_FILES} fichiers (20MB par fichier)</p>
                   </div>
                 </div>
               </motion.div>
