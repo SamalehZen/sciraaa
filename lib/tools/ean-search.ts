@@ -147,6 +147,58 @@ function collectImages(data: any): string[] {
   return Array.from(images).slice(0, 12);
 }
 
+async function fetchGoogleImagesLight(barcode: string): Promise<string[]> {
+  try {
+    const url = new URL('https://serpapi.com/search');
+    url.searchParams.set('engine', 'google_images_light');
+    url.searchParams.set('q', `EAN ${barcode}`);
+    url.searchParams.set('api_key', serverEnv.SERPAPI_API_KEY);
+    url.searchParams.set('hl', 'fr');
+    url.searchParams.set('gl', 'fr');
+    url.searchParams.set('google_domain', 'google.fr');
+    url.searchParams.set('device', 'desktop');
+    url.searchParams.set('location', 'Paris,Île-de-France,France');
+    url.searchParams.set('no_cache', 'true');
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      console.error('SerpAPI Google Images Light error:', response.status, response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data?.images_results)) {
+      return [];
+    }
+
+    const images: string[] = [];
+    for (const entry of data.images_results) {
+      if (!entry || typeof entry !== 'object') {
+        continue;
+      }
+      const value =
+        ensureSnippet((entry as any).original) ||
+        ensureSnippet((entry as any).image) ||
+        ensureSnippet((entry as any).thumbnail) ||
+        ensureSnippet((entry as any).serpapi_thumbnail);
+
+      if (value) {
+        images.push(value);
+      }
+
+      if (images.length >= 20) {
+        break;
+      }
+    }
+
+    return images;
+  } catch (error) {
+    console.error('Error fetching Google Images Light data:', error);
+    return [];
+  }
+}
+
 function buildShoppingResults(barcode: string, shoppingResults: unknown): ProductSearchResult[] {
   if (!Array.isArray(shoppingResults)) {
     return [];
@@ -289,6 +341,8 @@ async function fetchGoogleAIProductData(barcode: string) {
   const aggregatedResults = new Map<string, ProductSearchResult>();
   let bestDescription: string | undefined;
 
+  const imagesLightPromise = fetchGoogleImagesLight(barcode);
+
   for (const query of queryVariants) {
     const { description, images, results } = await fetchGoogleAIResponse(barcode, query);
 
@@ -308,6 +362,9 @@ async function fetchGoogleAIProductData(barcode: string) {
       break;
     }
   }
+
+  const lightImages = await imagesLightPromise;
+  lightImages.forEach((img) => aggregatedImages.add(img));
 
   const finalResults = Array.from(aggregatedResults.values()).slice(0, 8);
   const finalImages = Array.from(aggregatedImages).slice(0, 12);
