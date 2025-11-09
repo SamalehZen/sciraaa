@@ -82,6 +82,36 @@ function deriveBrand(title: string, content: string, hostname: string | null): s
   return undefined;
 }
 
+async function fetchGoogleAIDescription(barcode: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://serpapi.com/search?engine=google_ai_mode&q=EAN+${barcode}&api_key=${serverEnv.SERPAPI_API_KEY}`,
+    );
+
+    if (!response.ok) {
+      console.error('SerpAPI Google AI Mode error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    const textBlocks = data.text_blocks || [];
+    const paragraphs = textBlocks
+      .filter((block: any) => block.type === 'paragraph')
+      .map((block: any) => block.snippet)
+      .filter(Boolean);
+
+    if (paragraphs.length === 0) {
+      return null;
+    }
+
+    return paragraphs.slice(0, 3).join('\n\n');
+  } catch (error) {
+    console.error('Error fetching Google AI Mode description:', error);
+    return null;
+  }
+}
+
 type ProductSearchResult = {
   title: string;
   url: string;
@@ -92,6 +122,7 @@ type ProductSearchResult = {
   ean: string;
   publishedDate?: string;
   favicon?: string;
+  aiDescription?: string;
 };
 
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
@@ -119,7 +150,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
       try {
         const searchQuery = `EAN ${barcode}`;
 
-        const [exaResults, tavilyDomainResults] = await Promise.allSettled([
+        const [exaResults, tavilyDomainResults, googleAIDescription] = await Promise.allSettled([
           exa
             .searchAndContents(searchQuery, {
               numResults: 20,
@@ -137,6 +168,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
               }),
             ),
           ),
+          fetchGoogleAIDescription(barcode),
         ]);
 
         const collectedResults: ProductSearchResult[] = [];
@@ -208,6 +240,11 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           });
         }
 
+        let aiDescription: string | undefined;
+        if (googleAIDescription.status === 'fulfilled' && googleAIDescription.value) {
+          aiDescription = googleAIDescription.value;
+        }
+
         const seenUrls = new Set<string>();
         const finalResults: ProductSearchResult[] = [];
         for (const result of collectedResults) {
@@ -224,6 +261,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
             results: [],
             images: [],
             totalResults: 0,
+            aiDescription,
             message: 'Aucun résultat trouvé sur les sites autorisés.',
           } as const;
         }
@@ -235,6 +273,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           results: finalResults,
           images: finalImages,
           totalResults: finalResults.length,
+          aiDescription,
           message: `Found ${finalResults.length} results for barcode ${barcode}`,
         };
       } catch (err) {
@@ -243,6 +282,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           results: [],
           images: [],
           totalResults: 0,
+          aiDescription: undefined,
           message: 'Aucun résultat trouvé sur les sites autorisés.',
           error: (err as Error)?.message || 'Unknown error',
         } as const;

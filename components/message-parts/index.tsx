@@ -787,7 +787,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                 return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={barcode} />;
               }
               case 'output-available': {
-                const { barcode, results, images, totalResults } = (part as any).output || {};
+                const { barcode, results, images, totalResults, aiDescription } = (part as any).output || {};
                 return (
                   <EANSearchResults
                     key={`${messageIndex}-${partIndex}-tool`}
@@ -795,6 +795,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                     results={results || []}
                     images={images || []}
                     totalResults={totalResults ?? (results?.length || 0)}
+                    aiDescription={aiDescription}
                   />
                 );
               }

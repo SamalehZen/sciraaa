@@ -235,6 +235,7 @@ export type CustomUIDataTypes = {
     }>;
     images: string[];
     totalResults: number;
+    aiDescription?: string;
   };
 };
 
