@@ -225,6 +225,11 @@ const eanImageProviders = [
     label: 'Scrapingdog',
     description: 'Google Images API via Scrapingdog',
   },
+  {
+    value: 'serper' as const,
+    label: 'Serper.dev',
+    description: 'Google Images API via Serper.dev',
+  },
 ] as const;
 
 // Search Provider Selector Component
@@ -305,15 +310,15 @@ function EANImageProviderSelector({
   value,
   onValueChange,
 }: {
-  value: 'serpapi' | 'scrapingdog';
-  onValueChange: (value: 'serpapi' | 'scrapingdog') => void;
+  value: 'serpapi' | 'scrapingdog' | 'serper';
+  onValueChange: (value: 'serpapi' | 'scrapingdog' | 'serper') => void;
 }) {
   return (
     <div className="space-y-2">
       <label className="text-xs font-medium text-muted-foreground uppercase tracking-[0.12em]">
         Fournisseur images EAN
       </label>
-      <Select value={value} onValueChange={(val) => onValueChange(val as 'serpapi' | 'scrapingdog')}>
+      <Select value={value} onValueChange={(val) => onValueChange(val as 'serpapi' | 'scrapingdog' | 'serper')}>
         <SelectTrigger className="w-full">
           <div className="flex items-center justify-between w-full">
             <div className="flex flex-col items-start">
@@ -354,7 +359,7 @@ function PreferencesSection({
     'hyper-search-provider',
     'parallel',
   );
-  const [eanProvider, setEanProvider] = useLocalStorage<'serpapi' | 'scrapingdog'>(
+  const [eanProvider, setEanProvider] = useLocalStorage<'serpapi' | 'scrapingdog' | 'serper'>(
     'hyper-ean-provider',
     'serpapi',
   );
@@ -379,12 +384,14 @@ function PreferencesSection({
     );
   };
 
-  const handleEanProviderChange = (newProvider: 'serpapi' | 'scrapingdog') => {
+  const handleEanProviderChange = (newProvider: 'serpapi' | 'scrapingdog' | 'serper') => {
     setEanProvider(newProvider);
     toast.success(
       newProvider === 'scrapingdog'
         ? 'Fournisseur EAN basculé sur Scrapingdog'
-        : 'Fournisseur EAN basculé sur SerpAPI',
+        : newProvider === 'serper'
+          ? 'Fournisseur EAN basculé sur Serper.dev'
+          : 'Fournisseur EAN basculé sur SerpAPI',
     );
   };
 

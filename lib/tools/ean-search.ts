@@ -18,7 +18,7 @@ type ProductSearchResult = {
   favicon?: string;
 };
 
-type EANImageProvider = 'serpapi' | 'scrapingdog';
+type EANImageProvider = 'serpapi' | 'scrapingdog' | 'serper';
 
 function ensureSnippet(value: unknown): string | null {
   if (typeof value !== 'string') {
@@ -245,6 +245,51 @@ async function fetchScrapingdogImages(query: string): Promise<string[]> {
   }
 }
 
+async function fetchSerperImages(query: string): Promise<string[]> {
+  try {
+    const response = await fetch('https://google.serper.dev/images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': serverEnv.SERPER_API_KEY,
+      },
+      body: JSON.stringify({ q: query, gl: 'fr', hl: 'fr' }),
+    });
+
+    if (!response.ok) {
+      console.error('Serper.dev Google Images API error:', response.status, response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data?.images)) {
+      return [];
+    }
+
+    const images: string[] = [];
+    for (const entry of data.images) {
+      if (!entry || typeof entry !== 'object') continue;
+      const value =
+        ensureSnippet((entry as any).imageUrl) ||
+        ensureSnippet((entry as any).thumbnailUrl) ||
+        ensureSnippet((entry as any).link);
+
+      if (value) {
+        images.push(value);
+      }
+
+      if (images.length >= 20) {
+        break;
+      }
+    }
+
+    return images;
+  } catch (error) {
+    console.error('Error fetching Serper.dev Google Images data:', error);
+    return [];
+  }
+}
+
 function buildShoppingResults(barcode: string, shoppingResults: unknown): ProductSearchResult[] {
   if (!Array.isArray(shoppingResults)) {
     return [];
@@ -414,6 +459,11 @@ async function fetchGoogleAIProductData(barcode: string, imageProvider: EANImage
     scrapingdogImages.forEach((img) => aggregatedImages.add(img));
   }
 
+  if (imageProvider === 'serper') {
+    const serperImages = await fetchSerperImages(`EAN ${barcode}`);
+    serperImages.forEach((img) => aggregatedImages.add(img));
+  }
+
   const lightImages = await imagesLightPromise;
   lightImages.forEach((img) => aggregatedImages.add(img));
 
@@ -443,7 +493,7 @@ export function eanSearchTool(
   dataStream: UIMessageStreamWriter<ChatMessage> | undefined,
   options?: { imageProvider?: EANImageProvider },
 ) {
-  const selectedImageProvider: EANImageProvider = options?.imageProvider === 'scrapingdog' ? 'scrapingdog' : 'serpapi';
+  const selectedImageProvider: EANImageProvider = options?.imageProvider ?? 'serpapi';
   return tool({
     description:
       'Search for product information using EAN/UPC barcode. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides a barcode number (13 digits for EAN-13, 8 digits for EAN-8, or 12 digits for UPC).',

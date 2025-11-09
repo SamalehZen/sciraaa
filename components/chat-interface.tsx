@@ -136,7 +136,7 @@ const ChatInterface = memo(
       'hyper-search-provider',
       'parallel',
     );
-    const [eanProvider] = useLocalStorage<'serpapi' | 'scrapingdog'>('hyper-ean-provider', 'serpapi');
+    const [eanProvider] = useLocalStorage<'serpapi' | 'scrapingdog' | 'serper'>('hyper-ean-provider', 'serpapi');
 
     // Use reducer for complex state management
     const [chatState, dispatch] = useReducer(
