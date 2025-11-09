@@ -77,6 +77,12 @@ const ProductCard: React.FC<{ product: ProductResult; onClick?: () => void }> = 
             )}
           </div>
 
+          {product.content && (
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+              {product.content}
+            </p>
+          )}
+
         </div>
       </div>
     </a>
@@ -225,15 +231,8 @@ export function EANSearchResults({ barcode, results, images, totalResults, aiDes
             </AccordionTrigger>
             
             <AccordionContent className="px-4 pb-4 space-y-4">
-              {images.length > 0 && (
-                <ProductImageGallery 
-                  images={images} 
-                  productName={results[0]?.title || 'Produit'} 
-                />
-              )}
-
               {aiDescription && (
-                <div className="space-y-2 p-4 bg-gradient-to-r from-blue-50/50 to-cyan-50/50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                <div className="space-y-2 p-4 bg-gradient-to-r from-blue-50/60 via-cyan-50/60 to-blue-50/60 dark:from-blue-950/40 dark:via-cyan-950/40 dark:to-blue-950/40 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
                   <div className="flex items-center gap-2">
                     <svg
                       className="w-4 h-4 text-blue-600 dark:text-blue-400"
@@ -248,10 +247,17 @@ export function EANSearchResults({ barcode, results, images, totalResults, aiDes
                       Description enrichie par Google AI
                     </h4>
                   </div>
-                  <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                  <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
                     {aiDescription}
                   </div>
                 </div>
+              )}
+
+              {images.length > 0 && (
+                <ProductImageGallery 
+                  images={images} 
+                  productName={results[0]?.title || 'Produit'} 
+                />
               )}
 
               <div className="space-y-2">
