@@ -18,12 +18,6 @@ type ProductSearchResult = {
   favicon?: string;
 };
 
-type GoogleAIProductData = {
-  description?: string;
-  images: string[];
-  results: ProductSearchResult[];
-};
-
 function ensureSnippet(value: unknown): string | null {
   if (typeof value !== 'string') {
     return null;
@@ -45,7 +39,7 @@ function buildDescription(textBlocks: unknown): string | undefined {
     return undefined;
   }
 
-  const parts: string[] = [];
+  const segments: string[] = [];
 
   for (const block of textBlocks) {
     if (!block || typeof block !== 'object') {
@@ -57,7 +51,7 @@ function buildDescription(textBlocks: unknown): string | undefined {
     if (type === 'paragraph' || type === 'conversation') {
       const snippet = ensureSnippet((block as any).snippet);
       if (snippet) {
-        parts.push(snippet);
+        segments.push(snippet);
       }
       continue;
     }
@@ -65,7 +59,7 @@ function buildDescription(textBlocks: unknown): string | undefined {
     if (type === 'heading') {
       const snippet = ensureSnippet((block as any).snippet);
       if (snippet) {
-        parts.push(snippet);
+        segments.push(snippet);
       }
       continue;
     }
@@ -79,16 +73,16 @@ function buildDescription(textBlocks: unknown): string | undefined {
         const formatted = items
           .map((entry, index) => (type === 'bulleted_list' ? `• ${entry}` : `${index + 1}. ${entry}`))
           .join('\n');
-        parts.push(formatted);
+        segments.push(formatted);
       }
     }
   }
 
-  if (parts.length === 0) {
+  if (segments.length === 0) {
     return undefined;
   }
 
-  return parts.join('\n\n');
+  return segments.join('\n\n');
 }
 
 function collectImages(data: any): string[] {
@@ -186,7 +180,8 @@ function buildShoppingResults(barcode: string, shoppingResults: unknown): Produc
       contentParts.push(`Note: ${ratingValue}/5${reviewsCount ? ` (${reviewsCount} avis)` : ''}`);
     }
 
-    const availability = ensureSnippet(item.availability) || ensureSnippet(item.shipping) || ensureSnippet(item.delivery);
+    const availability =
+      ensureSnippet(item.availability) || ensureSnippet(item.shipping) || ensureSnippet(item.delivery);
     if (availability) {
       contentParts.push(availability);
     }
@@ -212,32 +207,128 @@ function buildShoppingResults(barcode: string, shoppingResults: unknown): Produc
   return results;
 }
 
-async function fetchGoogleAIProductData(barcode: string): Promise<GoogleAIProductData> {
+function sanitizeDescription(barcode: string, description: string | undefined): string | undefined {
+  if (!description) {
+    return undefined;
+  }
+
+  const lower = description.toLowerCase();
+  const rejectionPhrases = [
+    'not currently a recognized',
+    'not currently recognized',
+    'unknown product',
+    'aucun résultat',
+    'no results',
+    'no links between',
+    'aucune information disponible',
+    'unable to find',
+  ];
+
+  if (rejectionPhrases.some((phrase) => lower.includes(phrase))) {
+    return undefined;
+  }
+
+  if (!description.includes(barcode)) {
+    return `Le code-barres EAN ${barcode} correspond au produit suivant :\n\n${description}`;
+  }
+
+  return description;
+}
+
+async function fetchGoogleAIResponse(barcode: string, query: string) {
   try {
-    const response = await fetch(
-      `https://serpapi.com/search?engine=google_ai_mode&q=EAN+${barcode}&api_key=${serverEnv.SERPAPI_API_KEY}`,
-    );
+    const url = new URL('https://serpapi.com/search');
+    url.searchParams.set('engine', 'google_ai_mode');
+    url.searchParams.set('q', query);
+    url.searchParams.set('api_key', serverEnv.SERPAPI_API_KEY);
+    url.searchParams.set('hl', 'fr');
+    url.searchParams.set('gl', 'fr');
+    url.searchParams.set('google_domain', 'google.fr');
+    url.searchParams.set('device', 'desktop');
+    url.searchParams.set('location', 'Paris,Île-de-France,France');
+    url.searchParams.set('no_cache', 'true');
+
+    const response = await fetch(url.toString());
 
     if (!response.ok) {
-      console.error('SerpAPI Google AI Mode error:', response.status, response.statusText);
-      return { description: undefined, images: [], results: [] };
+      console.error('SerpAPI Google AI Mode error:', response.status, response.statusText, query);
+      return {
+        description: undefined,
+        images: [],
+        results: [],
+      };
     }
 
     const data = await response.json();
 
-    const description = buildDescription(data?.text_blocks);
-    const images = collectImages(data);
-    const results = buildShoppingResults(barcode, data?.shopping_results);
-
     return {
-      description,
-      images,
-      results,
+      description: buildDescription(data?.text_blocks),
+      images: collectImages(data),
+      results: buildShoppingResults(barcode, data?.shopping_results),
     };
   } catch (error) {
-    console.error('Error fetching Google AI Mode data:', error);
-    return { description: undefined, images: [], results: [] };
+    console.error('Error fetching Google AI Mode data:', error, query);
+    return {
+      description: undefined,
+      images: [],
+      results: [],
+    };
   }
+}
+
+async function fetchGoogleAIProductData(barcode: string) {
+  const queryVariants = [
+    `EAN ${barcode}`,
+    `Code-barres ${barcode}`,
+    `${barcode} produit`,
+    `${barcode} description détaillée`,
+    `${barcode} Carrefour`,
+  ];
+
+  const aggregatedImages = new Set<string>();
+  const aggregatedResults = new Map<string, ProductSearchResult>();
+  let bestDescription: string | undefined;
+
+  for (const query of queryVariants) {
+    const { description, images, results } = await fetchGoogleAIResponse(barcode, query);
+
+    images.forEach((img) => aggregatedImages.add(img));
+    results.forEach((result) => {
+      if (!aggregatedResults.has(result.url)) {
+        aggregatedResults.set(result.url, result);
+      }
+    });
+
+    const sanitized = sanitizeDescription(barcode, description);
+    if (!bestDescription && sanitized) {
+      bestDescription = sanitized;
+    }
+
+    if (bestDescription && aggregatedImages.size >= 4 && aggregatedResults.size >= 3) {
+      break;
+    }
+  }
+
+  const finalResults = Array.from(aggregatedResults.values()).slice(0, 8);
+  const finalImages = Array.from(aggregatedImages).slice(0, 12);
+
+  if (!bestDescription && finalResults.length > 0) {
+    const primary = finalResults[0];
+    const summaryLines = [
+      `Le code-barres EAN ${barcode} correspond au produit suivant :`,
+      primary.title,
+      primary.supplier ? `Marque : ${primary.supplier}` : undefined,
+      primary.price ? `Prix indicatif : ${primary.price}` : undefined,
+      `Données récupérées via Google AI Mode.`,
+    ].filter(Boolean) as string[];
+    bestDescription = summaryLines.join('\n');
+  }
+
+  return {
+    description: bestDescription,
+    images: finalImages,
+    results: finalResults,
+  };
 }
 
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
