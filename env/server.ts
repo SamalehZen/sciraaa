@@ -6,6 +6,7 @@ export const serverEnv = createEnv({
   server: {
     GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
     SERPAPI_API_KEY: z.string().min(1),
+    SCRAPINGDOG_API_KEY: z.string().min(1),
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
     BLOB_READ_WRITE_TOKEN: z.string().min(1),

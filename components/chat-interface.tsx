@@ -132,10 +132,11 @@ const ChatInterface = memo(
       true,
     );
 
-    const [searchProvider, _] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
+    const [searchProvider] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
       'hyper-search-provider',
       'parallel',
     );
+    const [eanProvider] = useLocalStorage<'serpapi' | 'scrapingdog'>('hyper-ean-provider', 'serpapi');
 
     // Use reducer for complex state management
     const [chatState, dispatch] = useReducer(
@@ -278,6 +279,7 @@ const ChatInterface = memo(
     const selectedGroupRef = useRef(selectedGroup);
     const isCustomInstructionsEnabledRef = useRef(isCustomInstructionsEnabled);
     const searchProviderRef = useRef(searchProvider);
+    const eanProviderRef = useRef(eanProvider);
     const selectedConnectorsRef = useRef(selectedConnectors);
 
     // Update refs whenever state changes - this ensures we always have current values
@@ -285,6 +287,7 @@ const ChatInterface = memo(
     selectedGroupRef.current = selectedGroup;
     isCustomInstructionsEnabledRef.current = isCustomInstructionsEnabled;
     searchProviderRef.current = searchProvider;
+    eanProviderRef.current = eanProvider;
     selectedConnectorsRef.current = selectedConnectors;
 
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
@@ -302,6 +305,7 @@ const ChatInterface = memo(
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
+              eanProvider: eanProviderRef.current,
               selectedConnectors: selectedConnectorsRef.current,
               ...(initialChatId ? { chat_id: initialChatId } : {}),
               ...body,

@@ -214,6 +214,19 @@ const searchProviders = [
   },
 ] as const;
 
+const eanImageProviders = [
+  {
+    value: 'serpapi' as const,
+    label: 'SerpAPI',
+    description: 'Google AI Mode + Google Images (SerpAPI)',
+  },
+  {
+    value: 'scrapingdog' as const,
+    label: 'Scrapingdog',
+    description: 'Google Images API via Scrapingdog',
+  },
+] as const;
+
 // Search Provider Selector Component
 function SearchProviderSelector({
   value,
@@ -288,6 +301,44 @@ function SearchProviderSelector({
   );
 }
 
+function EANImageProviderSelector({
+  value,
+  onValueChange,
+}: {
+  value: 'serpapi' | 'scrapingdog';
+  onValueChange: (value: 'serpapi' | 'scrapingdog') => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-muted-foreground uppercase tracking-[0.12em]">
+        Fournisseur images EAN
+      </label>
+      <Select value={value} onValueChange={(val) => onValueChange(val as 'serpapi' | 'scrapingdog')}>
+        <SelectTrigger className="w-full">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-foreground">{eanImageProviders.find((p) => p.value === value)?.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {eanImageProviders.find((p) => p.value === value)?.description}
+              </span>
+            </div>
+          </div>
+        </SelectTrigger>
+        <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-32px)]">
+          {eanImageProviders.map((provider) => (
+            <SelectItem key={provider.value} value={provider.value}>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{provider.label}</span>
+                <span className="text-xs text-muted-foreground">{provider.description}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 // Component for Combined Preferences (Search + Custom Instructions)
 function PreferencesSection({
   user,
@@ -302,6 +353,10 @@ function PreferencesSection({
   const [searchProvider, setSearchProvider] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
     'hyper-search-provider',
     'parallel',
+  );
+  const [eanProvider, setEanProvider] = useLocalStorage<'serpapi' | 'scrapingdog'>(
+    'hyper-ean-provider',
+    'serpapi',
   );
 
   const [content, setContent] = useState('');
@@ -321,6 +376,15 @@ function PreferencesSection({
             ? 'Tavily'
             : 'Firecrawl'
       }`,
+    );
+  };
+
+  const handleEanProviderChange = (newProvider: 'serpapi' | 'scrapingdog') => {
+    setEanProvider(newProvider);
+    toast.success(
+      newProvider === 'scrapingdog'
+        ? 'Fournisseur EAN basculé sur Scrapingdog'
+        : 'Fournisseur EAN basculé sur SerpAPI',
     );
   };
 
@@ -523,7 +587,20 @@ function PreferencesSection({
           <div className="space-y-2.5">
             <SearchProviderSelector value={searchProvider} onValueChange={handleSearchProviderChange} />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Sélectionnez votre moteur de recherche préféré pour les recherches Web. Les changements prennent effet immédiatement et seront utilisés pour toutes les recherches futures.
+              Impacte les recherches web standard (Web, X, Académique...).
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            <EANImageProviderSelector value={eanProvider} onValueChange={handleEanProviderChange} />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Contrôle la source d’images pour l’agent EAN-Expert.
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Les préférences sont sauvegardées automatiquement et s’appliqueront aux prochaines recherches.
             </p>
           </div>
         </div>

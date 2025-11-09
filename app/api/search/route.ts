@@ -125,6 +125,7 @@ export async function POST(req: Request) {
     isCustomInstructionsEnabled,
     searchProvider,
     selectedConnectors,
+    eanProvider,
   } = await req.json();
   const { latitude, longitude } = geolocation(req);
   const streamId = 'stream-' + uuidv7();
@@ -381,6 +382,8 @@ export async function POST(req: Request) {
           return undefined;
         },
         tools: (() => {
+          const normalizedEANProvider = eanProvider === 'scrapingdog' ? 'scrapingdog' : 'serpapi';
+
           const baseTools = {
             stock_chart: stockChartTool,
             currency_converter: currencyConverterTool,
@@ -415,7 +418,7 @@ export async function POST(req: Request) {
             track_flight: flightTrackerTool,
             datetime: datetimeTool,
             extreme_search: extremeSearchTool(dataStream),
-            ean_search: eanSearchTool(dataStream),
+            ean_search: eanSearchTool(dataStream, { imageProvider: normalizedEANProvider }),
             greeting: greetingTool(timezone),
             code_context: codeContextTool,
           };

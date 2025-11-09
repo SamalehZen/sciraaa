@@ -18,6 +18,8 @@ type ProductSearchResult = {
   favicon?: string;
 };
 
+type EANImageProvider = 'serpapi' | 'scrapingdog';
+
 function ensureSnippet(value: unknown): string | null {
   if (typeof value !== 'string') {
     return null;
@@ -199,6 +201,50 @@ async function fetchGoogleImagesLight(barcode: string): Promise<string[]> {
   }
 }
 
+async function fetchScrapingdogImages(query: string): Promise<string[]> {
+  try {
+    const url = new URL('https://api.scrapingdog.com/google_images');
+    url.searchParams.set('api_key', serverEnv.SCRAPINGDOG_API_KEY);
+    url.searchParams.set('query', query);
+    url.searchParams.set('domain', 'google.fr');
+    url.searchParams.set('country', 'fr');
+    url.searchParams.set('language', 'fr');
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      console.error('Scrapingdog Google Images API error:', response.status, response.statusText);
+      return [];
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data?.images_results)) {
+      return [];
+    }
+
+    const images: string[] = [];
+    for (const entry of data.images_results) {
+      if (!entry || typeof entry !== 'object') continue;
+      const value =
+        ensureSnippet((entry as any).original) ||
+        ensureSnippet((entry as any).image) ||
+        ensureSnippet((entry as any).thumbnail);
+
+      if (value) {
+        images.push(value);
+      }
+
+      if (images.length >= 20) {
+        break;
+      }
+    }
+
+    return images;
+  } catch (error) {
+    console.error('Error fetching Scrapingdog Google Images data:', error);
+    return [];
+  }
+}
+
 function buildShoppingResults(barcode: string, shoppingResults: unknown): ProductSearchResult[] {
   if (!Array.isArray(shoppingResults)) {
     return [];
@@ -328,7 +374,7 @@ async function fetchGoogleAIResponse(barcode: string, query: string) {
   }
 }
 
-async function fetchGoogleAIProductData(barcode: string) {
+async function fetchGoogleAIProductData(barcode: string, imageProvider: EANImageProvider) {
   const queryVariants = [
     `EAN ${barcode}`,
     `Code-barres ${barcode}`,
@@ -341,7 +387,7 @@ async function fetchGoogleAIProductData(barcode: string) {
   const aggregatedResults = new Map<string, ProductSearchResult>();
   let bestDescription: string | undefined;
 
-  const imagesLightPromise = fetchGoogleImagesLight(barcode);
+  const imagesLightPromise = imageProvider === 'serpapi' ? fetchGoogleImagesLight(barcode) : Promise.resolve<string[]>([]);
 
   for (const query of queryVariants) {
     const { description, images, results } = await fetchGoogleAIResponse(barcode, query);
@@ -361,6 +407,11 @@ async function fetchGoogleAIProductData(barcode: string) {
     if (bestDescription && aggregatedImages.size >= 4 && aggregatedResults.size >= 3) {
       break;
     }
+  }
+
+  if (imageProvider === 'scrapingdog') {
+    const scrapingdogImages = await fetchScrapingdogImages(`EAN ${barcode}`);
+    scrapingdogImages.forEach((img) => aggregatedImages.add(img));
   }
 
   const lightImages = await imagesLightPromise;
@@ -388,7 +439,11 @@ async function fetchGoogleAIProductData(barcode: string) {
   };
 }
 
-export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
+export function eanSearchTool(
+  dataStream: UIMessageStreamWriter<ChatMessage> | undefined,
+  options?: { imageProvider?: EANImageProvider },
+) {
+  const selectedImageProvider: EANImageProvider = options?.imageProvider === 'scrapingdog' ? 'scrapingdog' : 'serpapi';
   return tool({
     description:
       'Search for product information using EAN/UPC barcode. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides a barcode number (13 digits for EAN-13, 8 digits for EAN-8, or 12 digits for UPC).',
@@ -401,7 +456,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
       }
 
       try {
-        const { description, images, results } = await fetchGoogleAIProductData(barcode);
+        const { description, images, results } = await fetchGoogleAIProductData(barcode, selectedImageProvider);
         const totalResults = results.length;
 
         if (!description && totalResults === 0 && images.length === 0) {
