@@ -331,15 +331,21 @@ function EANImageProviderSelector({
         </SelectTrigger>
         <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-32px)]">
           {eanImageProviders.map((provider) => (
-            <SelectItem key={provider.value} value={provider.value}>
+            <SelectItem key={provider.value} value={provider.value} disabled={provider.value !== 'serper'}>
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{provider.label}</span>
-                <span className="text-xs text-muted-foreground">{provider.description}</span>
+                <span className="text-xs text-muted-foreground">
+                  {provider.description}
+                  {provider.value !== 'serper' ? ' (désactivé)' : ''}
+                </span>
               </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      {value !== 'serper' && (
+        <p className="text-[10px] text-destructive mt-1">Ce fournisseur est désactivé. Serper.dev est utilisé par défaut.</p>
+      )}
     </div>
   );
 }
@@ -361,11 +367,17 @@ function PreferencesSection({
   );
   const [eanProvider, setEanProvider] = useLocalStorage<'serpapi' | 'scrapingdog' | 'serper'>(
     'hyper-ean-provider',
-    'serpapi',
+    'serper',
   );
 
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (eanProvider !== 'serper') {
+      setEanProvider('serper');
+    }
+  }, [eanProvider, setEanProvider]);
 
   const enabled = isCustomInstructionsEnabled ?? true;
   const setEnabled = setIsCustomInstructionsEnabled ?? (() => { });
@@ -601,7 +613,7 @@ function PreferencesSection({
           <div className="space-y-2.5">
             <EANImageProviderSelector value={eanProvider} onValueChange={handleEanProviderChange} />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Contrôle la source d’images pour l’agent EAN-Expert.
+              Contrôle la source d’images pour l’agent EAN-Expert. Seul Serper.dev est disponible actuellement.
             </p>
           </div>
 

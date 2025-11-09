@@ -382,8 +382,7 @@ export async function POST(req: Request) {
           return undefined;
         },
         tools: (() => {
-          const normalizedEANProvider: 'serpapi' | 'scrapingdog' | 'serper' =
-            eanProvider === 'scrapingdog' ? 'scrapingdog' : eanProvider === 'serper' ? 'serper' : 'serpapi';
+          const normalizedEANProvider: 'serpapi' | 'scrapingdog' | 'serper' = 'serper';
 
           const baseTools = {
             stock_chart: stockChartTool,

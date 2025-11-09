@@ -493,7 +493,7 @@ export function eanSearchTool(
   dataStream: UIMessageStreamWriter<ChatMessage> | undefined,
   options?: { imageProvider?: EANImageProvider },
 ) {
-  const selectedImageProvider: EANImageProvider = options?.imageProvider ?? 'serpapi';
+  const selectedImageProvider: EANImageProvider = options?.imageProvider ?? 'serper';
   return tool({
     description:
       'Search for product information using EAN/UPC barcode. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides a barcode number (13 digits for EAN-13, 8 digits for EAN-8, or 12 digits for UPC).',

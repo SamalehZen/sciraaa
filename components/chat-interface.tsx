@@ -136,9 +136,15 @@ const ChatInterface = memo(
       'hyper-search-provider',
       'parallel',
     );
-    const [eanProvider] = useLocalStorage<'serpapi' | 'scrapingdog' | 'serper'>('hyper-ean-provider', 'serpapi');
+    const [eanProvider, setEanProvider] = useLocalStorage<'serpapi' | 'scrapingdog' | 'serper'>('hyper-ean-provider', 'serper');
 
     // Use reducer for complex state management
+    useEffect(() => {
+      if (eanProvider !== 'serper') {
+        setEanProvider('serper');
+      }
+    }, [eanProvider, setEanProvider]);
+
     const [chatState, dispatch] = useReducer(
       chatReducer,
       createInitialState(
@@ -279,7 +285,7 @@ const ChatInterface = memo(
     const selectedGroupRef = useRef(selectedGroup);
     const isCustomInstructionsEnabledRef = useRef(isCustomInstructionsEnabled);
     const searchProviderRef = useRef(searchProvider);
-    const eanProviderRef = useRef(eanProvider);
+    const eanProviderRef = useRef<'serper'>('serper');
     const selectedConnectorsRef = useRef(selectedConnectors);
 
     // Update refs whenever state changes - this ensures we always have current values
@@ -287,7 +293,7 @@ const ChatInterface = memo(
     selectedGroupRef.current = selectedGroup;
     isCustomInstructionsEnabledRef.current = isCustomInstructionsEnabled;
     searchProviderRef.current = searchProvider;
-    eanProviderRef.current = eanProvider;
+    eanProviderRef.current = 'serper';
     selectedConnectorsRef.current = selectedConnectors;
 
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
@@ -305,7 +311,7 @@ const ChatInterface = memo(
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
-              eanProvider: eanProviderRef.current,
+              eanProvider: 'serper',
               selectedConnectors: selectedConnectorsRef.current,
               ...(initialChatId ? { chat_id: initialChatId } : {}),
               ...body,
