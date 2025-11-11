@@ -72,51 +72,10 @@ const ChatInterface = memo(
       true,
     );
 
-    // Settings dialog state management with URL hash support
-    const [settingsOpen, setSettingsOpen] = useState(false);
-    const [settingsInitialTab, setSettingsInitialTab] = useState<string>('profile');
-
-    // Function to open settings with a specific tab
-    const handleOpenSettings = useCallback((tab: string = 'profile') => {
-      setSettingsInitialTab(tab);
-      setSettingsOpen(true);
-    }, []);
-
-    // URL hash detection for settings dialog
-    useEffect(() => {
-      const handleHashChange = () => {
-        const hash = window.location.hash;
-        if (hash === '#settings') {
-          setSettingsOpen(true);
-        }
-      };
-
-      // Check initial hash
-      handleHashChange();
-
-      // Listen for hash changes
-      window.addEventListener('hashchange', handleHashChange);
-
-      return () => {
-        window.removeEventListener('hashchange', handleHashChange);
-      };
-    }, []);
-
-    // Update URL hash when settings dialog opens/closes
-    useEffect(() => {
-      if (settingsOpen) {
-        // Only update hash if it's not already #settings to prevent infinite loops
-        if (window.location.hash !== '#settings') {
-          window.history.pushState(null, '', '#settings');
-        }
-      } else {
-        // Remove hash if settings is closed and hash is #settings
-        if (window.location.hash === '#settings') {
-          // Use replaceState to avoid adding to browser history
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
-      }
-    }, [settingsOpen]);
+    // Function to open settings page
+    const handleOpenSettings = useCallback((tab: string = 'usage') => {
+      router.push(`/settings?tab=${tab}`);
+    }, [router]);
 
     // Get persisted values for dialog states
     const [persistedHasShownUpgradeDialog, setPersitedHasShownUpgradeDialog] = useLocalStorage(
@@ -679,9 +638,6 @@ const ChatInterface = memo(
           isProStatusLoading={proStatusLoading}
           isCustomInstructionsEnabled={isCustomInstructionsEnabled}
           setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-          settingsOpen={settingsOpen}
-          setSettingsOpen={setSettingsOpen}
-          settingsInitialTab={settingsInitialTab}
         />
 
         {/* Chat Dialogs Component */}

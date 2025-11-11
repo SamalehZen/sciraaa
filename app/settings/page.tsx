@@ -42,10 +42,10 @@ function SettingsPageInner() {
   const defaultTab = searchParams.get('tab') || 'usage';
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
-    'scira-custom-instructions-enabled',
+    'hyper-custom-instructions-enabled',
     true,
   );
-  const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>('scira-blur-personal-info', false);
+  const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>('hyper-blur-personal-info', false);
 
   const tabs = [
     { value: 'usage', label: 'Usage', icon: Analytics01Icon },
