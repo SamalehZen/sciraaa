@@ -85,18 +85,7 @@ async function searchSerperImages(query: string, num: number = 20): Promise<{ im
   }
 }
 
-const allowedSources = [
-  'https://www.barcodelookup.com/',
-  'https://go-upc.com/',
-  'https://www.gs1.org/services/verified-by-gs1',
-  'https://www.eandata.com/',
-  'https://www.upcindex.com/',
-  'https://www.carrefour.fr/',
-  'https://fr.openfoodfacts.org/',
-  'https://carrefour-express.fr/',
-  'https://world.openfoodfacts.org/',
-];
-
+// No domain filtering - accept ALL results from Serper
 const hostToBrandFallback: Record<string, string> = {
   'www.barcodelookup.com': 'Barcode Lookup',
   'barcodelookup.com': 'Barcode Lookup',
@@ -109,15 +98,14 @@ const hostToBrandFallback: Record<string, string> = {
   'carrefour-express.fr': 'Carrefour Express',
   'fr.openfoodfacts.org': 'Open Food Facts',
   'world.openfoodfacts.org': 'Open Food Facts',
-};
-
-function extractDomain(value: string): string | null {
-  try {
-    const url = value.includes('://') ? new URL(value) : new URL(`https://${value}`);
-    return url.hostname.replace(/^www\./, '');
-  } catch {
-    return null;
-  }
+  'amazon.fr': 'Amazon',
+  'www.amazon.fr': 'Amazon',
+  'www.auchan.fr': 'Auchan',
+  'auchan.fr': 'Auchan',
+  'www.leclerc.com': 'Leclerc',
+  'leclerc.com': 'Leclerc',
+  'www.intermarche.com': 'Intermarché',
+  'intermarche.com': 'Intermarché',
 }
 
 function getHostname(value: string): string | null {
@@ -183,16 +171,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
         throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
       }
 
-      const normalizedDomains = Array.from(
-        new Set(allowedSources.map(extractDomain).filter((domain): domain is string => Boolean(domain))),
-      );
-      const allowedHostnames = new Set<string>();
-      normalizedDomains.forEach((domain) => {
-        allowedHostnames.add(domain);
-        allowedHostnames.add(domain.replace(/^www\./, ''));
-        allowedHostnames.add(`www.${domain.replace(/^www\./, '')}`);
-      });
-
       try {
         const searchQuery = `EAN ${barcode}`;
 
@@ -217,16 +195,11 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           console.log(`[EAN Search] Collected ${imageResults.images.length} images from dedicated image search`);
         }
 
+        // Accept ALL organic results from Serper (no domain filtering)
         if (serperResults.organic) {
           for (const result of serperResults.organic) {
             const url = result.link;
             const hostname = url ? getHostname(url) : null;
-            if (!hostname) continue;
-            const normalizedHost = hostname.replace(/^www\./, '');
-            if (!allowedHostnames.has(normalizedHost) && !allowedHostnames.has(hostname)) {
-              continue;
-            }
-
             const content = result.snippet || '';
             const brand = deriveBrand(result.title || '', content, hostname);
 
@@ -269,65 +242,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           });
         }
 
-        const domainSearches = normalizedDomains.slice(0, 5).map((domain) =>
-          searchSerper(`EAN ${barcode} site:${domain}`, 4).catch(() => null),
-        );
-
-        const domainResults = await Promise.all(domainSearches);
-
-        for (const domainResult of domainResults) {
-          if (!domainResult?.organic) continue;
-
-          for (const result of domainResult.organic) {
-            const url = result.link;
-            const hostname = url ? getHostname(url) : null;
-            if (!hostname) continue;
-            const normalizedHost = hostname.replace(/^www\./, '');
-            if (!allowedHostnames.has(normalizedHost) && !allowedHostnames.has(hostname)) {
-              continue;
-            }
-
-            const content = result.snippet || '';
-            const brand = deriveBrand(result.title || '', content, hostname);
-
-            collectedResults.push({
-              title: result.title || '',
-              url,
-              content,
-              images: [],
-              supplier: brand || undefined,
-              ean: barcode,
-              publishedDate: result.date || undefined,
-            });
-          }
-
-          // Collect images from Knowledge Graph
-          if (domainResult.knowledgeGraph?.imageUrl) {
-            collectedImages.push(domainResult.knowledgeGraph.imageUrl);
-          }
-
-          if (domainResult.knowledgeGraph?.images && Array.isArray(domainResult.knowledgeGraph.images)) {
-            domainResult.knowledgeGraph.images.forEach((img) => {
-              if (typeof img === 'string') {
-                collectedImages.push(img);
-              } else if (img && typeof img === 'object' && 'url' in img) {
-                collectedImages.push(img.url);
-              }
-            });
-          }
-
-          // Collect images from search results
-          if (domainResult.images && Array.isArray(domainResult.images)) {
-            domainResult.images.forEach((img) => {
-              if (typeof img === 'string') {
-                collectedImages.push(img);
-              } else if (img && typeof img === 'object' && 'imageUrl' in img) {
-                collectedImages.push(img.imageUrl);
-              }
-            });
-          }
-        }
-
         const seenUrls = new Set<string>();
         const finalResults: ProductSearchResult[] = [];
         for (const result of collectedResults) {
@@ -350,18 +264,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for barcode ${barcode}`);
 
-        if (finalResults.length === 0) {
-          return {
-            barcode,
-            results: [],
-            images: [],
-            totalResults: 0,
-            message: 'Aucun résultat trouvé sur les sites autorisés.',
-          } as const;
-        }
-
-        finalResults.splice(8);
-
+        // Build description from Knowledge Graph
         let fullDescription = '';
 
         if (serperResults.knowledgeGraph) {
@@ -380,6 +283,20 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         }
 
+        if (finalResults.length === 0 && finalImages.length === 0 && !fullDescription) {
+          return {
+            barcode,
+            results: [],
+            images: [],
+            totalResults: 0,
+            message: 'Aucun résultat trouvé pour ce code-barres.',
+          } as const;
+        }
+
+        // Limit to top 8 results
+        finalResults.splice(8);
+
+        // Add content from top results to description
         finalResults.slice(0, 3).forEach((result) => {
           if (result.content) {
             fullDescription += `${result.content}\n\n`;
@@ -395,13 +312,14 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           message: `Found ${finalResults.length} results for barcode ${barcode}`,
         };
       } catch (err) {
+        console.error('[EAN Search] Error:', err);
         return {
           barcode,
           results: [],
           images: [],
           totalResults: 0,
           description: undefined,
-          message: 'Aucun résultat trouvé sur les sites autorisés.',
+          message: 'Erreur lors de la recherche du code-barres.',
           error: (err as Error)?.message || 'Unknown error',
         } as const;
       }
