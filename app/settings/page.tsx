@@ -2,13 +2,11 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/contexts/user-context';
-import {
-  UsageSection,
-  PreferencesSection,
-  SubscriptionSection,
-  ConnectorsSection,
-  MemoriesSection,
-} from '@/components/settings-dialog';
+import { UsageSection } from '@/components/settings/usage-section';
+import { PreferencesSection } from '@/components/settings/preferences-section';
+import { SubscriptionSection } from '@/components/settings/subscription-section';
+import { ConnectorsSection } from '@/components/settings/connectors-section';
+import { MemoriesSection } from '@/components/settings/memories-section';
 import { cn } from '@/lib/utils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
