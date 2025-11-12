@@ -12,7 +12,7 @@ const OPEN_FOOD_FACTS_ENDPOINT = 'https://world.openfoodfacts.org/api/v2/product
 interface NutritionScores {
   nutriScore?: { grade?: string; score?: number };
   novaGroup?: number;
-  ecoScore?: { grade?: string; score?: number };
+  greenScore?: { grade?: string; score?: number };
 }
 
 interface NutritionData {
@@ -171,7 +171,7 @@ async function fetchNutritionData(barcode: string): Promise<NutritionData | unde
     }
 
     if (product.ecoscore_grade || product.ecoscore_score !== undefined) {
-      scores.ecoScore = {
+      scores.greenScore = {
         grade: product.ecoscore_grade?.toUpperCase(),
         score: product.ecoscore_score,
       };
@@ -280,25 +280,6 @@ function extractNutrients(attributes: Record<string, string> | undefined): Recor
   });
 
   return nutrients;
-}
-
-function buildNutritionTable(nutrients: Record<string, string | number> | undefined): string {
-  if (!nutrients) return '';
-
-  const entries = Object.entries(nutrients);
-  if (entries.length === 0) return '';
-
-  let table = '\n## Tableau Nutritionnel\n\n';
-  table += '| Nutriment | Valeur |\n';
-  table += '|-----------|--------|\n';
-
-  entries.forEach(([key, value]) => {
-    const cleanKey = key.replace(/[_-]/g, ' ').trim();
-    const cleanValue = String(value).replace(/\|/g, '∣').trim();
-    table += `| ${cleanKey} | ${cleanValue} |\n`;
-  });
-
-  return table;
 }
 
 type ProductSearchResult = {
@@ -489,8 +470,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           };
         }
 
-        const nutritionTable = buildNutritionTable(extractedNutrients);
-
         const errorMessage = isBarcode
           ? 'Aucun résultat trouvé pour ce code-barres.'
           : 'Aucun résultat trouvé pour ce produit.';
@@ -514,11 +493,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
             fullDescription += `${result.content}\n\n`;
           }
         });
-
-        // Add nutrition table at the end if available
-        if (nutritionTable) {
-          fullDescription += nutritionTable;
-        }
 
         const searchTypeLabel = isBarcode ? 'barcode' : 'label';
         return {

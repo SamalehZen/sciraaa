@@ -803,7 +803,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                       <NutritionScores
                         nutriScore={nutritionScores.nutriScore}
                         novaGroup={nutritionScores.novaGroup}
-                        ecoScore={nutritionScores.ecoScore}
+                        greenScore={nutritionScores.greenScore}
                       />
                     )}
 
