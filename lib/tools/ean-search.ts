@@ -15,6 +15,11 @@ interface NutritionScores {
   ecoScore?: { grade?: string; score?: number };
 }
 
+interface NutritionData {
+  scores?: NutritionScores;
+  nutriments?: Record<string, string | number>;
+}
+
 interface SerperSearchResult {
   organic?: Array<{
     title: string;
@@ -92,42 +97,100 @@ async function searchSerperImages(query: string, num: number = 20): Promise<{ im
   }
 }
 
-async function fetchNutritionScores(barcode: string): Promise<NutritionScores> {
+function formatNutrimentsFromOpenFoodFacts(nutrimentsRaw: Record<string, any> | undefined): Record<string, string> {
+  if (!nutrimentsRaw) return {};
+
+  const result: Record<string, string> = {};
+
+  const nutrientsConfig: Array<{ id: string; label: string; defaultUnit?: string }> = [
+    { id: 'energy-kcal', label: 'Énergie (kcal)', defaultUnit: 'kcal' },
+    { id: 'energy', label: 'Énergie (kJ)', defaultUnit: 'kJ' },
+    { id: 'fat', label: 'Matières grasses', defaultUnit: 'g' },
+    { id: 'saturated-fat', label: 'Dont acides gras saturés', defaultUnit: 'g' },
+    { id: 'carbohydrates', label: 'Glucides', defaultUnit: 'g' },
+    { id: 'sugars', label: 'Sucres', defaultUnit: 'g' },
+    { id: 'fiber', label: 'Fibres', defaultUnit: 'g' },
+    { id: 'proteins', label: 'Protéines', defaultUnit: 'g' },
+    { id: 'salt', label: 'Sel', defaultUnit: 'g' },
+    { id: 'sodium', label: 'Sodium', defaultUnit: 'g' },
+    { id: 'fruits-vegetables-nuts', label: 'Fruits, légumes et noix', defaultUnit: '%' },
+  ];
+
+  nutrientsConfig.forEach(({ id, label, defaultUnit }) => {
+    const unit = nutrimentsRaw[`${id}_unit`] || defaultUnit;
+
+    const per100g = nutrimentsRaw[`${id}_100g`];
+    if (per100g !== undefined && per100g !== null) {
+      const formattedUnit = unit ? ` ${unit}` : '';
+      result[`${label} (pour 100g)`] = `${per100g}${formattedUnit}`;
+    }
+
+    const perServing = nutrimentsRaw[`${id}_serving`];
+    if (perServing !== undefined && perServing !== null) {
+      const formattedUnit = unit ? ` ${unit}` : '';
+      result[`${label} (par portion)`] = `${perServing}${formattedUnit}`;
+    }
+
+    const dailyValue = nutrimentsRaw[`${id}_percent_daily_value`];
+    if (dailyValue !== undefined && dailyValue !== null) {
+      result[`${label} (% AJR)`] = `${dailyValue} %`;
+    }
+  });
+
+  return result;
+}
+
+async function fetchNutritionData(barcode: string): Promise<NutritionData | undefined> {
   try {
     const response = await fetch(`${OPEN_FOOD_FACTS_ENDPOINT}/${barcode}.json`);
-    
+
     if (!response.ok) {
       console.warn(`[Open Food Facts] No data found for barcode ${barcode}`);
-      return {};
+      return undefined;
     }
 
     const data = await response.json();
-    
+    const product = data?.product;
+
+    if (!product) {
+      console.warn(`[Open Food Facts] No product data for barcode ${barcode}`);
+      return undefined;
+    }
+
     const scores: NutritionScores = {};
 
-    if (data.nutriscore_grade || data.nutriscore_score !== undefined) {
+    if (product.nutriscore_grade || product.nutriscore_score !== undefined) {
       scores.nutriScore = {
-        grade: data.nutriscore_grade?.toUpperCase(),
-        score: data.nutriscore_score,
+        grade: product.nutriscore_grade?.toUpperCase(),
+        score: product.nutriscore_score,
       };
     }
 
-    if (data.nova_group) {
-      scores.novaGroup = data.nova_group;
+    if (product.nova_group) {
+      scores.novaGroup = product.nova_group;
     }
 
-    if (data.ecoscore_grade || data.ecoscore_score !== undefined) {
+    if (product.ecoscore_grade || product.ecoscore_score !== undefined) {
       scores.ecoScore = {
-        grade: data.ecoscore_grade?.toUpperCase(),
-        score: data.ecoscore_score,
+        grade: product.ecoscore_grade?.toUpperCase(),
+        score: product.ecoscore_score,
       };
     }
 
-    console.log(`[Open Food Facts] Found scores for barcode ${barcode}:`, scores);
-    return scores;
+    const nutriments = formatNutrimentsFromOpenFoodFacts(product.nutriments);
+
+    console.log(`[Open Food Facts] Found nutrition data for barcode ${barcode}:`, {
+      hasScores: Object.keys(scores).length > 0,
+      hasNutriments: Object.keys(nutriments).length > 0,
+    });
+
+    return {
+      scores: Object.keys(scores).length > 0 ? scores : undefined,
+      nutriments: Object.keys(nutriments).length > 0 ? nutriments : undefined,
+    };
   } catch (error) {
-    console.warn('[Open Food Facts] Failed to fetch nutrition scores:', error);
-    return {};
+    console.warn('[Open Food Facts] Failed to fetch nutrition data:', error);
+    return undefined;
   }
 }
 
@@ -219,39 +282,19 @@ function extractNutrients(attributes: Record<string, string> | undefined): Recor
   return nutrients;
 }
 
-function extractNutritionTable(attributes: Record<string, string> | undefined): string {
-  if (!attributes) return '';
+function buildNutritionTable(nutrients: Record<string, string | number> | undefined): string {
+  if (!nutrients) return '';
 
-  const nutritionKeys = [
-    'calories', 'énergie', 'energy',
-    'protéines', 'protein', 'proteins',
-    'graisses', 'lipides', 'fat', 'fats',
-    'glucides', 'carbohydrates', 'carbs',
-    'sucres', 'sugar', 'sugars',
-    'sodium', 'sel', 'salt',
-    'fibres', 'fiber', 'fibers', 'fibres alimentaires',
-    'calcium', 'fer', 'iron', 'magnésium', 'potassium',
-    'vitamine', 'vitamin',
-  ];
-
-  const nutritionData: Array<[string, string]> = [];
-
-  Object.entries(attributes).forEach(([key, value]) => {
-    const lowerKey = key.toLowerCase();
-    if (nutritionKeys.some(nKey => lowerKey.includes(nKey)) && value && value.trim()) {
-      nutritionData.push([key, value]);
-    }
-  });
-
-  if (nutritionData.length === 0) return '';
+  const entries = Object.entries(nutrients);
+  if (entries.length === 0) return '';
 
   let table = '\n## Tableau Nutritionnel\n\n';
   table += '| Nutriment | Valeur |\n';
   table += '|-----------|--------|\n';
-  
-  nutritionData.forEach(([key, value]) => {
+
+  entries.forEach(([key, value]) => {
     const cleanKey = key.replace(/[_-]/g, ' ').trim();
-    const cleanValue = value.replace(/\|/g, '∣').trim();
+    const cleanValue = String(value).replace(/\|/g, '∣').trim();
     table += `| ${cleanKey} | ${cleanValue} |\n`;
   });
 
@@ -269,11 +312,6 @@ type ProductSearchResult = {
   publishedDate?: string;
   favicon?: string;
   description?: string;
-};
-
-type NutritionData = {
-  nutriments?: Record<string, number | string>;
-  scores?: NutritionScores;
 };
 
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
@@ -316,10 +354,10 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         console.log(`[EAN Search] Search type: ${isBarcode ? 'BARCODE' : 'LABEL'} - Query: "${searchQuery}"`);
 
-        // Fetch nutrition scores from Open Food Facts if it's a barcode
-        let nutritionScores: NutritionScores = {};
+        // Fetch nutrition data from Open Food Facts if it's a barcode
+        let nutritionData: NutritionData | undefined;
         if (isBarcode) {
-          nutritionScores = await fetchNutritionScores(query);
+          nutritionData = await fetchNutritionData(query);
         }
 
         // Run both text and image searches in parallel
@@ -414,7 +452,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         // Build description from Knowledge Graph
         let fullDescription = '';
-        let nutritionTable = '';
         let extractedNutrients: Record<string, string | number> = {};
 
         if (serperResults.knowledgeGraph) {
@@ -427,18 +464,15 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
           if (kg.attributes) {
             const allAttributes = kg.attributes;
-            
+
             // Extract nutrients
             extractedNutrients = extractNutrients(allAttributes);
-            
-            // Extract nutrition table for later
-            nutritionTable = extractNutritionTable(allAttributes);
-            
+
             // Add all attributes except nutrition ones
             Object.entries(allAttributes).forEach(([key, value]) => {
               const lowerKey = key.toLowerCase();
               const nutritionKeys = ['calories', 'énergie', 'energy', 'protéines', 'protein', 'graisses', 'lipides', 'fat', 'glucides', 'carbohydrates', 'sucres', 'sugar', 'sodium', 'sel', 'fibres', 'fiber', 'calcium', 'fer', 'iron', 'magnésium', 'potassium', 'vitamine', 'vitamin'];
-              
+
               if (!nutritionKeys.some(nKey => lowerKey.includes(nKey))) {
                 fullDescription += `${key}: ${value}\n`;
               }
@@ -447,7 +481,17 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         }
 
-        const errorMessage = isBarcode 
+        // Merge nutriments from Open Food Facts if available
+        if (nutritionData?.nutriments) {
+          extractedNutrients = {
+            ...extractedNutrients,
+            ...nutritionData.nutriments,
+          };
+        }
+
+        const nutritionTable = buildNutritionTable(extractedNutrients);
+
+        const errorMessage = isBarcode
           ? 'Aucun résultat trouvé pour ce code-barres.'
           : 'Aucun résultat trouvé pour ce produit.';
 
@@ -484,7 +528,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           totalResults: finalResults.length,
           description: fullDescription.trim() || undefined,
           message: `Found ${finalResults.length} results for ${searchTypeLabel} "${query}"`,
-          nutritionScores: Object.keys(nutritionScores).length > 0 ? nutritionScores : undefined,
+          nutritionScores: nutritionData?.scores,
           nutrients: Object.keys(extractedNutrients).length > 0 ? extractedNutrients : undefined,
         };
       } catch (err) {
