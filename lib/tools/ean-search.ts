@@ -7,6 +7,13 @@ import { serverEnv } from '@/env/server';
 const SERPER_API_KEY = serverEnv.SERPER_API_KEY;
 const SERPER_SEARCH_ENDPOINT = 'https://google.serper.dev/search';
 const SERPER_IMAGES_ENDPOINT = 'https://google.serper.dev/images';
+const OPEN_FOOD_FACTS_ENDPOINT = 'https://world.openfoodfacts.org/api/v2/product';
+
+interface NutritionScores {
+  nutriScore?: { grade?: string; score?: number };
+  novaGroup?: number;
+  ecoScore?: { grade?: string; score?: number };
+}
 
 interface SerperSearchResult {
   organic?: Array<{
@@ -85,6 +92,45 @@ async function searchSerperImages(query: string, num: number = 20): Promise<{ im
   }
 }
 
+async function fetchNutritionScores(barcode: string): Promise<NutritionScores> {
+  try {
+    const response = await fetch(`${OPEN_FOOD_FACTS_ENDPOINT}/${barcode}.json`);
+    
+    if (!response.ok) {
+      console.warn(`[Open Food Facts] No data found for barcode ${barcode}`);
+      return {};
+    }
+
+    const data = await response.json();
+    
+    const scores: NutritionScores = {};
+
+    if (data.nutriscore_grade || data.nutriscore_score !== undefined) {
+      scores.nutriScore = {
+        grade: data.nutriscore_grade?.toUpperCase(),
+        score: data.nutriscore_score,
+      };
+    }
+
+    if (data.nova_group) {
+      scores.novaGroup = data.nova_group;
+    }
+
+    if (data.ecoscore_grade || data.ecoscore_score !== undefined) {
+      scores.ecoScore = {
+        grade: data.ecoscore_grade?.toUpperCase(),
+        score: data.ecoscore_score,
+      };
+    }
+
+    console.log(`[Open Food Facts] Found scores for barcode ${barcode}:`, scores);
+    return scores;
+  } catch (error) {
+    console.warn('[Open Food Facts] Failed to fetch nutrition scores:', error);
+    return {};
+  }
+}
+
 // No domain filtering - accept ALL results from Serper
 const hostToBrandFallback: Record<string, string> = {
   'www.barcodelookup.com': 'Barcode Lookup',
@@ -146,6 +192,72 @@ function deriveBrand(title: string, content: string, hostname: string | null): s
   return undefined;
 }
 
+function extractNutrients(attributes: Record<string, string> | undefined): Record<string, string | number> {
+  if (!attributes) return {};
+
+  const nutritionKeys = [
+    'calories', 'énergie', 'energy',
+    'protéines', 'protein', 'proteins',
+    'graisses', 'lipides', 'fat', 'fats',
+    'glucides', 'carbohydrates', 'carbs',
+    'sucres', 'sugar', 'sugars',
+    'sodium', 'sel', 'salt',
+    'fibres', 'fiber', 'fibers', 'fibres alimentaires',
+    'calcium', 'fer', 'iron', 'magnésium', 'potassium',
+    'vitamine', 'vitamin',
+  ];
+
+  const nutrients: Record<string, string | number> = {};
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    const lowerKey = key.toLowerCase();
+    if (nutritionKeys.some(nKey => lowerKey.includes(nKey)) && value && value.trim()) {
+      nutrients[key] = value;
+    }
+  });
+
+  return nutrients;
+}
+
+function extractNutritionTable(attributes: Record<string, string> | undefined): string {
+  if (!attributes) return '';
+
+  const nutritionKeys = [
+    'calories', 'énergie', 'energy',
+    'protéines', 'protein', 'proteins',
+    'graisses', 'lipides', 'fat', 'fats',
+    'glucides', 'carbohydrates', 'carbs',
+    'sucres', 'sugar', 'sugars',
+    'sodium', 'sel', 'salt',
+    'fibres', 'fiber', 'fibers', 'fibres alimentaires',
+    'calcium', 'fer', 'iron', 'magnésium', 'potassium',
+    'vitamine', 'vitamin',
+  ];
+
+  const nutritionData: Array<[string, string]> = [];
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    const lowerKey = key.toLowerCase();
+    if (nutritionKeys.some(nKey => lowerKey.includes(nKey)) && value && value.trim()) {
+      nutritionData.push([key, value]);
+    }
+  });
+
+  if (nutritionData.length === 0) return '';
+
+  let table = '\n## Tableau Nutritionnel\n\n';
+  table += '| Nutriment | Valeur |\n';
+  table += '|-----------|--------|\n';
+  
+  nutritionData.forEach(([key, value]) => {
+    const cleanKey = key.replace(/[_-]/g, ' ').trim();
+    const cleanValue = value.replace(/\|/g, '∣').trim();
+    table += `| ${cleanKey} | ${cleanValue} |\n`;
+  });
+
+  return table;
+}
+
 type ProductSearchResult = {
   title: string;
   url: string;
@@ -157,6 +269,11 @@ type ProductSearchResult = {
   publishedDate?: string;
   favicon?: string;
   description?: string;
+};
+
+type NutritionData = {
+  nutriments?: Record<string, number | string>;
+  scores?: NutritionScores;
 };
 
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
@@ -198,6 +315,12 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
         }
 
         console.log(`[EAN Search] Search type: ${isBarcode ? 'BARCODE' : 'LABEL'} - Query: "${searchQuery}"`);
+
+        // Fetch nutrition scores from Open Food Facts if it's a barcode
+        let nutritionScores: NutritionScores = {};
+        if (isBarcode) {
+          nutritionScores = await fetchNutritionScores(query);
+        }
 
         // Run both text and image searches in parallel
         const [serperResults, imageResults] = await Promise.all([
@@ -291,6 +414,8 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         // Build description from Knowledge Graph
         let fullDescription = '';
+        let nutritionTable = '';
+        let extractedNutrients: Record<string, string | number> = {};
 
         if (serperResults.knowledgeGraph) {
           const kg = serperResults.knowledgeGraph;
@@ -301,8 +426,22 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
             fullDescription += `${kg.description}\n\n`;
           }
           if (kg.attributes) {
-            Object.entries(kg.attributes).forEach(([key, value]) => {
-              fullDescription += `${key}: ${value}\n`;
+            const allAttributes = kg.attributes;
+            
+            // Extract nutrients
+            extractedNutrients = extractNutrients(allAttributes);
+            
+            // Extract nutrition table for later
+            nutritionTable = extractNutritionTable(allAttributes);
+            
+            // Add all attributes except nutrition ones
+            Object.entries(allAttributes).forEach(([key, value]) => {
+              const lowerKey = key.toLowerCase();
+              const nutritionKeys = ['calories', 'énergie', 'energy', 'protéines', 'protein', 'graisses', 'lipides', 'fat', 'glucides', 'carbohydrates', 'sucres', 'sugar', 'sodium', 'sel', 'fibres', 'fiber', 'calcium', 'fer', 'iron', 'magnésium', 'potassium', 'vitamine', 'vitamin'];
+              
+              if (!nutritionKeys.some(nKey => lowerKey.includes(nKey))) {
+                fullDescription += `${key}: ${value}\n`;
+              }
             });
             fullDescription += '\n';
           }
@@ -332,6 +471,11 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         });
 
+        // Add nutrition table at the end if available
+        if (nutritionTable) {
+          fullDescription += nutritionTable;
+        }
+
         const searchTypeLabel = isBarcode ? 'barcode' : 'label';
         return {
           barcode: identifier,
@@ -340,6 +484,8 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           totalResults: finalResults.length,
           description: fullDescription.trim() || undefined,
           message: `Found ${finalResults.length} results for ${searchTypeLabel} "${query}"`,
+          nutritionScores: Object.keys(nutritionScores).length > 0 ? nutritionScores : undefined,
+          nutrients: Object.keys(extractedNutrients).length > 0 ? extractedNutrients : undefined,
         };
       } catch (err) {
         console.error('[EAN Search] Error:', err);
