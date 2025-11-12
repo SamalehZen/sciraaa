@@ -162,17 +162,42 @@ type ProductSearchResult = {
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
   return tool({
     description:
-      'Search for product information using EAN/UPC barcode. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides a barcode number (13 digits for EAN-13, 8 digits for EAN-8, or 12 digits for UPC).',
+      'Search for product information using EAN/UPC barcode or product label/name. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides either a barcode number (8-13 digits for EAN-13, EAN-8, or UPC) OR a product label/name.',
     inputSchema: z.object({
-      barcode: z.string().describe('The EAN/UPC barcode number provided by the user'),
+      query: z.string().describe('Either an EAN/UPC barcode number (8-13 digits) or a product label/name to search for'),
+      searchType: z.enum(['auto', 'barcode', 'label']).describe('Type of search: auto (auto-detect), barcode (EAN/UPC only), or label (product name)').optional().default('auto'),
     }),
-    execute: async ({ barcode }) => {
-      if (!/^\d{8,13}$/.test(barcode)) {
-        throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
+    execute: async ({ query, searchType = 'auto' }) => {
+      let isBarcode = false;
+      let isLabel = false;
+      let searchQuery = query;
+      let identifier = query;
+
+      // Determine search type
+      if (searchType === 'auto') {
+        // Auto-detect: if query is 8-13 digits, treat as barcode
+        isBarcode = /^\d{8,13}$/.test(query);
+        isLabel = !isBarcode;
+      } else if (searchType === 'barcode') {
+        isBarcode = true;
+        isLabel = false;
+        if (!/^\d{8,13}$/.test(query)) {
+          throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
+        }
+      } else if (searchType === 'label') {
+        isLabel = true;
+        isBarcode = false;
       }
 
       try {
-        const searchQuery = `EAN ${barcode}`;
+        // Build search query based on type
+        if (isBarcode) {
+          searchQuery = `EAN ${query}`;
+        } else if (isLabel) {
+          searchQuery = query; // Use the label as-is for product search
+        }
+
+        console.log(`[EAN Search] Search type: ${isBarcode ? 'BARCODE' : 'LABEL'} - Query: "${searchQuery}"`);
 
         // Run both text and image searches in parallel
         const [serperResults, imageResults] = await Promise.all([
@@ -209,7 +234,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
               content,
               images: [],
               supplier: brand || undefined,
-              ean: barcode,
+              ean: identifier,
               publishedDate: result.date || undefined,
             });
           }
@@ -262,7 +287,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           })
           .slice(0, 12);
 
-        console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for barcode ${barcode}`);
+        console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for query "${searchQuery}"`);
 
         // Build description from Knowledge Graph
         let fullDescription = '';
@@ -283,13 +308,17 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         }
 
+        const errorMessage = isBarcode 
+          ? 'Aucun résultat trouvé pour ce code-barres.'
+          : 'Aucun résultat trouvé pour ce produit.';
+
         if (finalResults.length === 0 && finalImages.length === 0 && !fullDescription) {
           return {
-            barcode,
+            barcode: identifier,
             results: [],
             images: [],
             totalResults: 0,
-            message: 'Aucun résultat trouvé pour ce code-barres.',
+            message: errorMessage,
           } as const;
         }
 
@@ -303,23 +332,25 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         });
 
+        const searchTypeLabel = isBarcode ? 'barcode' : 'label';
         return {
-          barcode,
+          barcode: identifier,
           results: finalResults,
           images: finalImages,
           totalResults: finalResults.length,
           description: fullDescription.trim() || undefined,
-          message: `Found ${finalResults.length} results for barcode ${barcode}`,
+          message: `Found ${finalResults.length} results for ${searchTypeLabel} "${query}"`,
         };
       } catch (err) {
         console.error('[EAN Search] Error:', err);
+        const errorType = isBarcode ? 'code-barres' : 'produit';
         return {
-          barcode,
+          barcode: identifier,
           results: [],
           images: [],
           totalResults: 0,
           description: undefined,
-          message: 'Erreur lors de la recherche du code-barres.',
+          message: `Erreur lors de la recherche du ${errorType}.`,
           error: (err as Error)?.message || 'Unknown error',
         } as const;
       }
