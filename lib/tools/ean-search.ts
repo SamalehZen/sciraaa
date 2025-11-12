@@ -7,6 +7,18 @@ import { serverEnv } from '@/env/server';
 const SERPER_API_KEY = serverEnv.SERPER_API_KEY;
 const SERPER_SEARCH_ENDPOINT = 'https://google.serper.dev/search';
 const SERPER_IMAGES_ENDPOINT = 'https://google.serper.dev/images';
+const OPEN_FOOD_FACTS_ENDPOINT = 'https://world.openfoodfacts.org/api/v2/product';
+
+interface NutritionScores {
+  nutriScore?: { grade?: string; score?: number };
+  novaGroup?: number;
+  greenScore?: { grade?: string; score?: number };
+}
+
+interface NutritionData {
+  scores?: NutritionScores;
+  nutriments?: Record<string, string | number>;
+}
 
 interface SerperSearchResult {
   organic?: Array<{
@@ -85,6 +97,103 @@ async function searchSerperImages(query: string, num: number = 20): Promise<{ im
   }
 }
 
+function formatNutrimentsFromOpenFoodFacts(nutrimentsRaw: Record<string, any> | undefined): Record<string, string> {
+  if (!nutrimentsRaw) return {};
+
+  const result: Record<string, string> = {};
+
+  const nutrientsConfig: Array<{ id: string; label: string; defaultUnit?: string }> = [
+    { id: 'energy-kcal', label: 'Énergie (kcal)', defaultUnit: 'kcal' },
+    { id: 'energy', label: 'Énergie (kJ)', defaultUnit: 'kJ' },
+    { id: 'fat', label: 'Matières grasses', defaultUnit: 'g' },
+    { id: 'saturated-fat', label: 'Dont acides gras saturés', defaultUnit: 'g' },
+    { id: 'carbohydrates', label: 'Glucides', defaultUnit: 'g' },
+    { id: 'sugars', label: 'Sucres', defaultUnit: 'g' },
+    { id: 'fiber', label: 'Fibres', defaultUnit: 'g' },
+    { id: 'proteins', label: 'Protéines', defaultUnit: 'g' },
+    { id: 'salt', label: 'Sel', defaultUnit: 'g' },
+    { id: 'sodium', label: 'Sodium', defaultUnit: 'g' },
+    { id: 'fruits-vegetables-nuts', label: 'Fruits, légumes et noix', defaultUnit: '%' },
+  ];
+
+  nutrientsConfig.forEach(({ id, label, defaultUnit }) => {
+    const unit = nutrimentsRaw[`${id}_unit`] || defaultUnit;
+
+    const per100g = nutrimentsRaw[`${id}_100g`];
+    if (per100g !== undefined && per100g !== null) {
+      const formattedUnit = unit ? ` ${unit}` : '';
+      result[`${label} (pour 100g)`] = `${per100g}${formattedUnit}`;
+    }
+
+    const perServing = nutrimentsRaw[`${id}_serving`];
+    if (perServing !== undefined && perServing !== null) {
+      const formattedUnit = unit ? ` ${unit}` : '';
+      result[`${label} (par portion)`] = `${perServing}${formattedUnit}`;
+    }
+
+    const dailyValue = nutrimentsRaw[`${id}_percent_daily_value`];
+    if (dailyValue !== undefined && dailyValue !== null) {
+      result[`${label} (% AJR)`] = `${dailyValue} %`;
+    }
+  });
+
+  return result;
+}
+
+async function fetchNutritionData(barcode: string): Promise<NutritionData | undefined> {
+  try {
+    const response = await fetch(`${OPEN_FOOD_FACTS_ENDPOINT}/${barcode}.json`);
+
+    if (!response.ok) {
+      console.warn(`[Open Food Facts] No data found for barcode ${barcode}`);
+      return undefined;
+    }
+
+    const data = await response.json();
+    const product = data?.product;
+
+    if (!product) {
+      console.warn(`[Open Food Facts] No product data for barcode ${barcode}`);
+      return undefined;
+    }
+
+    const scores: NutritionScores = {};
+
+    if (product.nutriscore_grade || product.nutriscore_score !== undefined) {
+      scores.nutriScore = {
+        grade: product.nutriscore_grade?.toUpperCase(),
+        score: product.nutriscore_score,
+      };
+    }
+
+    if (product.nova_group) {
+      scores.novaGroup = product.nova_group;
+    }
+
+    if (product.ecoscore_grade || product.ecoscore_score !== undefined) {
+      scores.greenScore = {
+        grade: product.ecoscore_grade?.toUpperCase(),
+        score: product.ecoscore_score,
+      };
+    }
+
+    const nutriments = formatNutrimentsFromOpenFoodFacts(product.nutriments);
+
+    console.log(`[Open Food Facts] Found nutrition data for barcode ${barcode}:`, {
+      hasScores: Object.keys(scores).length > 0,
+      hasNutriments: Object.keys(nutriments).length > 0,
+    });
+
+    return {
+      scores: Object.keys(scores).length > 0 ? scores : undefined,
+      nutriments: Object.keys(nutriments).length > 0 ? nutriments : undefined,
+    };
+  } catch (error) {
+    console.warn('[Open Food Facts] Failed to fetch nutrition data:', error);
+    return undefined;
+  }
+}
+
 // No domain filtering - accept ALL results from Serper
 const hostToBrandFallback: Record<string, string> = {
   'www.barcodelookup.com': 'Barcode Lookup',
@@ -146,6 +255,33 @@ function deriveBrand(title: string, content: string, hostname: string | null): s
   return undefined;
 }
 
+function extractNutrients(attributes: Record<string, string> | undefined): Record<string, string | number> {
+  if (!attributes) return {};
+
+  const nutritionKeys = [
+    'calories', 'énergie', 'energy',
+    'protéines', 'protein', 'proteins',
+    'graisses', 'lipides', 'fat', 'fats',
+    'glucides', 'carbohydrates', 'carbs',
+    'sucres', 'sugar', 'sugars',
+    'sodium', 'sel', 'salt',
+    'fibres', 'fiber', 'fibers', 'fibres alimentaires',
+    'calcium', 'fer', 'iron', 'magnésium', 'potassium',
+    'vitamine', 'vitamin',
+  ];
+
+  const nutrients: Record<string, string | number> = {};
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    const lowerKey = key.toLowerCase();
+    if (nutritionKeys.some(nKey => lowerKey.includes(nKey)) && value && value.trim()) {
+      nutrients[key] = value;
+    }
+  });
+
+  return nutrients;
+}
+
 type ProductSearchResult = {
   title: string;
   url: string;
@@ -162,17 +298,48 @@ type ProductSearchResult = {
 export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | undefined) {
   return tool({
     description:
-      'Search for product information using EAN/UPC barcode. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides a barcode number (13 digits for EAN-13, 8 digits for EAN-8, or 12 digits for UPC).',
+      'Search for product information using EAN/UPC barcode or product label/name. Returns detailed product information including title, description, images, price, and suppliers. Use this tool when the user provides either a barcode number (8-13 digits for EAN-13, EAN-8, or UPC) OR a product label/name.',
     inputSchema: z.object({
-      barcode: z.string().describe('The EAN/UPC barcode number provided by the user'),
+      query: z.string().describe('Either an EAN/UPC barcode number (8-13 digits) or a product label/name to search for'),
+      searchType: z.enum(['auto', 'barcode', 'label']).describe('Type of search: auto (auto-detect), barcode (EAN/UPC only), or label (product name)').optional().default('auto'),
     }),
-    execute: async ({ barcode }) => {
-      if (!/^\d{8,13}$/.test(barcode)) {
-        throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
+    execute: async ({ query, searchType = 'auto' }) => {
+      let isBarcode = false;
+      let isLabel = false;
+      let searchQuery = query;
+      let identifier = query;
+
+      // Determine search type
+      if (searchType === 'auto') {
+        // Auto-detect: if query is 8-13 digits, treat as barcode
+        isBarcode = /^\d{8,13}$/.test(query);
+        isLabel = !isBarcode;
+      } else if (searchType === 'barcode') {
+        isBarcode = true;
+        isLabel = false;
+        if (!/^\d{8,13}$/.test(query)) {
+          throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
+        }
+      } else if (searchType === 'label') {
+        isLabel = true;
+        isBarcode = false;
       }
 
       try {
-        const searchQuery = `EAN ${barcode}`;
+        // Build search query based on type
+        if (isBarcode) {
+          searchQuery = `EAN ${query}`;
+        } else if (isLabel) {
+          searchQuery = query; // Use the label as-is for product search
+        }
+
+        console.log(`[EAN Search] Search type: ${isBarcode ? 'BARCODE' : 'LABEL'} - Query: "${searchQuery}"`);
+
+        // Fetch nutrition data from Open Food Facts if it's a barcode
+        let nutritionData: NutritionData | undefined;
+        if (isBarcode) {
+          nutritionData = await fetchNutritionData(query);
+        }
 
         // Run both text and image searches in parallel
         const [serperResults, imageResults] = await Promise.all([
@@ -209,7 +376,7 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
               content,
               images: [],
               supplier: brand || undefined,
-              ean: barcode,
+              ean: identifier,
               publishedDate: result.date || undefined,
             });
           }
@@ -262,10 +429,11 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           })
           .slice(0, 12);
 
-        console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for barcode ${barcode}`);
+        console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for query "${searchQuery}"`);
 
         // Build description from Knowledge Graph
         let fullDescription = '';
+        let extractedNutrients: Record<string, string | number> = {};
 
         if (serperResults.knowledgeGraph) {
           const kg = serperResults.knowledgeGraph;
@@ -276,20 +444,43 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
             fullDescription += `${kg.description}\n\n`;
           }
           if (kg.attributes) {
-            Object.entries(kg.attributes).forEach(([key, value]) => {
-              fullDescription += `${key}: ${value}\n`;
+            const allAttributes = kg.attributes;
+
+            // Extract nutrients
+            extractedNutrients = extractNutrients(allAttributes);
+
+            // Add all attributes except nutrition ones
+            Object.entries(allAttributes).forEach(([key, value]) => {
+              const lowerKey = key.toLowerCase();
+              const nutritionKeys = ['calories', 'énergie', 'energy', 'protéines', 'protein', 'graisses', 'lipides', 'fat', 'glucides', 'carbohydrates', 'sucres', 'sugar', 'sodium', 'sel', 'fibres', 'fiber', 'calcium', 'fer', 'iron', 'magnésium', 'potassium', 'vitamine', 'vitamin'];
+
+              if (!nutritionKeys.some(nKey => lowerKey.includes(nKey))) {
+                fullDescription += `${key}: ${value}\n`;
+              }
             });
             fullDescription += '\n';
           }
         }
 
+        // Merge nutriments from Open Food Facts if available
+        if (nutritionData?.nutriments) {
+          extractedNutrients = {
+            ...extractedNutrients,
+            ...nutritionData.nutriments,
+          };
+        }
+
+        const errorMessage = isBarcode
+          ? 'Aucun résultat trouvé pour ce code-barres.'
+          : 'Aucun résultat trouvé pour ce produit.';
+
         if (finalResults.length === 0 && finalImages.length === 0 && !fullDescription) {
           return {
-            barcode,
+            barcode: identifier,
             results: [],
             images: [],
             totalResults: 0,
-            message: 'Aucun résultat trouvé pour ce code-barres.',
+            message: errorMessage,
           } as const;
         }
 
@@ -303,23 +494,27 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         });
 
+        const searchTypeLabel = isBarcode ? 'barcode' : 'label';
         return {
-          barcode,
+          barcode: identifier,
           results: finalResults,
           images: finalImages,
           totalResults: finalResults.length,
           description: fullDescription.trim() || undefined,
-          message: `Found ${finalResults.length} results for barcode ${barcode}`,
+          message: `Found ${finalResults.length} results for ${searchTypeLabel} "${query}"`,
+          nutritionScores: nutritionData?.scores,
+          nutrients: Object.keys(extractedNutrients).length > 0 ? extractedNutrients : undefined,
         };
       } catch (err) {
         console.error('[EAN Search] Error:', err);
+        const errorType = isBarcode ? 'code-barres' : 'produit';
         return {
-          barcode,
+          barcode: identifier,
           results: [],
           images: [],
           totalResults: 0,
           description: undefined,
-          message: 'Erreur lors de la recherche du code-barres.',
+          message: `Erreur lors de la recherche du ${errorType}.`,
           error: (err as Error)?.message || 'Unknown error',
         } as const;
       }

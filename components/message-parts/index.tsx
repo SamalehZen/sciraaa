@@ -67,6 +67,8 @@ import { Spinner } from '../ui/spinner';
 import { markdownTablesToXlsx } from '@/lib/export-xlsx';
 import { EANSearchResults } from '@/components/ean-search-results';
 import { EANLoadingState } from '@/components/ean-loading-state';
+import { NutritionScores } from '@/components/nutrition-scores';
+import { NutritionTable } from '@/components/nutrition-table';
 
 // Lazy load tool components
 const FlightTracker = lazy(() =>
@@ -779,15 +781,15 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
           case 'tool-ean_search':
             switch (part.state) {
               case 'input-streaming': {
-                const barcode = (part as any).input?.barcode || (part as any).args?.barcode;
-                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={barcode} />;
+                const query = (part as any).input?.query || (part as any).args?.query || (part as any).input?.barcode || (part as any).args?.barcode;
+                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={query} />;
               }
               case 'input-available': {
-                const barcode = (part as any).input?.barcode || (part as any).args?.barcode;
-                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={barcode} />;
+                const query = (part as any).input?.query || (part as any).args?.query || (part as any).input?.barcode || (part as any).args?.barcode;
+                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={query} />;
               }
               case 'output-available': {
-                const { barcode, results, images, totalResults, description } = (part as any).output || {};
+                const { barcode, results, images, totalResults, description, nutritionScores, nutrients } = (part as any).output || {};
                 return (
                   <div key={`${messageIndex}-${partIndex}-tool`} className="space-y-4">
                     <EANSearchResults
@@ -796,6 +798,18 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                       images={images || []}
                       totalResults={totalResults ?? (results?.length || 0)}
                     />
+
+                    {nutritionScores && (
+                      <NutritionScores
+                        nutriScore={nutritionScores.nutriScore}
+                        novaGroup={nutritionScores.novaGroup}
+                        greenScore={nutritionScores.greenScore}
+                      />
+                    )}
+
+                    {nutrients && (
+                      <NutritionTable nutrients={nutrients} />
+                    )}
 
                     {description && (
                       <div className="prose prose-sm max-w-none p-4 bg-muted/50 rounded-lg border">
