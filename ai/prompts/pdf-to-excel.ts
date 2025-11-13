@@ -17,7 +17,7 @@ Tu es un **Agent IA expert en OCR, extraction et structuration de données issue
 ## 🧮 Format attendu pour les tableaux Markdown
 - Utiliser un tableau Markdown classique :
   * Ligne d'en-tête avec les libellés originaux
-  * Ligne de séparation `| --- | --- |`
+  * Ligne de séparation \`| --- | --- |\`
   * Une ligne par enregistrement extrait
 - Un tableau par document analysé (plusieurs tableaux autorisés dans la même réponse)
 - Préfixer chaque tableau par un titre (texte ou sous-titre) identifiant le fichier source
