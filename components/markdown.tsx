@@ -9,6 +9,7 @@ import Latex from 'react-latex-next';
 import Marked, { ReactRenderer } from 'marked-react';
 import React, { useCallback, useMemo, useState, Fragment, useRef, lazy, Suspense, useEffect } from 'react';
 
+import { TableUI, TableUIColumn, TableUIRow } from '@/components/table-ui';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -33,6 +34,31 @@ const geistMono = Geist_Mono({
   preload: true,
   display: 'swap',
 });
+
+const extractNodeText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined) return '';
+  if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map((item) => extractNodeText(item)).join(' ');
+  }
+  if (React.isValidElement(node)) {
+    return extractNodeText(node.props.children);
+  }
+  return '';
+};
+
+const parseNodeNumber = (node: React.ReactNode): number | null => {
+  if (node === null || node === undefined) return null;
+  if (typeof node === 'number') return Number.isFinite(node) ? node : null;
+  if (typeof node === 'boolean') return node ? 1 : 0;
+  const text = extractNodeText(node).replace(/[\s\u202F]/g, '').replace(/,/g, '.');
+  const sanitized = text.replace(/[^0-9.\-]/g, '');
+  if (!sanitized || sanitized === '-' || sanitized === '.') return null;
+  const parsed = Number(sanitized);
+  return Number.isNaN(parsed) ? null : parsed;
+};
 
 const isValidUrl = (str: string) => {
   try {
@@ -489,88 +515,144 @@ const InlineCode: React.FC<{ code: string; elementKey: string }> = React.memo(({
 InlineCode.displayName = 'InlineCode';
 
 const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [showActions, setShowActions] = useState(false);
+  const structure = useMemo(() => {
+    const toArray = (node: React.ReactNode) => React.Children.toArray(node).filter(Boolean);
+    const columnLabels: React.ReactNode[] = [];
+    const rows: TableUIRow[] = [];
 
-  const csvUtils = useMemo(
-    () => ({
-      escapeCsvValue: (value: string): string => {
-        const needsQuotes = /[",\n]/.test(value);
-        const escaped = value.replace(/"/g, '""');
-        return needsQuotes ? `"${escaped}"` : escaped;
-      },
-      buildCsvFromTable: (table: HTMLTableElement): string => {
-        const rows = Array.from(table.querySelectorAll('tr')) as HTMLTableRowElement[];
-        const csvLines: string[] = [];
-        for (const row of rows) {
-          const cells = Array.from(row.querySelectorAll('th,td')) as HTMLTableCellElement[];
-          if (cells.length > 0) {
-            const line = cells
-              .map((cell) => csvUtils.escapeCsvValue(cell.innerText.replace(/\u00A0/g, ' ').trim()))
-              .join(',');
-            csvLines.push(line);
-          }
+    const registerHeader = (headerElement: React.ReactElement) => {
+      const headerRows = toArray(headerElement.props.children).filter(
+        (row): row is React.ReactElement => React.isValidElement(row) && row.type === TableRow,
+      );
+      if (headerRows.length === 0) return;
+      const targetRow = headerRows[headerRows.length - 1];
+      const headerCells = toArray(targetRow.props.children).filter(
+        (cell): cell is React.ReactElement =>
+          React.isValidElement(cell) && (cell.type === TableHead || cell.type === TableCell),
+      );
+      headerCells.forEach((cell, index) => {
+        columnLabels[index] = cell.props.children ?? `Colonne ${index + 1}`;
+      });
+    };
+
+    const ensureColumn = (index: number) => {
+      if (columnLabels[index] === undefined) {
+        columnLabels[index] = `Colonne ${index + 1}`;
+      }
+    };
+
+    const registerRow = (rowElement: React.ReactElement) => {
+      const cells = toArray(rowElement.props.children).filter(
+        (cell): cell is React.ReactElement =>
+          React.isValidElement(cell) && (cell.type === TableCell || cell.type === TableHead),
+      );
+      if (cells.length === 0) return;
+      const rowRecord: TableUIRow = {};
+      cells.forEach((cell, index) => {
+        ensureColumn(index);
+        const key = `col_${index}`;
+        rowRecord[key] = cell.props.children ?? '';
+      });
+      const totalColumns = Math.max(columnLabels.length, rows.length > 0 ? Object.keys(rows[0]).length : columnLabels.length);
+      for (let index = 0; index < totalColumns; index += 1) {
+        const key = `col_${index}`;
+        if (!(key in rowRecord)) {
+          ensureColumn(index);
+          rowRecord[key] = '';
         }
-        return csvLines.join('\n');
-      },
-    }),
-    [],
-  );
+      }
+      rows.push(rowRecord);
+    };
 
-  const handleDownloadCsv = useCallback(() => {
-    const tableEl = containerRef.current?.querySelector('[data-slot="table"]') as HTMLTableElement | null;
-    if (!tableEl) return;
+    const childArray = toArray(children);
+    const headerElements = childArray.filter(
+      (child): child is React.ReactElement => React.isValidElement(child) && child.type === TableHeader,
+    );
+    const bodyElements = childArray.filter(
+      (child): child is React.ReactElement => React.isValidElement(child) && child.type === TableBody,
+    );
+    const looseRows = childArray.filter(
+      (child): child is React.ReactElement => React.isValidElement(child) && child.type === TableRow,
+    );
 
-    try {
-      const csv = csvUtils.buildCsvFromTable(tableEl);
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+/, '');
-      a.href = url;
-      a.download = `table-${timestamp}.csv`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to download CSV:', error);
+    headerElements.forEach(registerHeader);
+    bodyElements.forEach((bodyElement) => {
+      toArray(bodyElement.props.children)
+        .filter((row): row is React.ReactElement => React.isValidElement(row) && row.type === TableRow)
+        .forEach(registerRow);
+    });
+    looseRows.forEach(registerRow);
+
+    if (columnLabels.length === 0 && rows.length === 0) {
+      return null;
     }
-  }, [csvUtils]);
+
+    const longestRowLength = rows.reduce((length, row) => Math.max(length, Object.keys(row).length), 0);
+    for (let index = 0; index < longestRowLength; index += 1) {
+      ensureColumn(index);
+    }
+
+    const inferColumnType = (values: React.ReactNode[]): TableUIColumn['type'] => {
+      const meaningful = values.filter((value) => {
+        const text = extractNodeText(value).trim();
+        return text.length > 0;
+      });
+      if (meaningful.length === 0) return 'string';
+
+      const numericCount = meaningful.filter((value) => parseNodeNumber(value) !== null).length;
+      if (numericCount === meaningful.length) return 'number';
+
+      const dateCount = meaningful.filter((value) => {
+        const text = extractNodeText(value);
+        return !Number.isNaN(Date.parse(text));
+      }).length;
+      if (dateCount === meaningful.length) return 'date';
+
+      const booleanCount = meaningful.filter((value) => {
+        if (typeof value === 'boolean') return true;
+        const text = extractNodeText(value).toLowerCase();
+        return ['true', 'false', 'yes', 'no', 'oui', 'non'].includes(text);
+      }).length;
+      if (booleanCount === meaningful.length) return 'boolean';
+
+      return 'string';
+    };
+
+    const tableColumns: TableUIColumn[] = columnLabels.map((label, index) => {
+      const key = `col_${index}`;
+      const columnValues = rows.map((row) => row[key]);
+      return {
+        key,
+        label: label ?? `Colonne ${index + 1}`,
+        type: inferColumnType(columnValues),
+        align: columnValues.every((value) => parseNodeNumber(value) !== null) ? 'right' : 'left',
+      };
+    });
+
+    return {
+      columns: tableColumns,
+      rows,
+    };
+  }, [children]);
+
+  if (!structure || structure.columns.length === 0) {
+    return (
+      <div className="overflow-x-auto rounded-xl border border-border/60 shadow-sm">
+        <Table className="!m-0 !border-0">{children}</Table>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="relative group"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      <div
-        className={cn(
-          'absolute -top-3 -right-3 z-10 transition-opacity duration-200',
-          showActions ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover:opacity-100',
-        )}
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              className="size-7 text-xs shadow-sm rounded-sm"
-              onClick={handleDownloadCsv}
-              aria-label="Download CSV"
-            >
-              <Download className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={2}>
-            Download CSV
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <div ref={containerRef}>
-        <Table className="!border !rounded-lg !m-0">{children}</Table>
-      </div>
+    <div className="my-6">
+      <TableUI
+        columns={structure.columns}
+        data={structure.rows}
+        title="Table extraite"
+        description="Tableau détecté dans le contenu markdown"
+        sourceTag="markdown"
+        accentColor="violet"
+      />
     </div>
   );
 });

@@ -342,7 +342,7 @@ const groupTools = {
   cyrus: ['create_table', 'create_bar_chart', 'create_pie_chart', 'create_mermaid_diagram'] as const,
   libeller: ['create_table', 'create_bar_chart', 'create_pie_chart'] as const,
   nomenclature: ['create_table', 'create_bar_chart', 'create_pie_chart'] as const,
-  pdfExcel: ['create_table', 'create_bar_chart', 'create_pie_chart', 'create_line_chart'] as const,
+  pdfExcel: ['create_bar_chart', 'create_pie_chart', 'create_line_chart'] as const,
   extreme: ['extreme_search'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,
