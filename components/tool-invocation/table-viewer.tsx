@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { TableUI, TableUIColumn, TableUIRow } from '@/components/table-ui';
+import { OrangeTable, OrangeTableColumn } from '@/components/table-orange';
 
 export interface TableViewerColumn {
   key: string;
@@ -17,37 +17,33 @@ export interface TableViewerProps {
 }
 
 export function TableViewer({ title, description, columns, data }: TableViewerProps) {
-  const tableColumns: TableUIColumn[] = useMemo(
+  const tableColumns: OrangeTableColumn[] = useMemo(
     () =>
       columns.map((column) => ({
         key: column.key,
         label: column.label,
-        type: column.type ?? 'auto',
         align: column.type === 'number' ? 'right' : 'left',
       })),
     [columns],
   );
 
-  const tableData: TableUIRow[] = useMemo(() => {
+  const tableData = useMemo(() => {
     return data.map((row) => {
-      const result: TableUIRow = {};
+      const mapped: Record<string, React.ReactNode> = {};
       tableColumns.forEach((column) => {
-        result[column.key] = row[column.key];
+        mapped[column.key] = row[column.key] as React.ReactNode;
       });
-      return result;
+      return mapped;
     });
   }, [data, tableColumns]);
 
   return (
-    <TableUI
+    <OrangeTable
       title={title}
       description={description ?? undefined}
       columns={tableColumns}
       data={tableData}
-      enableJsonPreview
-      jsonPreviewPayload={{ title, description, columns, data }}
-      sourceTag="create_table"
-      accentColor="amber"
+      footnote={`Table générée automatiquement (${tableData.length} lignes)`}
     />
   );
 }

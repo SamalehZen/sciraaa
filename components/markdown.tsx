@@ -9,7 +9,7 @@ import Latex from 'react-latex-next';
 import Marked, { ReactRenderer } from 'marked-react';
 import React, { useCallback, useMemo, useState, Fragment, useRef, lazy, Suspense, useEffect } from 'react';
 
-import { TableUI, TableUIColumn, TableUIRow } from '@/components/table-ui';
+import { OrangeTable, OrangeTableColumn } from '@/components/table-orange';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -518,7 +518,7 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
   const structure = useMemo(() => {
     const toArray = (node: React.ReactNode) => React.Children.toArray(node).filter(Boolean);
     const columnLabels: React.ReactNode[] = [];
-    const rows: TableUIRow[] = [];
+    const rows: Array<Record<string, React.ReactNode>> = [];
 
     const registerHeader = (headerElement: React.ReactElement) => {
       const headerRows = toArray(headerElement.props.children).filter(
@@ -547,20 +547,12 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
           React.isValidElement(cell) && (cell.type === TableCell || cell.type === TableHead),
       );
       if (cells.length === 0) return;
-      const rowRecord: TableUIRow = {};
+      const rowRecord: Record<string, React.ReactNode> = {};
       cells.forEach((cell, index) => {
         ensureColumn(index);
         const key = `col_${index}`;
         rowRecord[key] = cell.props.children ?? '';
       });
-      const totalColumns = Math.max(columnLabels.length, rows.length > 0 ? Object.keys(rows[0]).length : columnLabels.length);
-      for (let index = 0; index < totalColumns; index += 1) {
-        const key = `col_${index}`;
-        if (!(key in rowRecord)) {
-          ensureColumn(index);
-          rowRecord[key] = '';
-        }
-      }
       rows.push(rowRecord);
     };
 
@@ -587,51 +579,34 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
       return null;
     }
 
-    const longestRowLength = rows.reduce((length, row) => Math.max(length, Object.keys(row).length), 0);
-    for (let index = 0; index < longestRowLength; index += 1) {
+    const columnCount = Math.max(columnLabels.length, ...rows.map((row) => Object.keys(row).length));
+    for (let index = 0; index < columnCount; index += 1) {
       ensureColumn(index);
     }
 
-    const inferColumnType = (values: React.ReactNode[]): TableUIColumn['type'] => {
-      const meaningful = values.filter((value) => {
-        const text = extractNodeText(value).trim();
-        return text.length > 0;
-      });
-      if (meaningful.length === 0) return 'string';
-
-      const numericCount = meaningful.filter((value) => parseNodeNumber(value) !== null).length;
-      if (numericCount === meaningful.length) return 'number';
-
-      const dateCount = meaningful.filter((value) => {
-        const text = extractNodeText(value);
-        return !Number.isNaN(Date.parse(text));
-      }).length;
-      if (dateCount === meaningful.length) return 'date';
-
-      const booleanCount = meaningful.filter((value) => {
-        if (typeof value === 'boolean') return true;
-        const text = extractNodeText(value).toLowerCase();
-        return ['true', 'false', 'yes', 'no', 'oui', 'non'].includes(text);
-      }).length;
-      if (booleanCount === meaningful.length) return 'boolean';
-
-      return 'string';
-    };
-
-    const tableColumns: TableUIColumn[] = columnLabels.map((label, index) => {
+    const tableColumns: OrangeTableColumn[] = columnLabels.map((label, index) => {
       const key = `col_${index}`;
       const columnValues = rows.map((row) => row[key]);
+      const numericColumn = columnValues.length > 0 && columnValues.every((value) => parseNodeNumber(value) !== null);
       return {
         key,
         label: label ?? `Colonne ${index + 1}`,
-        type: inferColumnType(columnValues),
-        align: columnValues.every((value) => parseNodeNumber(value) !== null) ? 'right' : 'left',
+        align: numericColumn ? 'right' : 'left',
       };
+    });
+
+    const completeRows = rows.map((row) => {
+      const normalized: Record<string, React.ReactNode> = {};
+      tableColumns.forEach((column, index) => {
+        const key = column.key;
+        normalized[key] = row[key] ?? '';
+      });
+      return normalized;
     });
 
     return {
       columns: tableColumns,
-      rows,
+      rows: completeRows,
     };
   }, [children]);
 
@@ -645,13 +620,11 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
 
   return (
     <div className="my-6">
-      <TableUI
+      <OrangeTable
         columns={structure.columns}
         data={structure.rows}
         title="Table extraite"
-        description="Tableau détecté dans le contenu markdown"
-        sourceTag="markdown"
-        accentColor="violet"
+        description="Table détectée dans le contenu"
       />
     </div>
   );
