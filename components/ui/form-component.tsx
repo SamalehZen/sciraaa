@@ -1704,6 +1704,8 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
             const access = agentAccess.find((a: any) => a.agentId === group.id);
             // If access record exists and is disabled, hide the agent
             if (access && access.enabled === false) return false;
+            // If agent is masked, hide it
+            if (access && access.masked === true) return false;
           }
           
           return true;

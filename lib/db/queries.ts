@@ -985,6 +985,7 @@ export async function getUserAgentAccess(userId: string) {
     return rows.map((row) => ({
       ...row,
       enabled: !!row.enabled,
+      masked: !!row.masked,
     }));
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to get user agent access');
@@ -1027,11 +1028,53 @@ export async function initializeUserAgentAccess(userId: string) {
       userId,
       agentId,
       enabled: true,
+      masked: false,
       createdAt: new Date(),
       updatedAt: new Date()
     }));
     return await db.insert(userAgentAccess).values(values).onConflictDoNothing();
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to initialize user agent access');
+  }
+}
+
+export async function updateUserAgentMask(userId: string, agentId: string, masked: boolean) {
+  try {
+    const { generateId } = await import('ai');
+    return await db
+      .insert(userAgentAccess)
+      .values({ 
+        id: generateId(), 
+        userId, 
+        agentId, 
+        masked,
+        enabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [userAgentAccess.userId, userAgentAccess.agentId],
+        set: { masked, updatedAt: new Date() }
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to update user agent mask');
+  }
+}
+
+export async function getVisibleAgents(userId: string) {
+  try {
+    const rows = await maindb
+      .select()
+      .from(userAgentAccess)
+      .where(and(eq(userAgentAccess.userId, userId), eq(userAgentAccess.masked, false)));
+
+    return rows.map((row) => ({
+      ...row,
+      enabled: !!row.enabled,
+      masked: !!row.masked,
+    }));
+  } catch (error) {
+    throw new ChatSDKError('bad_request:database', 'Failed to get visible agents');
   }
 }
