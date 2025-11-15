@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { UserProvider } from '@/contexts/user-context';
 import { DataStreamProvider } from '@/components/data-stream-provider';
+import { UnicornBackground } from '@/components/unicorn-background';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -28,7 +29,10 @@ export function Providers({ children }: { children: ReactNode }) {
       <UserProvider>
         <DataStreamProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <UnicornBackground />
+              {children}
+            </TooltipProvider>
           </ThemeProvider>
         </DataStreamProvider>
       </UserProvider>
