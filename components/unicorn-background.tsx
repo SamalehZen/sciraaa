@@ -62,5 +62,10 @@ export function UnicornBackground() {
     return null;
   }
 
-  return <div data-us-project="qF3qXhdiOxdUeQYH8wCK" className="absolute top-0 left-0 -z-10 w-full h-full" />;
+  return (
+    <div
+      data-us-project="qF3qXhdiOxdUeQYH8wCK"
+      className="pointer-events-none fixed inset-0 -z-10"
+    />
+  );
 }
