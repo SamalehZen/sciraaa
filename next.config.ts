@@ -16,7 +16,7 @@ const cspHeaderValue = [
   "connect-src 'self' https: wss:",
   "worker-src 'self' blob:",
   "child-src 'self' blob:",
-  "frame-src 'self'",
+  "frame-src 'self' https://my.spline.design",
 ].join('; ');
 
 const nextConfig: NextConfig = {
