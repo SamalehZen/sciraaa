@@ -19,15 +19,17 @@ export function UnicornBackground() {
   }
 
   return (
-    <div className="spline-container pointer-events-none fixed inset-0 -z-10" aria-hidden>
+    <div className="spline-container pointer-events-none fixed inset-0 z-0" aria-hidden style={{ zIndex: 0 }}>
       <iframe
         src="https://my.spline.design/aidatamodelinteraction-mdTL3FktFVHgDvFr5TKtnYDV"
         frameBorder="0"
         width="100%"
         height="100%"
         id="aura-spline"
-        className="w-full h-full"
+        className="h-full w-full"
         title="Spline background"
+        allow="autoplay; fullscreen"
+        loading="lazy"
       />
     </div>
   );
