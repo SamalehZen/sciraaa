@@ -289,25 +289,22 @@ export function EANSearchResults({ barcode, results, images, totalResults, label
             <AccordionContent className="px-4 pb-4 space-y-4">
               {isLabelSearch && (
                 hasDetectedBarcode ? (
-                  <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/15 via-cyan-400/10 to-transparent shadow-[0_18px_40px_-28px_rgba(14,116,144,0.55)] px-6 py-8 text-center">
-                    <div className="pointer-events-none absolute -inset-16 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.25),transparent_60%)]" />
-                    <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-4">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-blue-600 dark:border-cyan-300/40 dark:bg-slate-900/60 dark:text-cyan-200">
-                        Code-barres
-                      </span>
-                      <h1 className="font-mono text-4xl font-black tracking-[0.6em] text-blue-700 drop-shadow-sm dark:text-cyan-50 md:text-5xl">
-                        {barcode}
-                      </h1>
-                      {labelText && (
-                        <p className="text-sm text-blue-700/80 dark:text-cyan-100/70">
-                          Identifié pour « {labelText} »
-                        </p>
-                      )}
-                    </div>
+                  <div className="rounded-xl border border-border bg-muted/30 px-6 py-6 text-center">
+                    <p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+                      Code-barres détecté
+                    </p>
+                    <h1 className="mt-3 font-mono text-4xl font-semibold tracking-[0.5em] text-foreground md:text-5xl">
+                      {barcode}
+                    </h1>
+                    {labelText && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Produit : « {labelText} »
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 px-6 py-5 text-sm text-blue-700/80 dark:border-cyan-300/40 dark:bg-cyan-500/5 dark:text-cyan-100/70">
-                    Aucun code-barres détecté pour {labelText ? `« ${labelText} »` : 'ce libellé'}.
+                  <div className="rounded-xl border border-dashed border-border px-6 py-5 text-center text-sm text-muted-foreground">
+                    {labelText ? `Aucun code-barres détecté pour « ${labelText} ».` : 'Aucun code-barres détecté pour ce libellé.'}
                   </div>
                 )
               )}
