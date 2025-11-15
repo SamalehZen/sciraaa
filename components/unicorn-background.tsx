@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -17,6 +18,7 @@ declare global {
 export function UnicornBackground() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [shouldLoadScript, setShouldLoadScript] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -26,46 +28,43 @@ export function UnicornBackground() {
   const isDark = mounted && activeTheme === "dark";
 
   useEffect(() => {
+    if (isDark) {
+      setShouldLoadScript(true);
+    }
+  }, [isDark]);
+
+  useEffect(() => {
     if (!isDark) {
       return;
     }
 
-    if (window.UnicornStudio?.isInitialized) {
-      window.UnicornStudio.init?.();
-      return;
-    }
-
-    if (document.getElementById("unicorn-studio-loader")) {
-      return;
-    }
-
-    window.UnicornStudio = window.UnicornStudio ?? {};
-    window.UnicornStudio.isInitialized = false;
-
-    const script = document.createElement("script");
-    script.id = "unicorn-studio-loader";
-    script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js";
-    script.onload = () => {
-      if (!window.UnicornStudio?.isInitialized) {
+    if (window.UnicornStudio?.init) {
+      const timer = window.setTimeout(() => {
         window.UnicornStudio?.init?.();
-        if (window.UnicornStudio) {
-          window.UnicornStudio.isInitialized = true;
-        }
-      }
-    };
+      }, 0);
 
-    const parent = document.head ?? document.body;
-    parent.appendChild(script);
+      return () => window.clearTimeout(timer);
+    }
   }, [isDark]);
 
-  if (!isDark) {
-    return null;
-  }
-
   return (
-    <div
-      data-us-project="qF3qXhdiOxdUeQYH8wCK"
-      className="pointer-events-none fixed inset-0 -z-10"
-    />
+    <>
+      {isDark ? (
+        <div data-us-project="qF3qXhdiOxdUeQYH8wCK" className="pointer-events-none fixed inset-0" />
+      ) : null}
+      {shouldLoadScript ? (
+        <Script
+          id="unicorn-studio-loader"
+          src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js"
+          strategy="afterInteractive"
+          onLoad={() => {
+            if (window.UnicornStudio) {
+              window.UnicornStudio.isInitialized = true;
+              window.UnicornStudio.init?.();
+            }
+          }}
+        />
+      ) : null}
+    </>
   );
 }
