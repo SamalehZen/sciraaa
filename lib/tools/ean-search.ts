@@ -39,6 +39,33 @@ interface SerperSearchResult {
   };
 }
 
+const BARCODE_PATTERN = /\b\d{8,14}\b/g;
+
+function collectBarcodeCandidates(value: string | undefined | null, target: Set<string>) {
+  if (!value) return;
+  const matches = value.match(BARCODE_PATTERN);
+  if (!matches) return;
+  matches.forEach(match => {
+    const normalized = match.trim();
+    if (normalized.length >= 8 && normalized.length <= 14) {
+      target.add(normalized);
+    }
+  });
+}
+
+function selectPreferredBarcode(candidates: Set<string>): string | undefined {
+  if (candidates.size === 0) return undefined;
+  const ordered = Array.from(candidates);
+  const priorities = [13, 12, 14, 11, 10, 9, 8];
+  for (const length of priorities) {
+    const match = ordered.find(value => value.length === length);
+    if (match) {
+      return match;
+    }
+  }
+  return ordered[0];
+}
+
 async function searchSerper(query: string, num: number = 10): Promise<SerperSearchResult> {
   const response = await fetch(SERPER_SEARCH_ENDPOINT, {
     method: 'POST',
@@ -304,20 +331,19 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
       searchType: z.enum(['auto', 'barcode', 'label']).describe('Type of search: auto (auto-detect), barcode (EAN/UPC only), or label (product name)').optional().default('auto'),
     }),
     execute: async ({ query, searchType = 'auto' }) => {
+      const trimmedQuery = query.trim();
       let isBarcode = false;
       let isLabel = false;
-      let searchQuery = query;
-      let identifier = query;
+      let searchQuery = trimmedQuery;
+      let resolvedBarcode = trimmedQuery;
 
-      // Determine search type
       if (searchType === 'auto') {
-        // Auto-detect: if query is 8-13 digits, treat as barcode
-        isBarcode = /^\d{8,13}$/.test(query);
+        isBarcode = /^\d{8,13}$/.test(trimmedQuery);
         isLabel = !isBarcode;
       } else if (searchType === 'barcode') {
         isBarcode = true;
         isLabel = false;
-        if (!/^\d{8,13}$/.test(query)) {
+        if (!/^\d{8,13}$/.test(trimmedQuery)) {
           throw new Error('Invalid barcode format. EAN codes must be 8-13 digits.');
         }
       } else if (searchType === 'label') {
@@ -326,31 +352,37 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
       }
 
       try {
-        // Build search query based on type
         if (isBarcode) {
-          searchQuery = `EAN ${query}`;
+          resolvedBarcode = trimmedQuery;
+        }
+
+        let nutritionData: NutritionData | undefined;
+        if (isBarcode) {
+          nutritionData = await fetchNutritionData(trimmedQuery);
+        }
+
+        if (isBarcode) {
+          searchQuery = `EAN ${trimmedQuery}`;
         } else if (isLabel) {
-          searchQuery = query; // Use the label as-is for product search
+          searchQuery = trimmedQuery;
         }
 
         console.log(`[EAN Search] Search type: ${isBarcode ? 'BARCODE' : 'LABEL'} - Query: "${searchQuery}"`);
 
-        // Fetch nutrition data from Open Food Facts if it's a barcode
-        let nutritionData: NutritionData | undefined;
-        if (isBarcode) {
-          nutritionData = await fetchNutritionData(query);
-        }
-
-        // Run both text and image searches in parallel
         const [serperResults, imageResults] = await Promise.all([
           searchSerper(searchQuery, 20),
           searchSerperImages(searchQuery),
         ]);
 
+        const barcodeCandidates = isLabel ? new Set<string>() : null;
+        const addCandidate = (value: string | undefined | null) => {
+          if (!barcodeCandidates || !value) return;
+          collectBarcodeCandidates(value, barcodeCandidates);
+        };
+
         const collectedResults: ProductSearchResult[] = [];
         const collectedImages: string[] = [];
 
-        // Collect images from dedicated image search first (best quality)
         if (imageResults.images && Array.isArray(imageResults.images)) {
           imageResults.images.forEach((img) => {
             if (img && typeof img === 'object' && 'imageUrl' in img) {
@@ -362,9 +394,10 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           console.log(`[EAN Search] Collected ${imageResults.images.length} images from dedicated image search`);
         }
 
-        // Accept ALL organic results from Serper (no domain filtering)
         if (serperResults.organic) {
           for (const result of serperResults.organic) {
+            addCandidate(result.title);
+            addCandidate(result.snippet);
             const url = result.link;
             const hostname = url ? getHostname(url) : null;
             const content = result.snippet || '';
@@ -376,18 +409,36 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
               content,
               images: [],
               supplier: brand || undefined,
-              ean: identifier,
+              ean: trimmedQuery,
               publishedDate: result.date || undefined,
             });
           }
         }
 
-        // Collect images from Knowledge Graph first (higher quality)
+        if (barcodeCandidates) {
+          addCandidate(serperResults.knowledgeGraph?.title);
+          addCandidate(serperResults.knowledgeGraph?.description);
+          if (serperResults.knowledgeGraph?.attributes) {
+            Object.values(serperResults.knowledgeGraph.attributes).forEach(value => addCandidate(value));
+          }
+        }
+
+        let detectedBarcode: string | undefined;
+        if (barcodeCandidates && barcodeCandidates.size > 0) {
+          detectedBarcode = selectPreferredBarcode(barcodeCandidates);
+        }
+
+        if (isLabel && detectedBarcode) {
+          resolvedBarcode = detectedBarcode;
+          if (!nutritionData) {
+            nutritionData = await fetchNutritionData(detectedBarcode);
+          }
+        }
+
         if (serperResults.knowledgeGraph?.imageUrl) {
           collectedImages.push(serperResults.knowledgeGraph.imageUrl);
         }
 
-        // Collect images from Knowledge Graph array
         if (serperResults.knowledgeGraph?.images && Array.isArray(serperResults.knowledgeGraph.images)) {
           serperResults.knowledgeGraph.images.forEach((img) => {
             if (typeof img === 'string') {
@@ -398,7 +449,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           });
         }
 
-        // Collect images from main search results
         if (serperResults.images && Array.isArray(serperResults.images)) {
           serperResults.images.forEach((img) => {
             if (typeof img === 'string') {
@@ -414,10 +464,9 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
         for (const result of collectedResults) {
           if (!result.url || seenUrls.has(result.url)) continue;
           seenUrls.add(result.url);
-          finalResults.push(result);
+          finalResults.push({ ...result, ean: resolvedBarcode });
         }
 
-        // Deduplicate and filter valid images (must be proper URLs)
         const finalImages = Array.from(new Set(collectedImages))
           .filter(img => {
             try {
@@ -431,7 +480,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         console.log(`[EAN Search] Found ${collectedImages.length} images (${finalImages.length} after filtering) for query "${searchQuery}"`);
 
-        // Build description from Knowledge Graph
         let fullDescription = '';
         let extractedNutrients: Record<string, string | number> = {};
 
@@ -445,11 +493,8 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
           if (kg.attributes) {
             const allAttributes = kg.attributes;
-
-            // Extract nutrients
             extractedNutrients = extractNutrients(allAttributes);
 
-            // Add all attributes except nutrition ones
             Object.entries(allAttributes).forEach(([key, value]) => {
               const lowerKey = key.toLowerCase();
               const nutritionKeys = ['calories', 'énergie', 'energy', 'protéines', 'protein', 'graisses', 'lipides', 'fat', 'glucides', 'carbohydrates', 'sucres', 'sugar', 'sodium', 'sel', 'fibres', 'fiber', 'calcium', 'fer', 'iron', 'magnésium', 'potassium', 'vitamine', 'vitamin'];
@@ -462,7 +507,6 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
           }
         }
 
-        // Merge nutriments from Open Food Facts if available
         if (nutritionData?.nutriments) {
           extractedNutrients = {
             ...extractedNutrients,
@@ -476,18 +520,18 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         if (finalResults.length === 0 && finalImages.length === 0 && !fullDescription) {
           return {
-            barcode: identifier,
+            barcode: resolvedBarcode,
+            label: isLabel ? trimmedQuery : undefined,
             results: [],
             images: [],
             totalResults: 0,
             message: errorMessage,
+            searchType: isBarcode ? 'barcode' : 'label',
           } as const;
         }
 
-        // Limit to top 8 results
         finalResults.splice(8);
 
-        // Add content from top results to description
         finalResults.slice(0, 3).forEach((result) => {
           if (result.content) {
             fullDescription += `${result.content}\n\n`;
@@ -496,26 +540,30 @@ export function eanSearchTool(dataStream: UIMessageStreamWriter<ChatMessage> | u
 
         const searchTypeLabel = isBarcode ? 'barcode' : 'label';
         return {
-          barcode: identifier,
+          barcode: resolvedBarcode,
+          label: isLabel ? trimmedQuery : undefined,
           results: finalResults,
           images: finalImages,
           totalResults: finalResults.length,
           description: fullDescription.trim() || undefined,
-          message: `Found ${finalResults.length} results for ${searchTypeLabel} "${query}"`,
+          message: `Found ${finalResults.length} results for ${searchTypeLabel} "${trimmedQuery}"`,
           nutritionScores: nutritionData?.scores,
           nutrients: Object.keys(extractedNutrients).length > 0 ? extractedNutrients : undefined,
+          searchType: searchTypeLabel,
         };
       } catch (err) {
         console.error('[EAN Search] Error:', err);
         const errorType = isBarcode ? 'code-barres' : 'produit';
         return {
-          barcode: identifier,
+          barcode: resolvedBarcode,
+          label: isLabel ? trimmedQuery : undefined,
           results: [],
           images: [],
           totalResults: 0,
           description: undefined,
           message: `Erreur lors de la recherche du ${errorType}.`,
           error: (err as Error)?.message || 'Unknown error',
+          searchType: isBarcode ? 'barcode' : 'label',
         } as const;
       }
     },

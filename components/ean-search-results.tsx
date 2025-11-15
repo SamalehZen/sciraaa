@@ -26,6 +26,8 @@ interface EANSearchResultsProps {
   results: ProductResult[];
   images: string[];
   totalResults: number;
+  label?: string;
+  searchType?: 'barcode' | 'label';
 }
 
 const ProductCard: React.FC<{ product: ProductResult; onClick?: () => void }> = ({ 
@@ -239,20 +241,24 @@ const ProductImageGallery: React.FC<{ images: string[]; productName: string }> =
   );
 };
 
-export function EANSearchResults({ barcode, results, images, totalResults }: EANSearchResultsProps) {
+export function EANSearchResults({ barcode, results, images, totalResults, label, searchType }: EANSearchResultsProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  
-  // Debug logging
+  const isLabelSearch = searchType === 'label';
+  const hasDetectedBarcode = typeof barcode === 'string' && /^\d{8,14}$/.test(barcode);
+  const labelText = label?.trim();
+
   React.useEffect(() => {
     console.log('[EANSearchResults] Received props:', {
       barcode,
       resultsCount: results?.length || 0,
       imagesCount: images?.length || 0,
       totalResults,
-      images: images?.slice(0, 3) // Log first 3 images
+      label: labelText,
+      searchType,
+      images: images?.slice(0, 3),
     });
-  }, [barcode, results, images, totalResults]);
-  
+  }, [barcode, results, images, totalResults, labelText, searchType]);
+
   const displayResults = results.slice(0, 3);
   const remainingResults = results.slice(3);
 
@@ -266,8 +272,12 @@ export function EANSearchResults({ barcode, results, images, totalResults }: EAN
                 <div className="flex items-center gap-3">
                   <ShoppingCart className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <div className="text-left">
-                    <h3 className="font-semibold text-sm">Résultats pour le code-barres</h3>
-                    <p className="text-xs text-muted-foreground font-mono">{barcode}</p>
+                    <h3 className="font-semibold text-sm">
+                      {isLabelSearch && labelText ? `Résultats pour "${labelText}"` : 'Résultats pour le code-barres'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {hasDetectedBarcode ? barcode : isLabelSearch ? 'Code-barres non détecté' : barcode}
+                    </p>
                   </div>
                 </div>
                 <Badge variant="secondary" className="ml-2">
@@ -277,6 +287,31 @@ export function EANSearchResults({ barcode, results, images, totalResults }: EAN
             </AccordionTrigger>
             
             <AccordionContent className="px-4 pb-4 space-y-4">
+              {isLabelSearch && (
+                hasDetectedBarcode ? (
+                  <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-500/15 via-cyan-400/10 to-transparent shadow-[0_18px_40px_-28px_rgba(14,116,144,0.55)] px-6 py-8 text-center">
+                    <div className="pointer-events-none absolute -inset-16 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.25),transparent_60%)]" />
+                    <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-4">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-blue-600 dark:border-cyan-300/40 dark:bg-slate-900/60 dark:text-cyan-200">
+                        Code-barres
+                      </span>
+                      <h1 className="font-mono text-4xl font-black tracking-[0.6em] text-blue-700 drop-shadow-sm dark:text-cyan-50 md:text-5xl">
+                        {barcode}
+                      </h1>
+                      {labelText && (
+                        <p className="text-sm text-blue-700/80 dark:text-cyan-100/70">
+                          Identifié pour « {labelText} »
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-blue-500/30 bg-blue-500/5 px-6 py-5 text-sm text-blue-700/80 dark:border-cyan-300/40 dark:bg-cyan-500/5 dark:text-cyan-100/70">
+                    Aucun code-barres détecté pour {labelText ? `« ${labelText} »` : 'ce libellé'}.
+                  </div>
+                )
+              )}
+
               {images && images.length > 0 ? (
                 <ProductImageGallery 
                   images={images} 
