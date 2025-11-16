@@ -18,7 +18,6 @@ declare global {
 export function UnicornBackground() {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [shouldLoadScript, setShouldLoadScript] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -27,11 +26,6 @@ export function UnicornBackground() {
   const activeTheme = theme === "system" ? resolvedTheme : theme;
   const isDark = mounted && activeTheme === "dark";
 
-  useEffect(() => {
-    if (isDark) {
-      setShouldLoadScript(true);
-    }
-  }, [isDark]);
 
   useEffect(() => {
     if (!isDark) {
@@ -50,21 +44,19 @@ export function UnicornBackground() {
   return (
     <>
       {isDark ? (
-        <div data-us-project="qF3qXhdiOxdUeQYH8wCK" className="pointer-events-none fixed inset-0" />
+        <div data-us-project="qF3qXhdiOxdUeQYH8wCK" className="pointer-events-none fixed inset-0 z-0 w-full h-full" />
       ) : null}
-      {shouldLoadScript ? (
-        <Script
-          id="unicorn-studio-loader"
-          src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js"
-          strategy="afterInteractive"
-          onLoad={() => {
-            if (window.UnicornStudio) {
-              window.UnicornStudio.isInitialized = true;
-              window.UnicornStudio.init?.();
-            }
-          }}
-        />
-      ) : null}
+      <Script
+        id="unicorn-studio-loader"
+        src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.29/dist/unicornStudio.umd.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          if (window.UnicornStudio) {
+            window.UnicornStudio.isInitialized = true;
+            window.UnicornStudio.init?.();
+          }
+        }}
+      />
     </>
   );
 }
