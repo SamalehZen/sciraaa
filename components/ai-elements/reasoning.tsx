@@ -1,6 +1,5 @@
 "use client";
 
-import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import {
   Collapsible,
   CollapsibleContent,
@@ -9,7 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Brain as BrainIcon, ChevronDown as ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Streamdown } from "./streamdown";
 import { Shimmer } from "./shimmer";
 
@@ -29,6 +28,31 @@ export const useReasoning = () => {
   }
   return context;
 };
+
+type ControllableStateProps<T> = {
+  prop: T | undefined;
+  defaultProp: T | undefined;
+  onChange?: (value: T) => void;
+};
+
+function useControllableState<T>({ prop, defaultProp, onChange }: ControllableStateProps<T>) {
+  const isControlled = prop !== undefined;
+  const [uncontrolledState, setUncontrolledState] = useState<T | undefined>(defaultProp);
+  const value = isControlled ? (prop as T) : uncontrolledState;
+
+  const setValue = useCallback(
+    (nextValue: T | ((prev: T | undefined) => T)) => {
+      const resolved = typeof nextValue === "function" ? (nextValue as (prev: T | undefined) => T)(value) : nextValue;
+      if (!isControlled) {
+        setUncontrolledState(resolved);
+      }
+      onChange?.(resolved);
+    },
+    [isControlled, onChange, value],
+  );
+
+  return [value, setValue] as const;
+}
 
 export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
@@ -52,12 +76,12 @@ export const Reasoning = memo(
     children,
     ...props
   }: ReasoningProps) => {
-    const [isOpen, setIsOpen] = useControllableState({
+    const [isOpen, setIsOpen] = useControllableState<boolean>({
       prop: open,
       defaultProp: defaultOpen,
       onChange: onOpenChange,
     });
-    const [duration, setDuration] = useControllableState({
+    const [duration, setDuration] = useControllableState<number | undefined>({
       prop: durationProp,
       defaultProp: undefined,
     });
@@ -87,16 +111,17 @@ export const Reasoning = memo(
       }
     }, [isStreaming, isOpen, defaultOpen, setIsOpen, hasAutoClosed]);
 
-    const handleOpenChange = (newOpen: boolean) => {
-      setIsOpen(newOpen);
-    };
+    const contextValue = useMemo<ReasoningContextValue>(
+      () => ({ isStreaming, isOpen: Boolean(isOpen), setIsOpen: (value) => setIsOpen(value), duration }),
+      [isStreaming, isOpen, setIsOpen, duration],
+    );
 
     return (
-      <ReasoningContext.Provider value={{ isStreaming, isOpen, setIsOpen, duration }}>
+      <ReasoningContext.Provider value={contextValue}>
         <Collapsible
           className={cn("not-prose mb-4", className)}
-          onOpenChange={handleOpenChange}
-          open={isOpen}
+          onOpenChange={(nextOpen) => setIsOpen(nextOpen)}
+          open={Boolean(isOpen)}
           {...props}
         >
           {children}
