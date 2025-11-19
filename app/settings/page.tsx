@@ -129,7 +129,7 @@ function SettingsPageInner() {
                 <div className="flex items-center gap-2">
                   <h3 className={cn('font-semibold text-lg truncate', blurPersonalInfo && 'blur-sm')}>{user?.name || 'User'}</h3>
                   {isProUser && (
-                    <span className="inline-block !font-baumans leading-4 !mb-1 !px-2.5 !pt-0 !pb-1 rounded-xl shadow-sm bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
+                    <span className="inline-block !font-baumans leading-4 !mb-1 !px-2.5 !pt-0 !pb-1 rounded-xl shadow-sm bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 text-white ring-1 ring-sky-500/40 dark:ring-sky-300/40 ring-offset-1 ring-offset-background dark:bg-gradient-to-r dark:from-sky-400 dark:via-blue-500 dark:to-indigo-500 dark:text-white">
                       pro
                     </span>
                   )}
@@ -199,7 +199,7 @@ function SettingsPageInner() {
                     <Skeleton className="h-5 w-16 mx-auto mt-2" />
                   ) : (
                     isProUser && (
-                      <span className="inline-block !font-baumans leading-4 !px-2 !pt-0.5 !pb-1.5 rounded-xl shadow-sm bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground mt-2">
+                      <span className="inline-block !font-baumans leading-4 !px-2 !pt-0.5 !pb-1.5 rounded-xl shadow-sm bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 text-white ring-1 ring-sky-500/40 dark:ring-sky-300/40 ring-offset-1 ring-offset-background dark:bg-gradient-to-r dark:from-sky-400 dark:via-blue-500 dark:to-indigo-500 dark:text-white mt-2">
                         pro
                       </span>
                     )
