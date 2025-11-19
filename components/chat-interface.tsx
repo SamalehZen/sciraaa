@@ -729,7 +729,7 @@ const ChatInterface = memo(
                     Hyper
                   </h1>
                   {isUserPro && (
-                    <h1 className="text-2xl font-baumans! leading-4 inline-block relative !px-3 !pt-1 !pb-2.5 rounded-xl shadow-sm !m-0 !mt-2 bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
+                    <h1 className="text-2xl font-baumans! leading-4 inline-block relative !px-3 !pt-1 !pb-2.5 rounded-xl shadow-sm !m-0 !mt-2 bg-gradient-to-br from-green-500/25 to-emerald-500/25 text-green-700 ring-1 ring-green-500/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-green-600 dark:to-emerald-600 dark:text-white">
                       <span className="invisible">pro</span>
                       <span className="absolute inset-0 flex items-center justify-center">Fix</span>
                     </h1>
