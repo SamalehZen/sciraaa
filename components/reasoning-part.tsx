@@ -1,9 +1,10 @@
-import React, { useRef, useEffect, ReactNode } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Minimize2, Maximize2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { ReactNode, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronUp, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import Marked from 'marked-react';
 import { ReasoningUIPart } from 'ai';
+
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
+import { cn } from '@/lib/utils';
 
 interface ReasoningPartViewProps {
   part: ReasoningUIPart;
@@ -15,7 +16,6 @@ interface ReasoningPartViewProps {
   setIsExpanded: (v: boolean) => void;
 }
 
-// Type definition for table flags
 interface TableFlags {
   header?: boolean;
   align?: 'center' | 'left' | 'right' | null;
@@ -33,11 +33,9 @@ const SpinnerIcon = React.memo(() => (
 ));
 SpinnerIcon.displayName = 'SpinnerIcon';
 
-// Custom renderer for Marked
 const MarkdownRenderer = React.memo(({ content }: { content: string }) => {
-  // Define custom renderer with proper types
   const renderer = {
-    code(code: string, language?: string) {
+    code(code: string) {
       return (
         <pre
           key={Math.random()}
@@ -80,7 +78,7 @@ const MarkdownRenderer = React.memo(({ content }: { content: string }) => {
         h4: 'text-base font-medium mb-1 mt-1.5 text-foreground',
         h5: 'text-base font-normal mb-1 mt-1.5 text-foreground',
         h6: 'text-base font-normal mb-1 mt-1.5 text-foreground',
-      };
+      } as const;
 
       const className = classes[`h${level}` as keyof typeof classes] || '';
       return (
@@ -150,10 +148,7 @@ const MarkdownRenderer = React.memo(({ content }: { content: string }) => {
       const align = flags.align ? `text-${flags.align}` : '';
 
       return flags.header ? (
-        <th
-          key={Math.random()}
-          className={`px-1.5 py-1 font-medium bg-muted/60 text-foreground border border-border/60 ${align}`}
-        >
+        <th key={Math.random()} className={`px-1.5 py-1 font-medium bg-muted/60 text-foreground border border-border/60 ${align}`}>
           {children}
         </th>
       ) : (
@@ -172,7 +167,6 @@ const MarkdownRenderer = React.memo(({ content }: { content: string }) => {
 });
 MarkdownRenderer.displayName = 'MarkdownRenderer';
 
-// Helper function to check if content is empty (just newlines)
 const isEmptyContent = (content: string): boolean => {
   return !content || content.trim() === '' || /^\n+$/.test(content);
 };
@@ -182,132 +176,111 @@ export const ReasoningPartView: React.FC<ReasoningPartViewProps> = React.memo(
     const scrollRef = useRef<HTMLDivElement>(null);
     const isComplete = part.state === 'done';
 
-    // Auto-scroll to bottom when new content is added during reasoning
     useEffect(() => {
       if (!isComplete && scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }, [isComplete, part.text]);
 
-    // Also scroll when details change, even if isComplete doesn't change
     useEffect(() => {
       if (!isComplete && scrollRef.current && part.text && part.text.length > 0) {
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
           if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
           }
         }, 10);
+
+        return () => clearTimeout(timeout);
       }
+      return undefined;
     }, [part.text, isComplete]);
 
     const hasNonEmptyReasoning = part.text && !isEmptyContent(part.text);
 
-    // If all content is empty, don't render the reasoning section
     if (!hasNonEmptyReasoning) {
       return null;
     }
 
     return (
       <div className="my-2" key={sectionKey}>
-        <div className={cn('bg-accent', 'border border-border/80 rounded-lg overflow-hidden')}>
-          {/* Header - Always visible */}
-          <div
-            onClick={() => isComplete && setIsExpanded(!isExpanded)}
-            className={cn(
-              'flex items-center justify-between py-2 px-2.5',
-              isComplete && 'cursor-pointer hover:bg-muted/50 transition-colors',
-              'bg-background/80',
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {!isComplete ? (
-                <div className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      'px-1.5 py-0.5 rounded-md',
-                      'border border-border/80',
-                      'bg-muted/50',
-                      'text-muted-foreground',
-                      'flex items-center gap-1.5',
-                      'animate-pulse',
+        <Reasoning
+          isStreaming={!isComplete}
+          open={isExpanded}
+          onOpenChange={setIsExpanded}
+          className="w-full"
+        >
+          <div className={cn('bg-accent border border-border/80 rounded-lg overflow-hidden')}>
+            <ReasoningTrigger
+              disabledWhileStreaming
+              className={cn(
+                'bg-background/80 px-2.5 py-2 transition-colors',
+                isComplete ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-default',
+              )}
+            >
+              {({ isOpen, isStreaming }) => (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {isStreaming ? (
+                      <span className="flex items-center gap-1.5 rounded-md border border-border/80 bg-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground">
+                        <span className="size-2.5 text-muted-foreground">
+                          <SpinnerIcon />
+                        </span>
+                        <span>Réflexion</span>
+                        {parallelTool && <span className="opacity-60">({parallelTool})</span>}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+                        <Sparkles className="size-3" strokeWidth={2} />
+                        <span>Raisonnement</span>
+                        {parallelTool && <span className="opacity-60">({parallelTool})</span>}
+                      </span>
                     )}
-                  >
-                    <div className="size-2.5 text-muted-foreground">
-                      <SpinnerIcon />
-                    </div>
-                    <span className="text-xs font-normal">Réflexion</span>
-                    {parallelTool && <span className="text-xs font-normal opacity-60">({parallelTool})</span>}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setIsFullscreen(!isFullscreen);
+                      }}
+                      className="p-0.5 text-muted-foreground transition-colors hover:bg-muted rounded"
+                      aria-label={isFullscreen ? 'Réduire' : 'Agrandir'}
+                      type="button"
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="size-3" strokeWidth={2} />
+                      ) : (
+                        <Maximize2 className="size-3" strokeWidth={2} />
+                      )}
+                    </button>
+
+                    {!isStreaming && (
+                      <span className="text-muted-foreground">
+                        {isOpen ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                      </span>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="size-3 text-muted-foreground" strokeWidth={2} />
-                  <div className="text-xs font-normal text-muted-foreground">Raisonnement</div>
-                </div>
               )}
-            </div>
+            </ReasoningTrigger>
 
-            <div className="flex items-center gap-2">
-              {isComplete && (
-                <div className="text-muted-foreground">
-                  {isExpanded ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-                </div>
-              )}
-
-              {(!isComplete || isExpanded) && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsFullscreen(!isFullscreen);
-                  }}
-                  className="p-0.5 hover:bg-muted rounded text-muted-foreground transition-colors"
-                  aria-label={isFullscreen ? 'Réduire' : 'Agrandir'}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="size-3 text-muted-foreground" strokeWidth={2} />
-                  ) : (
-                    <Maximize2 className="size-3 text-muted-foreground" strokeWidth={2} />
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Content - Shown when in progress or when expanded */}
-          <AnimatePresence initial={false}>
-            {(!isComplete || isExpanded) && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-                className="overflow-hidden"
+            <ReasoningContent className="border-t border-border/80">
+              <div
+                ref={scrollRef}
+                className={cn(
+                  'overflow-y-auto bg-muted/20 px-2.5 py-2 text-xs leading-relaxed',
+                  'scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-border',
+                  'scrollbar-track-transparent',
+                  isFullscreen ? 'max-h-[60vh]' : 'max-h-[180px]',
+                )}
               >
-                <div>
-                  <div className="h-px w-full bg-border/80"></div>
-                  <div
-                    ref={scrollRef}
-                    className={cn(
-                      'overflow-y-auto bg-muted/20',
-                      'scrollbar-thin scrollbar-thumb-rounded-full scrollbar-thumb-border',
-                      'scrollbar-track-transparent',
-                      {
-                        'max-h-[180px] rounded-b-lg': !isFullscreen,
-                        'max-h-[60vh] rounded-b-lg': isFullscreen,
-                      },
-                    )}
-                  >
-                    <div className="px-2.5 py-2 text-xs leading-relaxed">
-                      <div className="text-muted-foreground prose prose-sm max-w-none">
-                        <MarkdownRenderer content={part.text} />
-                      </div>
-                    </div>
-                  </div>
+                <div className="text-muted-foreground prose prose-sm max-w-none">
+                  <MarkdownRenderer content={part.text} />
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+            </ReasoningContent>
+          </div>
+        </Reasoning>
       </div>
     );
   },
