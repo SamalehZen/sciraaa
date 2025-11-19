@@ -492,52 +492,38 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showActions, setShowActions] = useState(false);
 
-  const csvUtils = useMemo(
+  const tableUtils = useMemo(
     () => ({
-      escapeCsvValue: (value: string): string => {
-        const needsQuotes = /[",\n]/.test(value);
-        const escaped = value.replace(/"/g, '""');
-        return needsQuotes ? `"${escaped}"` : escaped;
-      },
-      buildCsvFromTable: (table: HTMLTableElement): string => {
+      extractTableMatrix: (table: HTMLTableElement): string[][] => {
         const rows = Array.from(table.querySelectorAll('tr')) as HTMLTableRowElement[];
-        const csvLines: string[] = [];
-        for (const row of rows) {
-          const cells = Array.from(row.querySelectorAll('th,td')) as HTMLTableCellElement[];
-          if (cells.length > 0) {
-            const line = cells
-              .map((cell) => csvUtils.escapeCsvValue(cell.innerText.replace(/\u00A0/g, ' ').trim()))
-              .join(',');
-            csvLines.push(line);
-          }
-        }
-        return csvLines.join('\n');
+        return rows
+          .map((row) => {
+            const cells = Array.from(row.querySelectorAll('th,td')) as HTMLTableCellElement[];
+            if (cells.length === 0) return null;
+            return cells.map((cell) => cell.innerText.replace(/\u00A0/g, ' ').trim());
+          })
+          .filter((row): row is string[] => Array.isArray(row));
       },
     }),
     [],
   );
 
-  const handleDownloadCsv = useCallback(() => {
+  const handleDownloadXlsx = useCallback(async () => {
     const tableEl = containerRef.current?.querySelector('[data-slot="table"]') as HTMLTableElement | null;
     if (!tableEl) return;
 
     try {
-      const csv = csvUtils.buildCsvFromTable(tableEl);
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const data = tableUtils.extractTableMatrix(tableEl);
+      const XLSX = await import('xlsx');
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Tableau');
       const timestamp = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+/, '');
-      a.href = url;
-      a.download = `table-${timestamp}.csv`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      XLSX.writeFile(workbook, `table-${timestamp}.xlsx`, { compression: true });
     } catch (error) {
-      console.error('Failed to download CSV:', error);
+      console.error('Failed to download XLSX:', error);
     }
-  }, [csvUtils]);
+  }, [tableUtils]);
 
   return (
     <div
@@ -557,14 +543,14 @@ const MarkdownTableWithActions: React.FC<{ children: React.ReactNode }> = React.
               size="icon"
               variant="outline"
               className="size-7 text-xs shadow-sm rounded-sm"
-              onClick={handleDownloadCsv}
-              aria-label="Download CSV"
+              onClick={handleDownloadXlsx}
+              aria-label="Download XLSX"
             >
               <Download className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={2}>
-            Download CSV
+            Download XLSX
           </TooltipContent>
         </Tooltip>
       </div>
