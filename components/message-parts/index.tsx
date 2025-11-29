@@ -65,8 +65,6 @@ import { getModelConfig } from '@/ai/providers';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
 import { Spinner } from '../ui/spinner';
 import { markdownTablesToXlsx } from '@/lib/export-xlsx';
-import { EANSearchResults } from '@/components/ean-search-results';
-import { EANLoadingState } from '@/components/ean-loading-state';
 import { NutritionScores } from '@/components/nutrition-scores';
 import { NutritionTable } from '@/components/nutrition-table';
 
@@ -780,24 +778,115 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
 
           case 'tool-ean_search':
             switch (part.state) {
-              case 'input-streaming': {
-                const query = (part as any).input?.query || (part as any).args?.query || (part as any).input?.barcode || (part as any).args?.barcode;
-                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={query} />;
-              }
+              case 'input-streaming':
               case 'input-available': {
-                const query = (part as any).input?.query || (part as any).args?.query || (part as any).input?.barcode || (part as any).args?.barcode;
-                return <EANLoadingState key={`${messageIndex}-${partIndex}-tool`} barcode={query} />;
+                const query =
+                  (part as any).input?.query ||
+                  (part as any).args?.query ||
+                  (part as any).input?.barcode ||
+                  (part as any).args?.barcode;
+                return (
+                  <div
+                    key={`${messageIndex}-${partIndex}-tool`}
+                    className="space-y-1.5 rounded-lg border border-dashed border-border/60 bg-muted/40 p-4 mt-4"
+                  >
+                    <p className="text-sm font-medium text-foreground">Analyse des données EAN en cours</p>
+                    <p className="text-xs text-muted-foreground">
+                      {query ? `Recherche pour ${query}` : 'Préparation de la recherche produit'}
+                    </p>
+                    <Spinner className="size-5 text-muted-foreground" />
+                  </div>
+                );
               }
               case 'output-available': {
                 const { barcode, results, images, totalResults, description, nutritionScores, nutrients } = (part as any).output || {};
+                const normalizedResults = Array.isArray(results) ? results : [];
+                const gallerySources = Array.isArray(images)
+                  ? images
+                      .map((value: any) => {
+                        if (typeof value === 'string') return value;
+                        if (value && typeof value.url === 'string') return value.url;
+                        if (value && typeof value.href === 'string') return value.href;
+                        return null;
+                      })
+                      .filter(Boolean)
+                  : [];
                 return (
                   <div key={`${messageIndex}-${partIndex}-tool`} className="space-y-4">
-                    <EANSearchResults
-                      barcode={barcode}
-                      results={results || []}
-                      images={images || []}
-                      totalResults={totalResults ?? (results?.length || 0)}
-                    />
+                    <div className="rounded-lg border bg-card p-4 space-y-1">
+                      <p className="text-sm font-semibold text-foreground">Synthèse de la recherche</p>
+                      <p className="text-xs text-muted-foreground">
+                        {barcode ? `Code-barres analysé : ${barcode}` : 'Code-barres non fourni'} · {totalResults ?? normalizedResults.length} résultat(s)
+                      </p>
+                    </div>
+
+                    {gallerySources.length > 0 && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {gallerySources.slice(0, 4).map((src, idx) => (
+                          <div
+                            key={`${messageIndex}-${partIndex}-ean-image-${idx}`}
+                            className="relative h-36 w-full overflow-hidden rounded-lg border bg-muted"
+                          >
+                            <Image
+                              src={src as string}
+                              alt={`Illustration produit ${idx + 1}`}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                              className="object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {normalizedResults.length > 0 ? (
+                      <div className="space-y-3">
+                        {normalizedResults.map((result, idx) => {
+                          const title =
+                            result?.title || result?.name || result?.productName || `Résultat ${idx + 1}`;
+                          const source = result?.source || result?.seller || result?.merchant || result?.brand;
+                          const url = result?.url || result?.link;
+                          const price = result?.price || result?.pricing || result?.amount;
+                          const summary =
+                            result?.description || result?.snippet || result?.summary || result?.details;
+                          const cardKey =
+                            result?.id || result?.ean || result?.barcode || `${messageIndex}-${partIndex}-${idx}`;
+                          return (
+                            <div key={cardKey} className="rounded-xl border bg-muted/30 p-4 space-y-2">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{title}</p>
+                                  {source && <p className="text-xs text-muted-foreground">{source}</p>}
+                                </div>
+                                {price && (
+                                  <div className="text-xs font-semibold px-2 py-1 rounded-md bg-primary/10 text-primary">
+                                    {price}
+                                  </div>
+                                )}
+                              </div>
+                              {summary && (
+                                <p className="text-sm text-muted-foreground whitespace-pre-line">{summary}</p>
+                              )}
+                              {url && (
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                  Explorer la fiche
+                                  <ArrowUpRight className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                        Aucun résultat structuré n'a été renvoyé par l'outil.
+                      </div>
+                    )}
 
                     {nutritionScores && (
                       <NutritionScores
@@ -807,9 +896,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                       />
                     )}
 
-                    {nutrients && (
-                      <NutritionTable nutrients={nutrients} />
-                    )}
+                    {nutrients && <NutritionTable nutrients={nutrients} />}
 
                     {description && (
                       <div className="prose prose-sm max-w-none p-4 bg-muted/50 rounded-lg border">

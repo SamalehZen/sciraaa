@@ -3,11 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { MapPin, Navigation } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import 'leaflet/dist/leaflet.css';
-import { cn } from '@/lib/utils';
 import type * as Leaflet from 'leaflet';
 
 interface LocationPickerProps {
@@ -180,17 +178,20 @@ export function LocationPicker({
           <span>Rayon de recherche</span>
           <span>{radius < 1000 ? `${radius}m` : `${(radius/1000).toFixed(1)}km`}</span>
         </div>
-        <Slider 
-          value={[radius]} 
-          max={20000} 
-          min={500} 
+        <input
+          type="range"
+          value={radius}
+          min={500}
+          max={20000}
           step={100}
-          onValueChange={(vals) => {
-            setRadius(vals[0]);
+          onChange={(event) => {
+            const value = Number(event.target.value);
+            setRadius(value);
             if (onLocationSelect) {
-              onLocationSelect({ ...location, radius: vals[0] });
+              onLocationSelect({ ...location, radius: value });
             }
-          }} 
+          }}
+          className="w-full h-2 rounded-full bg-muted"
         />
       </div>
     </div>
