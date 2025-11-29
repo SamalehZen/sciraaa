@@ -1,19 +1,6 @@
+import { CircleNotch } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 
-import { Loading03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "@/lib/utils"
-
-function Spinner({ className, ...props }: Omit<React.ComponentProps<"svg">, 'size' | 'strokeWidth'>) {
-  return (
-    <HugeiconsIcon
-      icon={Loading03Icon}
-      role="status"
-      aria-label="Loading"
-      strokeWidth={1.5}
-      className={cn("size-4 animate-spin", className)}
-      {...props}
-    />
-  )
+export function Spinner({ className, size = 24 }: { className?: string, size?: number }) {
+  return <CircleNotch size={size} className={cn("animate-spin", className)} weight="bold" />;
 }
-
-export { Spinner }

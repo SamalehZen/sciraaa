@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, boolean, json, varchar, integer, uuid, real }
 import { generateId } from 'ai';
 import { InferSelectModel } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { Place } from '../types/datespot';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -332,5 +333,86 @@ export const apiKeyUsage = pgTable(
   },
 );
 
+
 export type GeminiApiKey = InferSelectModel<typeof geminiApiKeys>;
 export type ApiKeyUsage = InferSelectModel<typeof apiKeyUsage>;
+
+// Table des couples
+export const couple = pgTable('couple', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  code: text('code').notNull().unique(), // Code unique 6 caractères pour rejoindre
+  partner1Id: text('partner1_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  partner2Id: text('partner2_id').references(() => user.id, { onDelete: 'set null' }),
+  status: varchar('status', { enum: ['pending', 'active', 'inactive'] })
+    .notNull()
+    .default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Sessions de sélection de lieux
+export const dateSession = pgTable('date_session', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  coupleId: text('couple_id')
+    .notNull()
+    .references(() => couple.id, { onDelete: 'cascade' }),
+  location: json('location').$type<{ lat: number; lng: number; address: string }>(),
+  radius: integer('radius').notNull().default(5000), // mètres
+  placeType: varchar('place_type', { enum: ['restaurant', 'cafe', 'bar', 'all'] })
+    .notNull()
+    .default('all'),
+  status: varchar('status', { enum: ['active', 'completed', 'cancelled'] })
+    .notNull()
+    .default('active'),
+  matchedPlaceId: text('matched_place_id'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  completedAt: timestamp('completed_at'),
+});
+
+// Swipes/choix des partenaires
+export const placeSwipe = pgTable('place_swipe', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => dateSession.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  placeId: text('place_id').notNull(), // Google Places ID
+  placeData: json('place_data').$type<Place>(), // Cache des données du lieu
+  liked: boolean('liked').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Matches confirmés
+export const dateMatch = pgTable('date_match', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId()),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => dateSession.id, { onDelete: 'cascade' }),
+  coupleId: text('couple_id')
+    .notNull()
+    .references(() => couple.id, { onDelete: 'cascade' }),
+  placeId: text('place_id').notNull(),
+  placeData: json('place_data').$type<Place>(),
+  scheduledDate: timestamp('scheduled_date'),
+  status: varchar('status', { enum: ['pending', 'confirmed', 'completed', 'cancelled'] })
+    .notNull()
+    .default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type Couple = InferSelectModel<typeof couple>;
+export type DateSession = InferSelectModel<typeof dateSession>;
+export type PlaceSwipe = InferSelectModel<typeof placeSwipe>;
+export type DateMatch = InferSelectModel<typeof dateMatch>;
