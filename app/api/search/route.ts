@@ -16,6 +16,7 @@ import {
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
+import * as XLSX from 'xlsx';
 import { createMemoryTools } from '@/lib/tools/supermemory';
 import {
   hyper,
@@ -106,6 +107,119 @@ export function getStreamContext() {
   }
 
   return globalStreamContext;
+}
+
+const EXCEL_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]);
+const CSV_MIME_TYPES = new Set(['text/csv']);
+const TABULAR_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
+const MAX_ROWS_PER_SHEET = 500;
+
+type FilePart = {
+  type: 'file';
+  url: string;
+  name?: string;
+  mediaType?: string;
+};
+
+function isTabularFilePart(part: any): part is FilePart {
+  if (!part || part.type !== 'file' || typeof part.url !== 'string') {
+    return false;
+  }
+
+  const mediaType = (part.mediaType || '').toLowerCase();
+  const name = (part.name || '').toLowerCase();
+  const hasMime = EXCEL_MIME_TYPES.has(mediaType) || CSV_MIME_TYPES.has(mediaType);
+  const hasExtension = TABULAR_EXTENSIONS.some((ext) => name.endsWith(ext));
+
+  return hasMime || hasExtension;
+}
+
+function limitRows(csv: string) {
+  const rows = csv.split(/\r?\n/);
+  if (rows.length <= MAX_ROWS_PER_SHEET) {
+    return csv;
+  }
+
+  const truncated = rows.slice(0, MAX_ROWS_PER_SHEET).join('\n');
+  return `${truncated}\n... (${rows.length - MAX_ROWS_PER_SHEET} lignes supplémentaires omises)`;
+}
+
+function workbookToDelimitedText(workbook: XLSX.WorkBook) {
+  const sections = workbook.SheetNames.map((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) return '';
+
+    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false }).trim();
+    if (!csv) return '';
+
+    return [`Feuille ${sheetName} :`, limitRows(csv)].join('\n');
+  }).filter(Boolean);
+
+  return sections.join('\n\n').trim();
+}
+
+async function convertTabularFilePartToText(part: FilePart) {
+  const mediaType = (part.mediaType || '').toLowerCase();
+  const name = part.name || 'fichier';
+  const response = await fetch(part.url);
+
+  if (!response.ok) {
+    throw new Error(`Téléchargement impossible (statut ${response.status})`);
+  }
+
+  if (CSV_MIME_TYPES.has(mediaType) || name.toLowerCase().endsWith('.csv')) {
+    const text = limitRows((await response.text()).trim());
+    return formatTabularText(name, text);
+  }
+
+  const buffer = await response.arrayBuffer();
+  const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+  const tableText = workbookToDelimitedText(workbook) || '(aucune donnée détectée)';
+  return formatTabularText(name, tableText);
+}
+
+function formatTabularText(name: string, table: string) {
+  const normalized = table.trim() || '(aucune donnée détectée)';
+  return `Données extraites du fichier ${name} :\n${normalized}`;
+}
+
+async function prepareChartPieMessages(messages: ChatMessage[]): Promise<ChatMessage[]> {
+  const processed: ChatMessage[] = [];
+
+  for (const message of messages) {
+    if (!Array.isArray(message.parts) || message.parts.length === 0) {
+      processed.push(message);
+      continue;
+    }
+
+    let changed = false;
+    const newParts: typeof message.parts = [];
+
+    for (const part of message.parts) {
+      if (isTabularFilePart(part)) {
+        changed = true;
+        try {
+          const tabularText = await convertTabularFilePartToText(part);
+          newParts.push({ type: 'text', text: tabularText });
+        } catch (error) {
+          console.error('Failed to convert Excel attachment for Chart Pie:', error);
+          newParts.push({
+            type: 'text',
+            text: `Impossible de convertir le fichier ${part.name || 'Excel'} : ${(error as Error)?.message ?? 'erreur inconnue'}`,
+          });
+        }
+      } else {
+        newParts.push(part);
+      }
+    }
+
+    processed.push(changed ? { ...message, parts: newParts } : message);
+  }
+
+  return processed;
 }
 
 export async function POST(req: Request) {
@@ -313,6 +427,9 @@ export async function POST(req: Request) {
         });
       }
 
+      const messagesForModel =
+        group === 'chartPie' ? await prepareChartPieMessages(messages) : messages;
+
       const setupTime = (Date.now() - requestStartTime) / 1000;
       console.log(`🚀 Time to streamText: ${setupTime.toFixed(2)}s`);
 
@@ -320,7 +437,7 @@ export async function POST(req: Request) {
 
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(messagesForModel),
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
