@@ -18,9 +18,9 @@ lib/
 │  └─ visualization/
 │     ├─ create-bar-chart.ts  # AI tool: build bar charts
 │     ├─ create-line-chart.ts # AI tool: build line charts
-│     ├─ create-pie-chart.ts  # AI tool: build pie charts
-│     ├─ create-table.ts      # AI tool: build interactive tables
-│     └─ create-mermaid-diagram.ts # AI tool: build Mermaid diagrams
+│     ├─ create-pie-chart.ts  # Legacy tool (désactivé)
+│     ├─ create-table.ts      # Legacy tool (désactivé)
+│     └─ create-mermaid-diagram.ts # Legacy tool (désactivé)
 └─ types/
    └─ chart-sandbox.ts        # Shared data contracts for sandbox results
 
@@ -46,13 +46,8 @@ All tools are exported from `lib/tools/index.ts` and registered inside `app/api/
 |------------------|-----------------------------------|
 | `js_run`         | Execute JavaScript in-browser      |
 | `python_run`     | Execute Python via Pyodide         |
-| `create_bar_chart` | Render multi-series bar charts  |
-| `create_line_chart`| Render line charts               |
-| `create_pie_chart` | Render pie charts               |
-| `create_table`     | Render interactive data tables  |
-| `create_mermaid_diagram` | Render any Mermaid diagram |
 
-Tool outputs are routed to the chat renderer (`components/message-parts/index.tsx`), which lazily loads the dedicated viewer components.
+Tool outputs are routed to the chat renderer (`components/message-parts/index.tsx`), qui s’occupe d’afficher les résultats. Les demandes de visualisation ou de tableaux doivent désormais être satisfaites via des descriptions textuelles ou des tableaux Markdown directement dans la réponse.
 
 ## Using the Sandbox in Chat
 
@@ -60,8 +55,8 @@ Each tool can be triggered naturally through chat prompts. A few examples:
 
 - **JavaScript execution** – `Exécute ce code JavaScript : console.log('Hello Hyper');`
 - **Python execution** – `Lance ce code Python pour calculer la suite de Fibonacci jusque 20.`
-- **Bar chart** – `Génère un graphique en barres avec les ventes Q1/Q2 pour les régions Europe et US.`
-- **Line chart** – `Trace un line chart de l'évolution quotidienne du trafic web (Desktop vs Mobile).`
+- **Tableau Markdown** – `Structure ces ventes (Europe: 120, US: 95, Asie: 140) dans un tableau Markdown clair.`
+- **Analyse textuelle** – `Décris textuellement la répartition des ventes par région sans générer de graphique.`
 - **Pie chart** – `Crée un pie chart montrant la répartition du budget marketing.`
 - **Table** – `Crée un tableau interactif avec ces données et prépare un export Excel.`
 - **Mermaid diagram** – `Dessine un diagramme Mermaid illustrant le workflow d’onboarding.`
