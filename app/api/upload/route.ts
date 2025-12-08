@@ -15,16 +15,19 @@ const FileSchema = z.object({
         const t = file.type || '';
         const allowedTypes = [
           'image/jpeg',
-          'image/jpg', 
+          'image/jpg',
           'image/png',
           'image/gif',
           'image/webp',
-          'application/pdf'
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'text/csv',
         ];
         return allowedTypes.includes(t);
       },
       {
-        message: 'File type must be JPEG, PNG, GIF, WebP, or PDF',
+        message: 'File type must be JPEG, PNG, GIF, WebP, PDF, Excel (.xlsx, .xls), or CSV',
       },
     ),
 });

@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Maximize2,
   FileText,
+  FileSpreadsheet,
   AlignLeft,
   AlertCircle,
   RefreshCw,
@@ -1066,6 +1067,19 @@ export const Message: React.FC<MessageProps> = ({
 // Add display name for better debugging
 Message.displayName = 'Message';
 
+const isExcelFile = (attachment: Attachment): boolean => {
+  const ct = attachment.contentType || attachment.mediaType || '';
+  const name = (attachment.name || '').toLowerCase();
+  return (
+    ct === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    ct === 'application/vnd.ms-excel' ||
+    ct === 'text/csv' ||
+    name.endsWith('.xlsx') ||
+    name.endsWith('.xls') ||
+    name.endsWith('.csv')
+  );
+};
+
 // Editable attachments badge component for edit mode
 export const EditableAttachmentsBadge = ({
   attachments,
@@ -1081,7 +1095,8 @@ export const EditableAttachmentsBadge = ({
       att.contentType?.startsWith('image/') ||
       att.mediaType?.startsWith('image/') ||
       att.contentType === 'application/pdf' ||
-      att.mediaType === 'application/pdf',
+      att.mediaType === 'application/pdf' ||
+      isExcelFile(att),
   );
 
   if (fileAttachments.length === 0) return null;
@@ -1098,6 +1113,7 @@ export const EditableAttachmentsBadge = ({
           const truncatedName = fileName.length > 15 ? fileName.substring(0, 12) + '...' : fileName;
 
           const isImage = attachment.contentType?.startsWith('image/') || attachment.mediaType?.startsWith('image/');
+          const isExcel = isExcelFile(attachment);
 
           return (
             <div
@@ -1132,6 +1148,8 @@ export const EditableAttachmentsBadge = ({
                     </svg>
                   ) : isImage ? (
                     <img src={attachment.url} alt={fileName} className="h-full w-full object-cover" />
+                  ) : isExcel ? (
+                    <FileSpreadsheet className="h-4 w-4 text-green-500" />
                   ) : (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1274,6 +1292,25 @@ export const EditableAttachmentsBadge = ({
                       </object>
                     </div>
                   </div>
+                ) : isExcelFile(fileAttachments[selectedIndex]) ? (
+                  <div className="flex items-center justify-center h-[60vh] w-full">
+                    <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg w-full max-w-lg">
+                      <FileSpreadsheet className="w-5 h-5 text-green-500" />
+                      <span className="text-sm text-green-600 dark:text-green-400">
+                        {fileAttachments[selectedIndex].name || 'Excel file'}
+                      </span>
+                      {fileAttachments[selectedIndex].url && (
+                        <a
+                          href={fileAttachments[selectedIndex].url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline ml-auto"
+                        >
+                          Télécharger
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[60vh]">
                     <img
@@ -1310,43 +1347,50 @@ export const EditableAttachmentsBadge = ({
             {fileAttachments.length > 1 && (
               <div className="border-t border-neutral-200 dark:border-neutral-800 p-2">
                 <div className="flex items-center justify-center gap-2 overflow-x-auto py-1 max-w-full">
-                  {fileAttachments.map((attachment, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedIndex(idx)}
-                      className={`relative h-10 w-10 rounded-md overflow-hidden shrink-0 transition-all ${
-                        selectedIndex === idx
-                          ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      {isPdf(attachment) ? (
-                        <div className="h-full w-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-red-500 dark:text-red-400"
-                          >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                          </svg>
-                        </div>
-                      ) : (
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name || `Thumbnail ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </button>
-                  ))}
+                  {fileAttachments.map((attachment, idx) => {
+                    const isExcelAttachment = isExcelFile(attachment);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedIndex(idx)}
+                        className={`relative h-10 w-10 rounded-md overflow-hidden shrink-0 transition-all ${
+                          selectedIndex === idx
+                            ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                            : 'opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        {isPdf(attachment) ? (
+                          <div className="h-full w-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-red-500 dark:text-red-400"
+                            >
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                          </div>
+                        ) : isExcelAttachment ? (
+                          <div className="h-full w-full flex items-center justify-center bg-green-500/10 border border-green-500/20">
+                            <FileSpreadsheet className="h-4 w-4 text-green-500" />
+                          </div>
+                        ) : (
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name || `Thumbnail ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1374,7 +1418,8 @@ export const AttachmentsBadge = ({ attachments }: { attachments: Attachment[] })
       att.contentType?.startsWith('image/') ||
       att.mediaType?.startsWith('image/') ||
       att.contentType === 'application/pdf' ||
-      att.mediaType === 'application/pdf',
+      att.mediaType === 'application/pdf' ||
+      isExcelFile(att),
   );
 
   React.useEffect(() => {
@@ -1396,6 +1441,7 @@ export const AttachmentsBadge = ({ attachments }: { attachments: Attachment[] })
 
           const fileExtension = fileName.split('.').pop()?.toLowerCase();
           const isImage = attachment.contentType?.startsWith('image/') || attachment.mediaType?.startsWith('image/');
+          const isExcel = isExcelFile(attachment);
 
           return (
             <button
@@ -1427,6 +1473,8 @@ export const AttachmentsBadge = ({ attachments }: { attachments: Attachment[] })
                   </svg>
                 ) : isImage ? (
                   <img src={attachment.url} alt={fileName} className="h-full w-full object-cover" />
+                ) : isExcel ? (
+                  <FileSpreadsheet className="h-4 w-4 text-green-500" />
                 ) : (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1561,6 +1609,25 @@ export const AttachmentsBadge = ({ attachments }: { attachments: Attachment[] })
                       </object>
                     </div>
                   </div>
+                ) : isExcelFile(fileAttachments[selectedIndex]) ? (
+                  <div className="flex items-center justify-center h-[60vh] w-full">
+                    <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg w-full max-w-lg">
+                      <FileSpreadsheet className="w-5 h-5 text-green-500" />
+                      <span className="text-sm text-green-600 dark:text-green-400">
+                        {fileAttachments[selectedIndex].name || 'Excel file'}
+                      </span>
+                      {fileAttachments[selectedIndex].url && (
+                        <a
+                          href={fileAttachments[selectedIndex].url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline ml-auto"
+                        >
+                          Télécharger
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-[60vh]">
                     <img
@@ -1597,43 +1664,50 @@ export const AttachmentsBadge = ({ attachments }: { attachments: Attachment[] })
             {fileAttachments.length > 1 && (
               <div className="border-t border-border dark:border-border p-2">
                 <div className="flex items-center justify-center gap-2 overflow-x-auto py-1 max-w-full">
-                  {fileAttachments.map((attachment, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedIndex(idx)}
-                      className={`relative h-10 w-10 rounded-md overflow-hidden shrink-0 transition-all ${
-                        selectedIndex === idx
-                          ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                    >
-                      {isPdf(attachment) ? (
-                        <div className="h-full w-full flex items-center justify-center bg-muted dark:bg-muted">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-red-500 dark:text-red-400"
-                          >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                          </svg>
-                        </div>
-                      ) : (
-                        <img
-                          src={attachment.url}
-                          alt={attachment.name || `Thumbnail ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </button>
-                  ))}
+                  {fileAttachments.map((attachment, idx) => {
+                    const isExcelAttachment = isExcelFile(attachment);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedIndex(idx)}
+                        className={`relative h-10 w-10 rounded-md overflow-hidden shrink-0 transition-all ${
+                          selectedIndex === idx
+                            ? 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                            : 'opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        {isPdf(attachment) ? (
+                          <div className="h-full w-full flex items-center justify-center bg-muted dark:bg-muted">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-red-500 dark:text-red-400"
+                            >
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                          </div>
+                        ) : isExcelAttachment ? (
+                          <div className="h-full w-full flex items-center justify-center bg-green-500/10 border border-green-500/20">
+                            <FileSpreadsheet className="h-4 w-4 text-green-500" />
+                          </div>
+                        ) : (
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name || `Thumbnail ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

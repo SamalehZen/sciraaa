@@ -17,6 +17,7 @@ import {
   HierarchyIcon,
   MagicWandIcon,
   File02Icon,
+  PieChartIcon,
 } from '@hugeicons/core-free-icons';
 
 export function cn(...inputs: ClassValue[]) {
@@ -40,7 +41,8 @@ export type SearchGroupId =
   | 'libeller'
   | 'nomenclature'
   | 'pdfExcel'
-  | 'eanexpert';
+  | 'eanexpert'
+  | 'chartPie';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {
@@ -146,6 +148,13 @@ function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
       name: 'Recherche YouTube',
       description: 'Recherche de vidéos YouTube via Exa',
       icon: YoutubeIcon,
+      show: true,
+    },
+    {
+      id: 'chartPie' as const,
+      name: 'Chart Pie',
+      description: 'Analyse Excel et génération de graphiques en camembert',
+      icon: PieChartIcon,
       show: true,
     },
     {

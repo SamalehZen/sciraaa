@@ -30,7 +30,18 @@ export interface PieChartViewerProps {
   jsonView?: boolean;
 }
 
-const palette = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+const palette = [
+  'hsl(217, 91%, 60%)',
+  'hsl(262, 83%, 58%)',
+  'hsl(24, 95%, 53%)',
+  'hsl(160, 84%, 39%)',
+  'hsl(0, 84%, 60%)',
+  'hsl(38, 92%, 50%)',
+  'hsl(187, 92%, 43%)',
+  'hsl(330, 81%, 60%)',
+  'hsl(239, 84%, 67%)',
+  'hsl(168, 76%, 42%)',
+];
 
 function formatLargeNumber(value: number) {
   if (!Number.isFinite(value)) return '0';

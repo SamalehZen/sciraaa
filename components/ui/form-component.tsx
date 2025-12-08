@@ -1264,6 +1264,18 @@ const StopIcon = ({ size = 16 }: { size?: number }) => {
 const MAX_FILES = 4;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_INPUT_CHARS = 50000;
+const EXCEL_MIME_TYPES = new Set([
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+]);
+const EXCEL_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
+
+const isExcelUploadFile = (file: File): boolean => {
+  const type = file.type || '';
+  const name = file.name?.toLowerCase() || '';
+  return EXCEL_MIME_TYPES.has(type) || EXCEL_EXTENSIONS.some((ext) => name.endsWith(ext));
+};
 
 const fileToDataURL = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -2719,6 +2731,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const excelFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
       const blockedPdfFiles: File[] = [];
@@ -2737,6 +2750,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
           } else {
             pdfFiles.push(file);
           }
+        } else if (isExcelUploadFile(file)) {
+          console.log('Processing Excel file:', file.name);
+          excelFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
@@ -2763,7 +2779,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
+      if (imageFiles.length === 0 && pdfFiles.length === 0 && excelFiles.length === 0) {
         console.log('No supported files found');
         event.target.value = '';
         return;
@@ -2789,7 +2805,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
+      let validFiles: File[] = [...imageFiles, ...excelFiles];
       if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
         validFiles = [...validFiles, ...pdfFiles];
       }
@@ -2935,6 +2951,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
       const imageFiles: File[] = [];
       const pdfFiles: File[] = [];
+      const excelFiles: File[] = [];
       const unsupportedFiles: File[] = [];
       const oversizedFiles: File[] = [];
       const blockedPdfFiles: File[] = [];
@@ -2955,13 +2972,16 @@ const FormComponent: React.FC<FormComponentProps> = ({
           } else {
             pdfFiles.push(file);
           }
+        } else if (isExcelUploadFile(file)) {
+          console.log('Processing Excel file:', file.name);
+          excelFiles.push(file);
         } else {
           unsupportedFiles.push(file);
         }
       });
 
       console.log(
-        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
+        `Images: ${imageFiles.length}, PDFs: ${pdfFiles.length}, Excel: ${excelFiles.length}, Unsupported: ${unsupportedFiles.length}, Oversized: ${oversizedFiles.length}`,
       );
 
       if (unsupportedFiles.length > 0) {
@@ -2993,8 +3013,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
         });
       }
 
-      if (imageFiles.length === 0 && pdfFiles.length === 0) {
-        toast.error('Only image and PDF files are supported');
+      if (imageFiles.length === 0 && pdfFiles.length === 0 && excelFiles.length === 0) {
+        toast.error('Only image, PDF, and Excel files are supported');
         return;
       }
 
@@ -3015,7 +3035,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
       }
 
-      let validFiles: File[] = [...imageFiles];
+      let validFiles: File[] = [...imageFiles, ...excelFiles];
       if (hasPdfSupport(selectedModel) || pdfFiles.length > 0) {
         validFiles = [...validFiles, ...pdfFiles];
       }
@@ -3064,7 +3084,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
       }
 
-      if (!currentModelData?.vision) {
+      if (!currentModelData?.vision && (imageFiles.length > 0 || pdfFiles.length > 0)) {
         let visionModel: string;
 
         if (pdfFiles.length > 0) {
