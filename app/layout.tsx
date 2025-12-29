@@ -13,6 +13,7 @@ import { Providers } from './providers';
 import AuthGate from '@/components/auth-gate';
 import { ClientHeartbeat } from '@/components/ClientHeartbeat';
 import { SuspensionDetector } from '@/components/suspension-detector';
+import { TitleBar, NetworkStatus } from '@/components/electron';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hyper.vercel.app'),
@@ -121,6 +122,7 @@ export default function RootLayout({
         className={`${inter.variable} ${beVietnamPro.variable} ${baumans.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
+        <TitleBar />
         <AuthGate />
         <NuqsAdapter>
           <Providers>
@@ -128,6 +130,7 @@ export default function RootLayout({
             <ClientHeartbeat />
             <SuspensionDetector />
             {children}
+            <NetworkStatus />
           </Providers>
         </NuqsAdapter>
         {/* <Databuddy clientId={process.env.DATABUDDY_CLIENT_ID!} enableBatching={true} trackSessions={true} /> */}

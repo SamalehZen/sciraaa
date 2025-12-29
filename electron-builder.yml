@@ -1,0 +1,41 @@
+appId: com.hyper.desktop
+productName: Hyper Desktop
+copyright: Copyright © 2024 Hyper
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+files:
+  - .next/**/*
+  - public/**/*
+  - electron/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+
+extraResources:
+  - from: .next/standalone
+    to: app
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Hyper Desktop
+
+publish: null
