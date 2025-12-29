@@ -24,18 +24,12 @@ Cela démarre le serveur Next.js et ouvre l'application Electron une fois le ser
 
 ## Configuration des Clés API
 
-Avant de builder, vous devez configurer vos clés API dans `electron/main.cjs` :
+✅ **Les clés API sont déjà configurées** dans `electron/main.cjs` avec vos clés de production.
 
-```javascript
-const DEFAULT_API_KEYS = {
-  GOOGLE_GENERATIVE_AI_API_KEY: 'YOUR_GEMINI_KEY',
-  DATABASE_URL: 'YOUR_NEON_DATABASE_URL',
-  REDIS_URL: 'YOUR_REDIS_URL',
-  // ... autres clés
-};
-```
-
-**Important**: Les clés sont chiffrées localement au premier lancement en utilisant `safeStorage` d'Electron.
+**Important**: 
+- Les clés sont chiffrées localement au premier lancement en utilisant `safeStorage` d'Electron
+- En mode développement, les variables peuvent aussi être lues depuis `.env.electron`
+- Les clés sont stockées de manière sécurisée dans `%APPDATA%/hyper-config/` sur Windows
 
 ## Build pour Windows
 
