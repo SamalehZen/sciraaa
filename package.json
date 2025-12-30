@@ -21,7 +21,9 @@
     "electron:build": "pnpm build && electron-builder",
     "electron:pack": "electron-builder --dir",
     "electron:dist": "electron-builder",
-    "electron:build-win": "node scripts/build-electron.cjs"
+    "electron:build-win": "node scripts/build-electron.cjs",
+    "electron:list-keys": "node scripts/list-api-keys.cjs",
+    "electron:update-key": "node scripts/update-api-key.cjs"
   },
   "dependencies": {
     "@ai-sdk/google": "2.0.17",

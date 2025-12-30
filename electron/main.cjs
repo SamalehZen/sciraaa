@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain, Menu, shell, safeStorage } = require('elect
 const path = require('path');
 const { spawn } = require('child_process');
 
+// Import du gestionnaire de clés API
+require('./api-keys-updater.cjs');
+
 let Store;
 try {
   Store = require('electron-store');
@@ -203,7 +206,9 @@ function createMenu() {
         { label: 'Accueil', accelerator: 'CmdOrCtrl+H', click: () => mainWindow.loadURL(`http://localhost:${PORT}`) },
         { label: 'Admin', click: () => mainWindow.loadURL(`http://localhost:${PORT}/admin`) },
         { label: 'Lookout', click: () => mainWindow.loadURL(`http://localhost:${PORT}/lookout`) },
-        { label: 'XQL', click: () => mainWindow.loadURL(`http://localhost:${PORT}/xql`) }
+        { label: 'XQL', click: () => mainWindow.loadURL(`http://localhost:${PORT}/xql`) },
+        { type: 'separator' },
+        { label: 'Gérer les clés API', accelerator: 'CmdOrCtrl+K', click: () => mainWindow.loadURL(`http://localhost:${PORT}/settings/api-keys`) }
       ]
     },
     {

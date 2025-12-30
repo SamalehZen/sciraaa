@@ -19,5 +19,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   copyToClipboard: (text) => {
     navigator.clipboard.writeText(text);
-  }
+  },
+
+  // API Keys Management
+  updateApiKey: (keyName, newValue) => ipcRenderer.invoke('update-api-key', keyName, newValue),
+  getApiKeyPreview: (keyName) => ipcRenderer.invoke('get-api-key-preview', keyName),
+  listApiKeys: () => ipcRenderer.invoke('list-api-keys'),
+  resetAllKeys: (defaultKeys) => ipcRenderer.invoke('reset-all-keys', defaultKeys),
 });

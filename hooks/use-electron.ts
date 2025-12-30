@@ -8,6 +8,10 @@ interface ElectronAPI {
   isElectron: () => Promise<boolean>;
   showNotification: (title: string, body: string) => void;
   copyToClipboard: (text: string) => void;
+  updateApiKey: (keyName: string, newValue: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  getApiKeyPreview: (keyName: string) => Promise<{ success: boolean; preview?: string; error?: string }>;
+  listApiKeys: () => Promise<{ success: boolean; keys?: string[]; error?: string }>;
+  resetAllKeys: (defaultKeys: Record<string, string>) => Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 declare global {
