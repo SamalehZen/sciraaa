@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -15,7 +16,14 @@
     "seed:test-data": "tsx scripts/seed-test-data.ts",
     "seed:api-keys": "tsx scripts/seed-api-keys.ts",
     "seed:all": "pnpm seed:admin && pnpm seed:test-data && pnpm seed:api-keys",
-    "seed:reset": "pnpm db:push && pnpm seed:all"
+    "seed:reset": "pnpm db:push && pnpm seed:all",
+    "electron:dev": "concurrently \"pnpm dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "pnpm build && electron-builder",
+    "electron:pack": "electron-builder --dir",
+    "electron:dist": "electron-builder",
+    "electron:build-win": "node scripts/build-electron.cjs",
+    "electron:list-keys": "node scripts/list-api-keys.cjs",
+    "electron:update-key": "node scripts/update-api-key.cjs"
   },
   "dependencies": {
     "@ai-sdk/google": "2.0.17",
@@ -143,6 +151,12 @@
     "zod": "4.1.8"
   },
   "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "electron-serve": "^2.0.0",
+    "electron-store": "^10.0.0",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/canvas-confetti": "^1.9.0",
     "@types/google.maps": "^3.58.1",
@@ -180,5 +194,32 @@
   "overrides": {
     "react-is": "^19.0.0-rc-69d4b800-20241021"
   },
-  "packageManager": "pnpm@10.18.0"
+  "packageManager": "pnpm@10.18.0",
+  "build": {
+    "appId": "com.hyper.desktop",
+    "productName": "Hyper Desktop",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": [
+      ".next/**/*",
+      "public/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app"
+      }
+    ]
+  }
 }

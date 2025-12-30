@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
 
+const isElectron = process.env.NEXT_PUBLIC_IS_ELECTRON === 'true';
+
 const jiti = createJiti(fileURLToPath(import.meta.url));
 
 jiti.import('./env/server.ts');
@@ -20,6 +22,7 @@ const cspHeaderValue = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  assetPrefix: isElectron ? '' : undefined,
   compiler: {
     // if NODE_ENV is production, remove console.log
     removeConsole:
@@ -78,6 +81,9 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
+    if (isElectron) {
+      return [];
+    }
     return [
       {
         source: '/ph',

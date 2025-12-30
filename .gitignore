@@ -13,8 +13,14 @@
 /.next/
 /out/
 
-# production
-/build
+# production (keep /build for electron-builder resources)
+# /build
+
+# electron
+/dist-electron
+*.exe
+*.dmg
+*.AppImage
 
 # misc
 .DS_Store
@@ -28,6 +34,7 @@ yarn-error.log*
 # env files
 .env*.local
 .env
+.env.electron
 
 # vercel
 .vercel
