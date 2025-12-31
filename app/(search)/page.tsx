@@ -93,8 +93,16 @@ export default function Home() {
   const handleSelect = (id: string) => {
     const p = profiles.find((x) => x.id === id);
     try {
-      if (p?.label) {
-        localStorage.setItem('hyper:selected-profile', JSON.stringify({ label: p.label, t: Date.now() }));
+      if (p) {
+        const iconUrl = typeof p.icon === 'string' ? p.icon : null;
+        localStorage.setItem('hyper:selected-profile', JSON.stringify({ 
+          label: p.label, 
+          icon: iconUrl,
+          t: Date.now() 
+        }));
+        if (iconUrl) {
+          localStorage.setItem('hyper:pending-avatar', iconUrl);
+        }
       }
     } catch {}
     toast('Connexion…', {

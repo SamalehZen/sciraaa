@@ -45,6 +45,7 @@ import { HyperLogoHeader } from '@/components/hyper-logo-header';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
 import { cn } from '@/lib/utils';
 import { useDataStream } from './data-stream-provider';
+import { useSelectedProfileIcon } from '@/hooks/use-selected-profile-icon';
 
 // Enhanced Error Display Component
 interface EnhancedErrorDisplayProps {
@@ -324,6 +325,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({
   setSuggestedQuestions,
   user,
 }) => {
+  const selectedProfileIcon = useSelectedProfileIcon();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [draftContent, setDraftContent] = useState<string>(
     message.parts
@@ -425,7 +427,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({
         <div className="flex items-start gap-2">
           {user ? (
             <Avatar className="size-7 rounded-md !p-0 !m-0 flex-shrink-0 self-start">
-              <AvatarImage src={user.image ?? ''} alt={user.name ?? ''} className="rounded-md !p-0 !m-0 size-7" />
+              <AvatarImage src={user.image || selectedProfileIcon || ''} alt={user.name ?? ''} className="rounded-md !p-0 !m-0 size-7" />
               <AvatarFallback className="rounded-md text-sm p-0 m-0 size-7">
                 {(user.name || user.email || '?').charAt(0)}
               </AvatarFallback>
@@ -545,6 +547,7 @@ export const Message: React.FC<MessageProps> = ({
   onHighlight,
   shouldReduceHeight = false,
 }) => {
+  const selectedProfileIcon = useSelectedProfileIcon();
   // State for expanding/collapsing long user messages
   const [isExpanded, setIsExpanded] = useState(false);
   // State to track if the message exceeds max height
@@ -662,7 +665,7 @@ export const Message: React.FC<MessageProps> = ({
                             {user ? (
                               <Avatar className="size-7 rounded-md !p-0 !m-0 flex-shrink-0 self-start">
                                 <AvatarImage
-                                  src={user.image ?? ''}
+                                  src={user.image || selectedProfileIcon || ''}
                                   alt={user.name ?? ''}
                                   className="rounded-md !p-0 !m-0 size-7 "
                                 />
@@ -725,7 +728,7 @@ export const Message: React.FC<MessageProps> = ({
                         {user ? (
                           <Avatar className="size-7 rounded-md !p-0 !m-0 flex-shrink-0 self-start">
                             <AvatarImage
-                              src={user.image ?? ''}
+                              src={user.image || selectedProfileIcon || ''}
                               alt={user.name ?? ''}
                               className="rounded-md !p-0 !m-0 size-7"
                             />
@@ -866,7 +869,7 @@ export const Message: React.FC<MessageProps> = ({
                     {user ? (
                       <Avatar className="size-7 rounded-md !p-0 !m-0 flex-shrink-0 self-start">
                         <AvatarImage
-                          src={user.image ?? ''}
+                          src={user.image || selectedProfileIcon || ''}
                           alt={user.name ?? ''}
                           className="rounded-md !p-0 !m-0 size-7"
                         />

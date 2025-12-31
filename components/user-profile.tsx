@@ -139,8 +139,21 @@ const UserProfile = memo(
     const [signInDialogOpen, setSignInDialogOpen] = useState(false);
     const [showEmail, setShowEmail] = useState(false);
     const [blurPersonalInfo] = useLocalStorage<boolean>('hyper-blur-personal-info', false);
+    const [selectedProfileIcon, setSelectedProfileIcon] = useState<string | null>(null);
     const { data: session, isPending } = useSession();
     const router = useRouter();
+
+    useEffect(() => {
+      try {
+        const stored = localStorage.getItem('hyper:selected-profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.icon) {
+            setSelectedProfileIcon(parsed.icon);
+          }
+        }
+      } catch {}
+    }, []);
 
     // Use passed user prop if available, otherwise fall back to session
     // BUT only use session for authentication check, not for settings dialog data
@@ -199,7 +212,7 @@ const UserProfile = memo(
                   >
                     <Avatar className="size-6 rounded-full border border-neutral-200 dark:border-neutral-700 !p-0 !m-0">
                       <AvatarImage
-                        src={currentUser?.image ?? ''}
+                        src={currentUser?.image || selectedProfileIcon || ''}
                         alt={currentUser?.name ?? ''}
                         className="rounded-md !p-0 !m-0 size-6"
                       />
@@ -219,7 +232,7 @@ const UserProfile = memo(
                 <div className="flex items-center gap-2">
                   <Avatar className="size-8 shrink-0 rounded-md border border-neutral-200 dark:border-neutral-700">
                     <AvatarImage
-                      src={currentUser?.image ?? ''}
+                      src={currentUser?.image || selectedProfileIcon || ''}
                       alt={currentUser?.name ?? ''}
                       className={cn('rounded-md p-0 m-0 size-8', blurPersonalInfo && 'blur-sm')}
                     />

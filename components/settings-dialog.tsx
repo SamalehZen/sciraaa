@@ -48,6 +48,7 @@ import { getAllMemories, searchMemories, deleteMemory, MemoryItem } from '@/lib/
 import { Loader2, Search } from 'lucide-react';
 import { cn, getSearchGroups, SearchGroupId } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { useSelectedProfileIcon } from '@/hooks/use-selected-profile-icon';
 import { useIsProUser } from '@/contexts/user-context';
 import { HyperLogo } from './logos/hyper-logo';
 import Image from 'next/image';
@@ -147,6 +148,7 @@ interface SettingsDialogProps {
 function ProfileSection({ user, subscriptionData, isProUser, isProStatusLoading }: any) {
   const { isProUser: fastProStatus, isLoading: fastProLoading } = useIsProUser();
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const selectedProfileIcon = useSelectedProfileIcon();
 
   // Use comprehensive Pro status from user data (includes both Polar + DodoPayments)
   const isProUserActive: boolean = user?.isProUser || fastProStatus || false;
@@ -156,7 +158,7 @@ function ProfileSection({ user, subscriptionData, isProUser, isProStatusLoading 
     <div>
       <div className={cn('flex flex-col items-center text-center space-y-3', isMobile ? 'pb-2' : 'pb-4')}>
         <Avatar className={isMobile ? 'h-16 w-16' : 'h-20 w-20'}>
-          <AvatarImage src={user?.image || ''} />
+          <AvatarImage src={user?.image || selectedProfileIcon || ''} />
           <AvatarFallback className={isMobile ? 'text-base' : 'text-lg'}>
             {user?.name
               ? user.name
