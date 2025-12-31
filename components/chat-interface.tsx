@@ -170,7 +170,7 @@ const ChatInterface = memo(
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null!);
     const inputRef = useRef<HTMLTextAreaElement>(null!);
-    const initializedRef = useRef(false);
+    const userActionGuardRef = useRef(false);
 
     // Use optimized scroll hook
     const { scrollToBottom, markManualScroll, resetManualScroll } = useOptimizedScroll(bottomRef);
@@ -287,12 +287,22 @@ const ChatInterface = memo(
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
 
-    const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
+    const {
+      messages,
+      sendMessage: baseSendMessage,
+      setMessages,
+      regenerate: baseRegenerate,
+      stop,
+      status,
+      error,
+      resumeStream,
+    } = useChat<ChatMessage>({
       id: chatId,
       transport: new DefaultChatTransport({
         api: '/api/search',
         prepareSendMessagesRequest({ messages, body }) {
-          // Use ref values to get current state
+          const userInitiated = userActionGuardRef.current;
+          userActionGuardRef.current = false;
           return {
             body: {
               id: chatId,
@@ -303,8 +313,9 @@ const ChatInterface = memo(
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
               selectedConnectors: selectedConnectorsRef.current,
+              userInitiated,
               ...(initialChatId ? { chat_id: initialChatId } : {}),
-              ...body,
+              ...(body || {}),
             },
           };
         },
@@ -401,6 +412,23 @@ const ChatInterface = memo(
       messages: initialMessages || [],
     });
 
+    const markUserInitiated = useCallback(() => {
+      userActionGuardRef.current = true;
+    }, []);
+
+    const sendMessage = useCallback(
+      (message: Parameters<typeof baseSendMessage>[0]) => {
+        markUserInitiated();
+        return baseSendMessage(message);
+      },
+      [baseSendMessage, markUserInitiated],
+    );
+
+    const regenerate = useCallback(() => {
+      markUserInitiated();
+      return baseRegenerate();
+    }, [baseRegenerate, markUserInitiated]);
+
     // Handle text highlighting and quoting
     const handleHighlight = useCallback(
       (text: string) => {
@@ -465,15 +493,10 @@ const ChatInterface = memo(
     }, [user, status, router, chatId, initialChatId, messages.length]);
 
     useEffect(() => {
-      if (!initializedRef.current && initialState.query && !messages.length && !initialChatId) {
-        initializedRef.current = true;
-        console.log('[initial query]:', initialState.query);
-        sendMessage({
-          parts: [{ type: 'text', text: initialState.query }],
-          role: 'user',
-        });
+      if (initialState.query && !messages.length && !initialChatId) {
+        setInput(initialState.query);
       }
-    }, [initialState.query, sendMessage, setInput, messages.length, initialChatId]);
+    }, [initialState.query, initialChatId, messages.length, setInput]);
 
     // Generate suggested questions when opening a chat directly
     useEffect(() => {

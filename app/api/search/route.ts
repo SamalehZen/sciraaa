@@ -1,6 +1,5 @@
 // /app/api/chat/route.ts
 import {
-  generateTitleFromUserMessage,
   getGroupConfig,
   getUserMessageCount,
   getCurrentUser,
@@ -30,7 +29,6 @@ import {
   saveChat,
   saveMessages,
   incrementMessageUsage,
-  updateChatTitleById,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
@@ -84,7 +82,13 @@ export async function POST(req: Request) {
     id,
     selectedVisibilityType,
     isCustomInstructionsEnabled,
+    userInitiated,
   } = await req.json();
+
+  if (!userInitiated) {
+    return new ChatSDKError('forbidden:automation', 'AI generation requires explicit user action').toResponse();
+  }
+
   const { latitude, longitude } = geolocation(req);
   const streamId = 'stream-' + uuidv7();
 
@@ -150,17 +154,6 @@ export async function POST(req: Request) {
           visibility: selectedVisibilityType,
         });
 
-        // Generate better title in background (non-critical)
-        after(async () => {
-          try {
-            const title = await generateTitleFromUserMessage({
-              message: messages[messages.length - 1],
-            });
-            await updateChatTitleById({ chatId: id, title });
-          } catch (error) {
-            console.error('Background title generation failed:', error);
-          }
-        });
       }
 
       // Stream tracking (must be sync for proper stream management)
@@ -430,8 +423,11 @@ export async function POST(req: Request) {
     },
     onError(error) {
       console.log('Error: ', error);
-      if (error instanceof Error && error.message.includes('Rate Limit')) {
-        return 'Oops, you have reached the rate limit! Please try again later.';
+      if (error instanceof ChatSDKError && error.type === 'forbidden:automation') {
+        return 'Action bloquée : veuillez déclencher la génération depuis l’interface utilisateur.';
+      }
+      if (error instanceof Error && (error.message.includes('Rate Limit') || error.message.includes('429'))) {
+        return 'Quota Gemini atteint pour aujourd’hui. Réessayez dans 24 heures.';
       }
       return 'Oops, an error occurred!';
     },

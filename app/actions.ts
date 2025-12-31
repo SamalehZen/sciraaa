@@ -1,8 +1,6 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { CoreMessage, generateText } from 'ai';
-import { getModelConfig, writerModel } from '@/ai/providers';
 import {
   getUser,
   type User,
@@ -10,7 +8,6 @@ import {
   saveCustomInstructions as saveCustomInstructionsDb,
   deleteCustomInstructions as deleteCustomInstructionsDb,
 } from '@/lib/db/queries';
-import { generateId } from 'ai';
 import { SearchGroupId } from '@/lib/utils';
 import { getLightweightUser } from '@/lib/user-data-server';
 
@@ -133,18 +130,8 @@ export async function getSystemPromptByGroup(groupId: GroupId): Promise<string> 
 // CHAT UTILITIES
 // -----------------------------------------------------------------------------
 
-export async function generateTitleFromUserMessage({ message }: { message: any }) {
-  const { text: title } = await generateText({
-    model: writerModel,
-    system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 80 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
-    prompt: JSON.stringify(message),
-  });
-
-  return title;
+export async function generateTitleFromUserMessage() {
+  throw new Error('Automatic title generation is disabled.');
 }
 
 export async function suggestQuestions(history: any[], groupId: GroupId = 'chat') {
