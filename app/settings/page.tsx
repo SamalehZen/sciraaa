@@ -53,6 +53,7 @@ function SettingsPageInner() {
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [customAvatars, setCustomAvatars] = useLocalStorage<string[]>('hyper:custom-avatars', []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { refetch } = useUser();
 
@@ -66,16 +67,20 @@ function SettingsPageInner() {
   ];
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('hyper:selected-profile');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.icon) {
-          setSelectedProfileIcon(parsed.icon);
+    if (user?.image) {
+      setSelectedProfileIcon(user.image);
+    } else {
+      try {
+        const stored = localStorage.getItem('hyper:selected-profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.icon) {
+            setSelectedProfileIcon(parsed.icon);
+          }
         }
-      }
-    } catch {}
-  }, []);
+      } catch {}
+    }
+  }, [user?.image]);
 
   const handleSelectAvatar = async (url: string) => {
     setSelectedProfileIcon(url);
@@ -125,6 +130,7 @@ function SettingsPageInner() {
       if (!uploadRes.ok) throw new Error('Upload failed');
       
       const { url } = await uploadRes.json();
+      setCustomAvatars((prev) => [url, ...prev.filter(u => u !== url)].slice(0, 6));
       await handleSelectAvatar(url);
     } catch (error) {
       toast.error('Échec de l\'upload');
@@ -380,20 +386,43 @@ function SettingsPageInner() {
             <DialogTitle>Choisir une photo de profil</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {predefinedAvatars.map((url, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSelectAvatar(url)}
-                  className={cn(
-                    "relative aspect-square rounded-full overflow-hidden border-2 transition-all hover:scale-105",
-                    selectedProfileIcon === url ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
-                  )}
-                >
-                  <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+            {customAvatars.length > 0 && (
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Vos photos</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {customAvatars.map((url, index) => (
+                    <button
+                      key={`custom-${index}`}
+                      type="button"
+                      onClick={() => handleSelectAvatar(url)}
+                      className={cn(
+                        "relative aspect-square rounded-full overflow-hidden border-2 transition-all hover:scale-105",
+                        (user?.image === url || selectedProfileIcon === url) ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
+                      )}
+                    >
+                      <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2 block">Avatars par défaut</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {predefinedAvatars.map((url, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSelectAvatar(url)}
+                    className={cn(
+                      "relative aspect-square rounded-full overflow-hidden border-2 transition-all hover:scale-105",
+                      (user?.image === url || selectedProfileIcon === url) ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="border-t pt-4 space-y-4">
               <div>
