@@ -3,19 +3,10 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import {
   GlobalSearchIcon,
-  Database02Icon,
-  AtomicPowerIcon,
-  Bitcoin02Icon,
-  MicroscopeIcon,
-  NewTwitterIcon,
-  RedditIcon,
-  YoutubeIcon,
   ChattingIcon,
-  AppleStocksIcon,
-  ConnectIcon,
-  CodeCircleIcon,
   HierarchyIcon,
   MagicWandIcon,
+  AppleStocksIcon,
   File02Icon,
 } from '@hugeicons/core-free-icons';
 
@@ -24,25 +15,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export type SearchGroupId =
-  | 'web'
-  | 'x'
-  | 'academic'
-  | 'youtube'
-  | 'reddit'
-  | 'stocks'
   | 'chat'
-  | 'extreme'
-  | 'memory'
-  | 'crypto'
-  | 'code'
-  | 'connectors'
   | 'cyrus'
   | 'libeller'
   | 'nomenclature'
   | 'pdfExcel'
   | 'eanexpert';
 
-// Search provider information for dynamic descriptions
+// Search provider information for dynamic descriptions (kept for compatibility)
 export const searchProviderInfo = {
   parallel: 'Parallel AI',
   exa: 'Exa',
@@ -61,91 +41,10 @@ export function getWebSearchDescription(provider: SearchProvider = 'parallel'): 
 function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
   return [
     {
-      id: 'web' as const,
-      name: 'Web',
-      description: getWebSearchDescription(searchProvider),
-      icon: GlobalSearchIcon,
-      show: true,
-    },
-    {
-      id: 'x' as const,
-      name: 'X',
-      description: 'Rechercher des publications sur X',
-      icon: NewTwitterIcon,
-      show: true,
-    },
-    {
-      id: 'stocks' as const,
-      name: 'Stocks',
-      description: 'Informations sur les actions et les devises',
-      icon: AppleStocksIcon,
-      show: true,
-    },
-    {
-      id: 'connectors' as const,
-      name: 'Connectors',
-      description: 'Recherchez des documents Google Drive, Notion et OneDrive',
-      icon: ConnectIcon,
-      show: true,
-      requireAuth: true,
-      requirePro: true,
-    },
-    {
-      id: 'code' as const,
-      name: 'Code',
-      description: 'Obtenez du contexte sur les langages et frameworks',
-      icon: CodeCircleIcon,
-      show: true,
-    },
-    {
-      id: 'academic' as const,
-      name: 'Recherche académique',
-      description: 'Recherche d’articles académiques via Exa',
-      icon: MicroscopeIcon,
-      show: true,
-    },
-    {
       id: 'chat' as const,
       name: 'Chat',
       description: 'Discutez directement avec le modèle.',
       icon: ChattingIcon,
-      show: true,
-    },
-    {
-      id: 'extreme' as const,
-      name: 'Extreme',
-      description: 'Recherche approfondie avec multiples sources et analyse',
-      icon: AtomicPowerIcon,
-      show: true,
-      requireAuth: true,
-    },
-    {
-      id: 'memory' as const,
-      name: 'Memory',
-      description: 'Votre compagnon de mémoire personnel',
-      icon: Database02Icon,
-      show: true,
-      requireAuth: true,
-    },
-    {
-      id: 'reddit' as const,
-      name: 'Reddit',
-      description: 'Rechercher des publications Reddit',
-      icon: RedditIcon,
-      show: true,
-    },
-    {
-      id: 'crypto' as const,
-      name: 'Crypto',
-      description: 'Recherche de cryptomonnaies via CoinGecko',
-      icon: Bitcoin02Icon,
-      show: true,
-    },
-    {
-      id: 'youtube' as const,
-      name: 'Recherche YouTube',
-      description: 'Recherche de vidéos YouTube via Exa',
-      icon: YoutubeIcon,
       show: true,
     },
     {
