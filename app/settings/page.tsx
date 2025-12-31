@@ -27,7 +27,14 @@ import { signOut } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ArrowLeftIcon } from '@phosphor-icons/react';
+import { ArrowLeftIcon, PencilSimpleIcon } from '@phosphor-icons/react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 function SettingsPageInner() {
   const router = useRouter();
@@ -41,6 +48,17 @@ function SettingsPageInner() {
   );
   const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>('scira-blur-personal-info', false);
   const [selectedProfileIcon, setSelectedProfileIcon] = useState<string | null>(null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+
+  const predefinedAvatars = [
+    'https://vucvdpamtrjkzmubwlts.supabase.co/storage/v1/object/public/users/user_2zMtrqo9RMaaIn4f8F2z3oeY497/avatar.png',
+    'https://plus.unsplash.com/premium_photo-1739163838574-27c663e8a22b?auto=format&fit=crop&q=60&w=900',
+    'https://plus.unsplash.com/premium_photo-1739206781762-6b28bac44141?auto=format&fit=crop&q=60&w=900',
+    'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=900&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=900&auto=format&fit=crop',
+  ];
 
   useEffect(() => {
     try {
@@ -53,6 +71,28 @@ function SettingsPageInner() {
       }
     } catch {}
   }, []);
+
+  const handleSelectAvatar = (url: string) => {
+    setSelectedProfileIcon(url);
+    try {
+      const stored = localStorage.getItem('hyper:selected-profile');
+      const parsed = stored ? JSON.parse(stored) : {};
+      localStorage.setItem('hyper:selected-profile', JSON.stringify({
+        ...parsed,
+        icon: url,
+        t: Date.now()
+      }));
+    } catch {}
+    setAvatarDialogOpen(false);
+    toast.success('Photo de profil mise à jour');
+  };
+
+  const handleCustomAvatar = () => {
+    if (customAvatarUrl.trim()) {
+      handleSelectAvatar(customAvatarUrl.trim());
+      setCustomAvatarUrl('');
+    }
+  };
 
   const tabs = [
     { value: 'usage', label: 'Usage', icon: Analytics01Icon },
@@ -117,18 +157,27 @@ function SettingsPageInner() {
         <div className="lg:hidden mb-6">
           <Card className="p-4 shadow-none">
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
-                <AvatarFallback>
-                  {user?.name
-                    ? user.name
-                      .split(' ')
-                      .map((n: string) => n[0])
-                      .join('')
-                      .toUpperCase()
-                    : 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <button
+                type="button"
+                onClick={() => setAvatarDialogOpen(true)}
+                className="relative group"
+              >
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
+                  <AvatarFallback>
+                    {user?.name
+                      ? user.name
+                        .split(' ')
+                        .map((n: string) => n[0])
+                        .join('')
+                        .toUpperCase()
+                      : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <PencilSimpleIcon className="h-4 w-4 text-white" />
+                </div>
+              </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className={cn('font-semibold text-lg truncate', blurPersonalInfo && 'blur-sm')}>{user?.name || 'User'}</h3>
@@ -184,18 +233,27 @@ function SettingsPageInner() {
             {/* User Profile Card */}
             <Card className="p-6 shadow-none">
               <div className="flex flex-col items-center text-center space-y-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
-                  <AvatarFallback className={cn('text-lg', blurPersonalInfo && 'blur-sm')}>
-                    {user?.name
-                      ? user.name
-                        .split(' ')
-                        .map((n: string) => n[0])
-                        .join('')
-                        .toUpperCase()
-                      : 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <button
+                  type="button"
+                  onClick={() => setAvatarDialogOpen(true)}
+                  className="relative group"
+                >
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
+                    <AvatarFallback className={cn('text-lg', blurPersonalInfo && 'blur-sm')}>
+                      {user?.name
+                        ? user.name
+                          .split(' ')
+                          .map((n: string) => n[0])
+                          .join('')
+                          .toUpperCase()
+                        : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <PencilSimpleIcon className="h-5 w-5 text-white" />
+                  </div>
+                </button>
                 <div className="space-y-1 w-full">
                   <h3 className={cn('font-semibold text-base', blurPersonalInfo && 'blur-sm')}>{user?.name || 'User'}</h3>
                   <p className={cn('text-xs text-muted-foreground break-all', blurPersonalInfo && 'blur-sm')}>{user?.email}</p>
@@ -268,6 +326,45 @@ function SettingsPageInner() {
           </div>
         </Tabs>
       </div>
+      {/* Avatar Selection Dialog */}
+      <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choisir une photo de profil</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {predefinedAvatars.map((url, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSelectAvatar(url)}
+                  className={cn(
+                    "relative aspect-square rounded-full overflow-hidden border-2 transition-all hover:scale-105",
+                    selectedProfileIcon === url ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
+                  )}
+                >
+                  <img src={url} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+            <div className="border-t pt-4">
+              <Label className="text-sm text-muted-foreground mb-2 block">Ou entrez une URL personnalisée</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://example.com/photo.jpg"
+                  value={customAvatarUrl}
+                  onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button onClick={handleCustomAvatar} disabled={!customAvatarUrl.trim()}>
+                  Appliquer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
