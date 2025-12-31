@@ -3,7 +3,6 @@ import {
   generateTitleFromUserMessage,
   getGroupConfig,
   getUserMessageCount,
-  getExtremeSearchUsageCount,
   getCurrentUser,
   getLightweightUser,
 } from '@/app/actions';
@@ -16,7 +15,6 @@ import {
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
-import { createMemoryTools } from '@/lib/tools/supermemory';
 import {
   hyper,
   requiresAuthentication,
@@ -31,7 +29,6 @@ import {
   getChatById,
   saveChat,
   saveMessages,
-  incrementExtremeSearchUsage,
   incrementMessageUsage,
   updateChatTitleById,
 } from '@/lib/db/queries';
@@ -44,45 +41,14 @@ import { geolocation } from '@vercel/functions';
 import { createStreamResponse } from '@/lib/streaming-heartbeat';
 
 import {
-  stockChartTool,
-  currencyConverterTool,
-  xSearchTool,
-  textTranslateTool,
-  webSearchTool,
-  movieTvSearchTool,
-  trendingMoviesTool,
-  trendingTvTool,
-  academicSearchTool,
-  youtubeSearchTool,
-  retrieveTool,
-  weatherTool,
-  codeInterpreterTool,
-  jsRunTool,
-  pythonRunTool,
-  findPlaceOnMapTool,
-  nearbyPlacesSearchTool,
-  flightTrackerTool,
-  coinDataTool,
-  coinDataByContractTool,
-  coinOhlcTool,
   datetimeTool,
   greetingTool,
-  // mcpSearchTool,
-  redditSearchTool,
-  extremeSearchTool,
-  createConnectorsSearchTool,
-  codeContextTool,
   eanSearchTool,
 } from '@/lib/tools';
-import { GroqProviderOptions } from '@ai-sdk/groq';
 import { markdownJoinerTransform } from '@/lib/parser';
 import { ChatMessage } from '@/lib/types';
-import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { getCachedCustomInstructionsByUserId } from '@/lib/user-data-server';
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-
-import { CohereChatModelOptions } from '@ai-sdk/cohere';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -118,8 +84,6 @@ export async function POST(req: Request) {
     id,
     selectedVisibilityType,
     isCustomInstructionsEnabled,
-    searchProvider,
-    selectedConnectors,
   } = await req.json();
   const { latitude, longitude } = geolocation(req);
   const streamId = 'stream-' + uuidv7();
@@ -137,9 +101,6 @@ export async function POST(req: Request) {
   if (!lightweightUser) {
     if (requiresAuthentication(resolvedModel)) {
       return new ChatSDKError('unauthorized:model', `${resolvedModel} requires authentication`).toResponse();
-    }
-    if (group === 'extreme') {
-      return new ChatSDKError('unauthorized:auth', 'Authentication required to use Extreme Search mode').toResponse();
     }
   } else {
     // Fast auth checks using lightweight user (no additional DB calls)
@@ -168,7 +129,6 @@ export async function POST(req: Request) {
     error?: any;
     isProUser: boolean;
     messageCount?: number;
-    extremeSearchUsage?: number;
     subscriptionData?: any;
     shouldBypassLimits?: boolean;
   }>;
@@ -219,10 +179,7 @@ export async function POST(req: Request) {
           throw new ChatSDKError('unauthorized:auth', 'User authentication failed');
         }
 
-        const [messageCountResult, extremeSearchUsage] = await Promise.all([
-          getUserMessageCount(user),
-          getExtremeSearchUsageCount(user),
-        ]);
+        const messageCountResult = await getUserMessageCount(user);
 
         if (messageCountResult.error) {
           throw new ChatSDKError('bad_request:api', 'Failed to verify usage limits');
@@ -237,7 +194,6 @@ export async function POST(req: Request) {
           canProceed: true,
           isProUser: false,
           messageCount: messageCountResult.count,
-          extremeSearchUsage: extremeSearchUsage.count,
           subscriptionData: user.polarSubscription
             ? { hasSubscription: true, subscription: { ...user.polarSubscription, organizationId: null } }
             : { hasSubscription: false },
@@ -256,7 +212,6 @@ export async function POST(req: Request) {
         canProceed: true,
         isProUser: true,
         messageCount: 0,
-        extremeSearchUsage: 0,
         subscriptionData: user?.polarSubscription
           ? { hasSubscription: true, subscription: { ...user.polarSubscription, organizationId: null } }
           : { hasSubscription: false },
@@ -269,7 +224,6 @@ export async function POST(req: Request) {
       canProceed: true,
       isProUser: false,
       messageCount: 0,
-      extremeSearchUsage: 0,
       subscriptionData: null,
       shouldBypassLimits: false,
     });
@@ -355,7 +309,7 @@ export async function POST(req: Request) {
 
           // Check if we need to prune messages
           const shouldPrune = messages.length > 10 || totalTokens > 100000;
-          
+
           // Always check if model supports reasoning
           const modelHasReasoning = hasReasoningSupport(resolvedModel);
 
@@ -375,53 +329,11 @@ export async function POST(req: Request) {
 
           return undefined;
         },
-        tools: (() => {
-          const baseTools = {
-            stock_chart: stockChartTool,
-            currency_converter: currencyConverterTool,
-            coin_data: coinDataTool,
-            coin_data_by_contract: coinDataByContractTool,
-            coin_ohlc: coinOhlcTool,
-
-            x_search: xSearchTool,
-            web_search: webSearchTool(dataStream, searchProvider),
-            academic_search: academicSearchTool,
-            youtube_search: youtubeSearchTool,
-            reddit_search: redditSearchTool,
-            retrieve: retrieveTool,
-
-            movie_or_tv_search: movieTvSearchTool,
-            trending_movies: trendingMoviesTool,
-            trending_tv: trendingTvTool,
-
-            find_place_on_map: findPlaceOnMapTool,
-            nearby_places_search: nearbyPlacesSearchTool,
-            get_weather_data: weatherTool,
-
-            text_translate: textTranslateTool,
-            code_interpreter: codeInterpreterTool,
-            js_run: jsRunTool,
-            python_run: pythonRunTool,
-            track_flight: flightTrackerTool,
-            datetime: datetimeTool,
-            extreme_search: extremeSearchTool(dataStream),
-            ean_search: eanSearchTool(dataStream),
-            greeting: greetingTool(timezone),
-            code_context: codeContextTool,
-          };
-
-          if (!user) {
-            return baseTools;
-          }
-
-          const memoryTools = createMemoryTools(user.id);
-          return {
-            ...baseTools,
-            search_memories: memoryTools.searchMemories as any,
-            add_memory: memoryTools.addMemory as any,
-            connectors_search: createConnectorsSearchTool(user.id, selectedConnectors),
-          } as any;
-        })(),
+        tools: {
+          datetime: datetimeTool,
+          ean_search: eanSearchTool(dataStream),
+          greeting: greetingTool(timezone),
+        },
         experimental_repairToolCall: async ({ toolCall, tools, inputSchema, error }) => {
           if (NoSuchToolError.isInstance(error)) {
             return null;
@@ -448,8 +360,6 @@ export async function POST(req: Request) {
               `The tool accepts the following schema:`,
               JSON.stringify(inputSchema(toolCall)),
               'Please fix the arguments.',
-              'For the code interpreter tool do not use print statements.',
-              `For the web search make multiple queries to get the best results but avoid using the same query multiple times and do not use te include and exclude parameters.`,
               `Today's date is ${new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -483,16 +393,6 @@ export async function POST(req: Request) {
               try {
                 if (!shouldBypassRateLimits(resolvedModel, user)) {
                   await incrementMessageUsage({ userId: user.id });
-                }
-
-                // Track extreme search usage if used
-                if (group === 'extreme') {
-                  const extremeSearchUsed = event.steps?.some((step) =>
-                    step.toolCalls?.some((toolCall) => toolCall && toolCall.toolName === 'extreme_search'),
-                  );
-                  if (extremeSearchUsed) {
-                    await incrementExtremeSearchUsage({ userId: user.id });
-                  }
                 }
               } catch (error) {
                 console.error('Failed to track usage:', error);
@@ -555,14 +455,7 @@ export async function POST(req: Request) {
       }
     },
   });
-  // const streamContext = getStreamContext();
 
-  // if (streamContext) {
-  //   return new Response(
-  //     await streamContext.resumableStream(streamId, () => stream.pipeThrough(new JsonToSseTransformStream())),
-  //   );
-  // }
-  
   // Return streaming response with headers optimized for firewall/proxy compatibility
   return createStreamResponse(
     stream.pipeThrough(new JsonToSseTransformStream())
