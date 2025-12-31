@@ -1,6 +1,5 @@
 // /app/api/chat/route.ts
 import {
-  generateTitleFromUserMessage,
   getGroupConfig,
   getUserMessageCount,
   getExtremeSearchUsageCount,
@@ -32,7 +31,6 @@ import {
   saveMessages,
   incrementExtremeSearchUsage,
   incrementMessageUsage,
-  updateChatTitleById,
 } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
@@ -148,16 +146,7 @@ export async function POST(req: Request) {
           visibility: selectedVisibilityType,
         });
 
-        after(async () => {
-          try {
-            const title = await generateTitleFromUserMessage({
-              message: messages[messages.length - 1],
-            });
-            await updateChatTitleById({ chatId: id, title });
-          } catch (error) {
-            console.error('Background title generation failed:', error);
-          }
-        });
+
       }
 
       await createStreamId({ streamId, chatId: id });
