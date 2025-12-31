@@ -1,11 +1,16 @@
 import type { Metadata, Viewport } from 'next';
+import dynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from '@/components/theme-provider';
 import { UserProvider } from '@/contexts/user-context';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+
+const ThemeProvider = dynamic(
+  () => import('next-themes').then((mod) => mod.ThemeProvider),
+  { ssr: false },
+);
 
 const inter = Inter({ subsets: ['latin'] });
 

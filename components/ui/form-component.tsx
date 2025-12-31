@@ -23,8 +23,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { ComprehensiveUserData } from '@/hooks/use-user-data';
 import { useLocalSession } from '@/hooks/use-local-session';
-import { checkImageModeration, enhancePrompt, getDiscountConfigAction } from '@/app/actions';
-import { DiscountConfig } from '@/lib/discount';
+import {
+  checkImageModeration,
+  enhancePrompt,
+  getDiscountConfigAction,
+  listUserConnectorsAction,
+  type ConnectorProvider,
+  type DiscountConfig,
+} from '@/app/actions';
 import { PRICING } from '@/lib/constants';
 import { LockIcon, Eye, Brain, FilePdf } from '@phosphor-icons/react';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -48,9 +54,7 @@ import { useLocation } from '@/hooks/use-location';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAgentAccess } from '@/hooks/use-agent-access';
-import { CONNECTOR_CONFIGS, CONNECTOR_ICONS, type ConnectorProvider } from '@/lib/connectors';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listUserConnectorsAction } from '@/app/actions';
 import { BorderTrail } from '@/components/core/border-trail';
 import { pusherClient } from '@/lib/pusher-client';
 import { encodeChannelUserId } from '@/lib/pusher-utils';
@@ -63,6 +67,22 @@ const ProBadge = ({ className = '' }: { className?: string }) => (
     <span>Fix</span>
   </span>
 );
+
+const connectorIconFactory = (label: string) => ({ className = '' }: { className?: string }) => (
+  <span className={`inline-flex h-4 w-4 items-center justify-center text-[0.6rem] font-semibold ${className}`}>{label}</span>
+);
+
+const CONNECTOR_CONFIGS: Record<ConnectorProvider, { name: string; description: string; icon: ConnectorProvider }> = {
+  notion: { name: 'Notion', description: 'Sync workspace pages and databases', icon: 'notion' },
+  slack: { name: 'Slack', description: 'Monitor channels and threads', icon: 'slack' },
+  google_drive: { name: 'Google Drive', description: 'Search docs and spreadsheets', icon: 'google_drive' },
+};
+
+const CONNECTOR_ICONS: Record<ConnectorProvider, ReturnType<typeof connectorIconFactory>> = {
+  notion: connectorIconFactory('N'),
+  slack: connectorIconFactory('S'),
+  google_drive: connectorIconFactory('G'),
+};
 
 interface ModelSwitcherProps {
   selectedModel: string;

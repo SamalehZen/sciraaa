@@ -9,8 +9,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { CheckIcon } from 'lucide-react';
 import { PRICING } from '@/lib/constants';
-import { DiscountConfig } from '@/lib/discount';
-import { getDiscountConfigAction } from '@/app/actions';
+import { getDiscountConfigAction, type DiscountConfig } from '@/app/actions';
 import { useState, useEffect, useMemo } from 'react';
 
 // Pro Badge Component

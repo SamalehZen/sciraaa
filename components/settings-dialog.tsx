@@ -13,6 +13,7 @@ import {
   getCustomInstructions,
   saveCustomInstructions,
   deleteCustomInstructionsAction,
+  listUserConnectorsAction,
 } from '@/app/actions';
 import {
   FloppyDiskIcon,
@@ -38,6 +39,14 @@ import { SortableContext, rectSortingStrategy, useSortable, arrayMove, sortableK
 import { CSS } from '@dnd-kit/utilities';
 import { useMemo, useState, useEffect } from 'react';
 import { useLocalSession } from '@/hooks/use-local-session';
+import { useUsageData } from '@/hooks/use-usage-data';
+import type { ConnectorProvider } from '@/app/actions';
+
+const SETTINGS_CONNECTOR_CONFIGS: Record<ConnectorProvider, { name: string; description: string }> = {
+  notion: { name: 'Notion', description: 'Sync workspace pages and databases' },
+  slack: { name: 'Slack', description: 'Monitor channels and threads' },
+  google_drive: { name: 'Google Drive', description: 'Search docs and spreadsheets' },
+};
 
 // Component for Profile Information
 function ProfileSection({ user, isProStatusLoading }: any) {
@@ -647,6 +656,112 @@ export function PreferencesSection({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function UsageSection({ user }: { user: any }) {
+  const { data, isLoading, refetch } = useUsageData(user ?? null, Boolean(user));
+  const count = data?.count ?? 0;
+  const resetAt = data?.resetAt ? new Date(data.resetAt) : null;
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">Daily searches used</p>
+          <p className="text-3xl font-semibold">{count}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+          {isLoading ? 'Refreshing…' : 'Refresh'}
+        </Button>
+      </div>
+      {resetAt && (
+        <p className="text-xs text-muted-foreground">
+          Resets {resetAt.toLocaleDateString('fr-FR')} à {resetAt.toLocaleTimeString('fr-FR')}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function SubscriptionSection({
+  subscriptionData,
+  isProUser,
+  user,
+}: {
+  subscriptionData: any;
+  isProUser?: boolean;
+  user: any;
+}) {
+  const status = isProUser ? 'Pro' : 'Free';
+  const renewalDate = subscriptionData?.currentPeriodEnd ? new Date(subscriptionData.currentPeriodEnd) : null;
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">Current plan</p>
+          <p className="text-xl font-semibold">{status}</p>
+        </div>
+        <Button variant="default" size="sm" onClick={() => (window.location.href = '/pricing')}>
+          Manage
+        </Button>
+      </div>
+      <div className="text-sm text-muted-foreground">
+        <p>Email: {user?.email || 'Unknown'}</p>
+        {renewalDate && <p>Renews {renewalDate.toLocaleDateString('fr-FR')}</p>}
+      </div>
+    </div>
+  );
+}
+
+export function ConnectorsSection({ user }: { user: any }) {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['settings-connectors', user?.id],
+    queryFn: listUserConnectorsAction,
+    enabled: !!user,
+  });
+
+  const connections = data?.connections ?? [];
+  const connectedProviders = new Set(connections.map((conn) => conn.provider));
+
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">Connected services</p>
+          <p className="text-xs text-muted-foreground">{connections.length} active</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading || !user}>
+          {isLoading ? 'Loading…' : 'Refresh'}
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {Object.entries(SETTINGS_CONNECTOR_CONFIGS).map(([provider, config]) => (
+          <div key={provider} className="flex items-center justify-between rounded-md border px-3 py-2">
+            <div>
+              <p className="text-sm font-medium">{config.name}</p>
+              <p className="text-xs text-muted-foreground">{config.description}</p>
+            </div>
+            <Badge variant={connectedProviders.has(provider as ConnectorProvider) ? 'default' : 'outline'}>
+              {connectedProviders.has(provider as ConnectorProvider) ? 'Connected' : 'Not connected'}
+            </Badge>
+          </div>
+        ))}
+      </div>
+      {!user && <p className="text-xs text-muted-foreground">Sign in to manage connectors.</p>}
+    </div>
+  );
+}
+
+export function MemoriesSection() {
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-2">
+      <p className="text-sm font-medium">Memories</p>
+      <p className="text-xs text-muted-foreground">
+        Memory storage is not available in this environment. Contact support if you need access.
+      </p>
     </div>
   );
 }

@@ -16,7 +16,6 @@ import { UseChatHelpers } from '@ai-sdk/react';
 import { HyperLogoHeader } from '@/components/hyper-logo-header';
 import { EANSearchResults } from '@/components/ean-search-results';
 import { EANLoadingState } from '@/components/ean-loading-state';
-import { markdownTablesToXlsx } from '@/lib/export-xlsx';
 
 import {
   XCircle,
@@ -29,6 +28,42 @@ import {
 } from 'lucide-react';
 import { getModelConfig } from '@/ai/providers';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
+
+function markdownTablesToXlsx(markdown: string, sheetName = 'pdf-to-excel') {
+  const tableRegex = /(^\s*\|.+\|\s*$\n?)+/gm;
+  const dividerRegex = /^\s*\|?\s*:?[-]+:?\s*(\|\s*:?[-]+:?\s*)*\|?\s*$/;
+  const matches = markdown.match(tableRegex) || [];
+  const rows = matches
+    .map((block) =>
+      block
+        .trim()
+        .split('\n')
+        .filter((line) => line.trim().length > 0 && !dividerRegex.test(line.trim()))
+        .map((line) =>
+          line
+            .trim()
+            .replace(/^\|/, '')
+            .replace(/\|$/, '')
+            .split('|')
+            .map((cell) => cell.trim()),
+        ),
+    )
+    .filter((table) => table.length > 0);
+
+  if (!rows.length) {
+    return new Blob(['No structured tables detected'], { type: 'text/plain' });
+  }
+
+  const csvLines: string[] = [`Sheet,${sheetName}`];
+  rows.forEach((table, idx) => {
+    if (idx > 0) csvLines.push('');
+    table.forEach((line) => {
+      csvLines.push(line.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','));
+    });
+  });
+
+  return new Blob([csvLines.join('\n')], { type: 'text/csv' });
+}
 
 // Error component for tool errors
 const ToolErrorDisplay = ({ errorText, toolName }: { errorText: string; toolName: string }) => (

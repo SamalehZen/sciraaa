@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardAction } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { DiscountConfig } from '@/lib/discount';
+import type { DiscountConfig } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { PRICING } from '@/lib/constants';
 import { SlidingNumber } from '@/components/core/sliding-number';

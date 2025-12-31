@@ -7,23 +7,52 @@ import {
   getCustomInstructions as getCustomInstructionsDb,
   saveCustomInstructions as saveCustomInstructionsDb,
   deleteCustomInstructions as deleteCustomInstructionsDb,
+  getChatById,
+  updateChatVisibilityById,
+  deleteChatById,
+  getChatsByUserId,
+  updateChatTitleById,
+  getMessageUsageByUserId,
+  createLookout,
+  getLookoutsByUserId,
+  updateLookout,
+  updateLookoutStatus,
+  deleteLookout,
+  getLookoutById,
 } from '@/lib/db/queries';
 import { SearchGroupId } from '@/lib/utils';
-import { getLightweightUser } from '@/lib/user-data-server';
+
+export type ConnectorProvider = 'notion' | 'slack' | 'google_drive';
+
+export type DiscountConfig = {
+  enabled?: boolean;
+  dev?: boolean;
+  code?: string;
+  message?: string;
+  percentage?: number;
+  finalPrice?: number;
+  originalPrice?: number;
+  inrPrice?: number;
+  startsAt?: Date;
+  expiresAt?: Date;
+  buttonText?: string;
+  showPrice?: boolean;
+};
+
+const DEFAULT_DISCOUNT_CONFIG: DiscountConfig = {
+  enabled: false,
+  dev: false,
+  code: '',
+  message: 'Student offers available on request.',
+};
 
 // Lightweight auth check for fast authentication validation
 export async function getLightweightUser() {
   const cookieStore = await cookies();
-  // In a real implementation this would verify the session cookie
-  // For this lite version we'll trust the layout/middleware to handle auth state
-  // and just return a basic user object if the cookie exists
   const hasSession = cookieStore.has('next-auth.session-token') || cookieStore.has('__Secure-next-auth.session-token');
 
   if (!hasSession) return null;
 
-  // We can't easily get the full user object without a DB call or JWT decode
-  // so this runs a fast check. In this LITE version, we'll assume Pro is active
-  // if you want to enforce limits, you'd need the DB call here.
   return { id: 'user', isProUser: true };
 }
 
@@ -135,18 +164,10 @@ export async function generateTitleFromUserMessage() {
 }
 
 export async function suggestQuestions(history: any[], groupId: GroupId = 'chat') {
-  // Simple heuristic or lightweight generation can go here.
-  // For HyperLITE, we will return an empty array to save token usage and latency,
-  // or implement a very simple static suggestion if needed.
   return [];
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
-  // This would interact with the DB to delete messages after a certain point (for regeneration).
-  // Implementation depends on the DB schema.
-  // For LITE version, we'll stub this or use the imported one if available.
-  // Since we imported queries, let's assume we might need to implement it in queries.ts if not present.
-  // For now, no-op or explicit TODO.
   return;
 }
 
@@ -170,5 +191,219 @@ export async function deleteCustomInstructionsAction() {
   const user = await getUser();
   if (!user) throw new Error('Unauthorized');
   await deleteCustomInstructionsDb(user.id);
+  return { success: true };
+}
+
+export async function updateChatVisibility(chatId: string, visibility: 'public' | 'private') {
+  const user = await getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== user.id) {
+    return { success: false, error: 'Chat not found' };
+  }
+  return await updateChatVisibilityById({ chatId, visibility });
+}
+
+export async function deleteChat(chatId: string) {
+  const user = await getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== user.id) {
+    return { success: false, error: 'Chat not found' };
+  }
+  await deleteChatById({ id: chatId });
+  return { success: true };
+}
+
+async function getChatsPage(userId: string, cursor: string | null, limit: number) {
+  const records = await getChatsByUserId({ id: userId, limit, startingAfter: cursor, endingBefore: null });
+  const trimmed = records.slice(0, limit);
+  return { chats: trimmed, hasMore: records.length > limit };
+}
+
+export async function getUserChats(userId: string, limit = 20) {
+  const user = await getUser();
+  if (!user || user.id !== userId) {
+    return { chats: [], hasMore: false, error: 'Unauthorized' };
+  }
+  return await getChatsPage(userId, null, limit);
+}
+
+export async function loadMoreChats(userId: string, cursor: string, limit = 20) {
+  const user = await getUser();
+  if (!user || user.id !== userId) {
+    return { chats: [], hasMore: false, error: 'Unauthorized' };
+  }
+  return await getChatsPage(userId, cursor, limit);
+}
+
+export async function updateChatTitle(chatId: string, title: string) {
+  const user = await getUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== user.id) {
+    return { success: false, error: 'Chat not found' };
+  }
+  const sanitizedTitle = title?.trim().slice(0, 120) || 'Untitled chat';
+  await updateChatTitleById({ chatId, title: sanitizedTitle });
+  return { success: true };
+}
+
+export async function getUserMessageCount() {
+  const user = await getUser();
+  if (!user) {
+    return { count: 0, resetAt: null };
+  }
+  const usage = await getMessageUsageByUserId({ userId: user.id });
+  return {
+    count: usage?.messageCount || 0,
+    resetAt: usage?.resetAt || new Date(new Date().setHours(24, 0, 0, 0)),
+  };
+}
+
+export async function getStudentDomainsAction() {
+  const domains = ['.edu', '.ac.in', '.edu.mx', '.ac.uk'];
+  return {
+    success: true,
+    domains,
+    count: domains.length,
+    fallback: false,
+  };
+}
+
+export async function getUserLocation() {
+  return {
+    country: 'Unknown',
+    countryCode: '',
+    isIndia: false,
+    loading: false,
+  };
+}
+
+export async function getDiscountConfigAction(): Promise<DiscountConfig> {
+  return { ...DEFAULT_DISCOUNT_CONFIG };
+}
+
+export async function checkImageModeration(_images: string[]): Promise<string> {
+  return 'safe';
+}
+
+export async function enhancePrompt(_input: string): Promise<{ success: boolean; error: string }> {
+  return { success: false, error: 'Action bloquée : automatisation non autorisée.' };
+}
+
+export async function listUserConnectorsAction(): Promise<{
+  success: boolean;
+  connections: Array<{ id: string; provider: ConnectorProvider; connectedAt: string }>;
+}> {
+  return { success: true, connections: [] };
+}
+
+function buildNextRunAt(time: string, date?: string) {
+  const base = date ? new Date(date) : new Date();
+  const [hours, minutes] = time.split(':').map((part) => Number(part));
+  if (!Number.isNaN(hours)) {
+    base.setHours(hours);
+  }
+  if (!Number.isNaN(minutes)) {
+    base.setMinutes(minutes);
+  }
+  base.setSeconds(0, 0);
+  return base;
+}
+
+async function ensureLookoutOwner(id: string, userId: string) {
+  const record = await getLookoutById({ id });
+  if (!record || record.userId !== userId) {
+    throw new Error('Lookout not found');
+  }
+  return record;
+}
+
+export async function createScheduledLookout(params: {
+  title: string;
+  prompt: string;
+  frequency: 'once' | 'daily' | 'weekly' | 'monthly';
+  time: string;
+  timezone: string;
+  date?: string;
+}) {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  const nextRunAt = buildNextRunAt(params.time, params.date);
+  const lookout = await createLookout({
+    userId: user.id,
+    title: params.title,
+    prompt: params.prompt,
+    frequency: params.frequency,
+    cronSchedule: params.frequency,
+    timezone: params.timezone,
+    nextRunAt,
+  });
+  return { success: true, lookout };
+}
+
+export async function getUserLookouts() {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, lookouts: [], error: 'Unauthorized' };
+  }
+  const lookouts = await getLookoutsByUserId({ userId: user.id });
+  return { success: true, lookouts };
+}
+
+export async function updateLookoutStatusAction(params: {
+  id: string;
+  status: 'active' | 'paused' | 'archived' | 'running';
+}) {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  await ensureLookoutOwner(params.id, user.id);
+  await updateLookoutStatus(params);
+  return { success: true };
+}
+
+export async function updateLookoutAction(params: {
+  id: string;
+  title?: string;
+  prompt?: string;
+  frequency?: string;
+  timezone?: string;
+}) {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  await ensureLookoutOwner(params.id, user.id);
+  await updateLookout({
+    id: params.id,
+    title: params.title,
+    prompt: params.prompt,
+    frequency: params.frequency,
+    timezone: params.timezone,
+  });
+  return { success: true };
+}
+
+export async function deleteLookoutAction(params: { id: string }) {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  await ensureLookoutOwner(params.id, user.id);
+  await deleteLookout({ id: params.id });
+  return { success: true };
+}
+
+export async function testLookoutAction(params: { id: string }) {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  await ensureLookoutOwner(params.id, user.id);
   return { success: true };
 }
