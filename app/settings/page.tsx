@@ -5,23 +5,17 @@ import { useUser } from '@/contexts/user-context';
 import {
   UsageSection,
   PreferencesSection,
-  SubscriptionSection,
-  ConnectorsSection,
-  MemoriesSection,
 } from '@/components/settings-dialog';
 import { cn } from '@/lib/utils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Analytics01Icon,
   Settings02Icon,
-  Crown02Icon,
-  ConnectIcon,
-  Brain02Icon,
 } from '@hugeicons/core-free-icons';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Suspense, useState } from 'react';
@@ -37,7 +31,7 @@ import { ArrowLeftIcon } from '@phosphor-icons/react';
 
 function SettingsPageInner() {
   const router = useRouter();
-  const { user, isProUser, isLoading, subscriptionData } = useUser();
+  const { user, isProUser, isLoading } = useUser();
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'usage';
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -49,10 +43,7 @@ function SettingsPageInner() {
 
   const tabs = [
     { value: 'usage', label: 'Usage', icon: Analytics01Icon },
-    { value: 'subscription', label: 'Subscription', icon: Crown02Icon },
     { value: 'preferences', label: 'Preferences', icon: Settings02Icon },
-    { value: 'connectors', label: 'Connectors', icon: ConnectIcon },
-    { value: 'memories', label: 'Memories', icon: Brain02Icon },
   ];
 
   return (
@@ -245,16 +236,6 @@ function SettingsPageInner() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="subscription" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Subscription</h2>
-                    <p className="text-sm text-muted-foreground">Manage your subscription and billing</p>
-                  </div>
-                  <SubscriptionSection subscriptionData={subscriptionData} isProUser={isProUser} user={user} />
-                </div>
-              </TabsContent>
-
               <TabsContent value="preferences" className="m-0">
                 <div className="space-y-4">
                   <div>
@@ -269,25 +250,7 @@ function SettingsPageInner() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="connectors" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Connectors</h2>
-                    <p className="text-sm text-muted-foreground">Connect your external services and data sources</p>
-                  </div>
-                  <ConnectorsSection user={user} />
-                </div>
-              </TabsContent>
 
-              <TabsContent value="memories" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Memories</h2>
-                    <p className="text-sm text-muted-foreground">Manage your stored memories and context</p>
-                  </div>
-                  <MemoriesSection />
-                </div>
-              </TabsContent>
             </Card>
           </div>
         </Tabs>
