@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from '@/components/theme-provider';
 import { UserProvider } from '@/contexts/user-context';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
@@ -32,15 +31,8 @@ export default function RootLayout({
       <body className={cn('antialiased', inter.className)}>
         <NuqsAdapter>
           <UserProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster position="bottom-right" />
-            </ThemeProvider>
+            {children}
+            <Toaster position="bottom-right" />
           </UserProvider>
         </NuqsAdapter>
       </body>

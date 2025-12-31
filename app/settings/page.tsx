@@ -6,8 +6,6 @@ import {
   UsageSection,
   PreferencesSection,
   SubscriptionSection,
-  ConnectorsSection,
-  MemoriesSection,
 } from '@/components/settings-dialog';
 import { cn } from '@/lib/utils';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -15,8 +13,6 @@ import {
   Analytics01Icon,
   Settings02Icon,
   Crown02Icon,
-  ConnectIcon,
-  Brain02Icon,
 } from '@hugeicons/core-free-icons';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
@@ -51,8 +47,6 @@ function SettingsPageInner() {
     { value: 'usage', label: 'Usage', icon: Analytics01Icon },
     { value: 'subscription', label: 'Subscription', icon: Crown02Icon },
     { value: 'preferences', label: 'Preferences', icon: Settings02Icon },
-    { value: 'connectors', label: 'Connectors', icon: ConnectIcon },
-    { value: 'memories', label: 'Memories', icon: Brain02Icon },
   ];
 
   return (
@@ -266,26 +260,6 @@ function SettingsPageInner() {
                     isCustomInstructionsEnabled={isCustomInstructionsEnabled}
                     setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
                   />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="connectors" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Connectors</h2>
-                    <p className="text-sm text-muted-foreground">Connect your external services and data sources</p>
-                  </div>
-                  <ConnectorsSection user={user} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="memories" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Memories</h2>
-                    <p className="text-sm text-muted-foreground">Manage your stored memories and context</p>
-                  </div>
-                  <MemoriesSection />
                 </div>
               </TabsContent>
             </Card>

@@ -23,8 +23,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { ComprehensiveUserData } from '@/hooks/use-user-data';
 import { useLocalSession } from '@/hooks/use-local-session';
-import { checkImageModeration, enhancePrompt, getDiscountConfigAction } from '@/app/actions';
-import { DiscountConfig } from '@/lib/discount';
 import { PRICING } from '@/lib/constants';
 import { LockIcon, Eye, Brain, FilePdf } from '@phosphor-icons/react';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -48,9 +46,6 @@ import { useLocation } from '@/hooks/use-location';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAgentAccess } from '@/hooks/use-agent-access';
-import { CONNECTOR_CONFIGS, CONNECTOR_ICONS, type ConnectorProvider } from '@/lib/connectors';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listUserConnectorsAction } from '@/app/actions';
 import { BorderTrail } from '@/components/core/border-trail';
 import { pusherClient } from '@/lib/pusher-client';
 import { encodeChannelUserId } from '@/lib/pusher-utils';

@@ -33,9 +33,6 @@ import {
   GlobalSearchIcon,
 } from '@hugeicons/core-free-icons';
 import { GripIcon } from '@/components/ui/grip';
-import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, useSortable, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useMemo, useState, useEffect } from 'react';
 import { useLocalSession } from '@/hooks/use-local-session';
 
