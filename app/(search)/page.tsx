@@ -93,8 +93,12 @@ export default function Home() {
   const handleSelect = (id: string) => {
     const p = profiles.find((x) => x.id === id);
     try {
-      if (p?.label) {
-        localStorage.setItem('hyper:selected-profile', JSON.stringify({ label: p.label, t: Date.now() }));
+      if (p) {
+        localStorage.setItem('hyper:selected-profile', JSON.stringify({ 
+          label: p.label, 
+          icon: typeof p.icon === 'string' ? p.icon : null,
+          t: Date.now() 
+        }));
       }
     } catch {}
     toast('Connexion…', {

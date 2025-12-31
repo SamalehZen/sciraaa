@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,6 +40,19 @@ function SettingsPageInner() {
     true,
   );
   const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>('scira-blur-personal-info', false);
+  const [selectedProfileIcon, setSelectedProfileIcon] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('hyper:selected-profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.icon) {
+          setSelectedProfileIcon(parsed.icon);
+        }
+      }
+    } catch {}
+  }, []);
 
   const tabs = [
     { value: 'usage', label: 'Usage', icon: Analytics01Icon },
@@ -105,7 +118,7 @@ function SettingsPageInner() {
           <Card className="p-4 shadow-none">
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={user?.image || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
+                <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
                 <AvatarFallback>
                   {user?.name
                     ? user.name
@@ -172,7 +185,7 @@ function SettingsPageInner() {
             <Card className="p-6 shadow-none">
               <div className="flex flex-col items-center text-center space-y-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.image || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
+                  <AvatarImage src={user?.image || selectedProfileIcon || ''} className={cn(blurPersonalInfo && 'blur-sm')} />
                   <AvatarFallback className={cn('text-lg', blurPersonalInfo && 'blur-sm')}>
                     {user?.name
                       ? user.name
