@@ -1,6 +1,5 @@
 import './globals.css';
 import 'katex/dist/katex.min.css';
-import 'leaflet/dist/leaflet.css';
 
 import { Metadata, Viewport } from 'next';
 import { Be_Vietnam_Pro, Inter, Baumans } from 'next/font/google';

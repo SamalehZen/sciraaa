@@ -1,36 +1,7 @@
 import { z } from 'zod';
 import type {
-  academicSearchTool,
-  codeInterpreterTool,
-  coinDataByContractTool,
-  coinDataTool,
-  coinOhlcTool,
-  currencyConverterTool,
-  redditSearchTool,
-  retrieveTool,
-  trendingMoviesTool,
-  textTranslateTool,
-  xSearchTool,
-  stockChartTool,
-  webSearchTool,
-  youtubeSearchTool,
-  weatherTool,
-  findPlaceOnMapTool,
-  nearbyPlacesSearchTool,
-  flightTrackerTool,
   datetimeTool,
-  // mcpSearchTool,
-  extremeSearchTool,
   greetingTool,
-  movieTvSearchTool,
-  trendingTvTool,
-  createConnectorsSearchTool,
-  createMemoryTools,
-  SearchMemoryTool,
-  AddMemoryTool,
-  codeContextTool,
-  jsRunTool,
-  pythonRunTool,
   eanSearchTool,
 } from '@/lib/tools';
 
@@ -111,83 +82,14 @@ export const messageMetadataSchema = z.object({
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
 
-type weatherTool = InferUITool<typeof weatherTool>;
-type academicSearchTool = InferUITool<typeof academicSearchTool>;
-type codeInterpreterTool = InferUITool<typeof codeInterpreterTool>;
-type coinDataTool = InferUITool<typeof coinDataTool>;
-type coinOhlcTool = InferUITool<typeof coinOhlcTool>;
-type currencyConverterTool = InferUITool<typeof currencyConverterTool>;
-type redditSearchTool = InferUITool<typeof redditSearchTool>;
-type retrieveTool = InferUITool<typeof retrieveTool>;
-type trendingMoviesTool = InferUITool<typeof trendingMoviesTool>;
-type textTranslateTool = InferUITool<typeof textTranslateTool>;
-type xSearchTool = InferUITool<typeof xSearchTool>;
-type stockChartTool = InferUITool<typeof stockChartTool>;
-type greetingTool = InferUITool<ReturnType<typeof greetingTool>>;
-type flightTrackerTool = InferUITool<typeof flightTrackerTool>;
-type findPlaceOnMapTool = InferUITool<typeof findPlaceOnMapTool>;
-type nearbyPlacesSearchTool = InferUITool<typeof nearbyPlacesSearchTool>;
-type webSearch = InferUITool<ReturnType<typeof webSearchTool>>;
-type extremeSearch = InferUITool<ReturnType<typeof extremeSearchTool>>;
-type movieTvSearchTool = InferUITool<typeof movieTvSearchTool>;
-type trendingTvTool = InferUITool<typeof trendingTvTool>;
-type youtubeSearchTool = InferUITool<typeof youtubeSearchTool>;
-type coinDataByContractTool = InferUITool<typeof coinDataByContractTool>;
-type datetimeTool = InferUITool<typeof datetimeTool>;
-type createConnectorsSearchTool = InferUITool<ReturnType<typeof createConnectorsSearchTool>>;
-type createMemoryTools = InferUITool<SearchMemoryTool>;
-type addMemoryTools = InferUITool<AddMemoryTool>;
-type codeContextTool = InferUITool<typeof codeContextTool>;
-type jsRunTool = InferUITool<typeof jsRunTool>;
-type pythonRunTool = InferUITool<typeof pythonRunTool>;
-type createBarChartTool = InferUITool<typeof createBarChartTool>;
-type createLineChartTool = InferUITool<typeof createLineChartTool>;
-  type eanSearch = InferUITool<ReturnType<typeof eanSearchTool>>;
-
-// type mcpSearchTool = InferUITool<typeof mcpSearchTool>;
+type greetingToolType = InferUITool<ReturnType<typeof greetingTool>>;
+type datetimeToolType = InferUITool<typeof datetimeTool>;
+type eanSearch = InferUITool<ReturnType<typeof eanSearchTool>>;
 
 export type ChatTools = {
-  stock_chart: stockChartTool;
-  currency_converter: currencyConverterTool;
-  coin_data: coinDataTool;
-  coin_data_by_contract: coinDataByContractTool;
-  coin_ohlc: coinOhlcTool;
-
-  // Search & Content Tools
-  x_search: xSearchTool;
-  web_search: webSearch;
-  academic_search: academicSearchTool;
-  youtube_search: youtubeSearchTool;
-  reddit_search: redditSearchTool;
-  retrieve: retrieveTool;
-
-  // Media & Entertainment
-  movie_or_tv_search: movieTvSearchTool;
-  trending_movies: trendingMoviesTool;
-  trending_tv: trendingTvTool;
-
-  // Location & Maps
-  find_place_on_map: findPlaceOnMapTool;
-  nearby_places_search: nearbyPlacesSearchTool;
-  get_weather_data: weatherTool;
-
-  // Utility Tools
-  text_translate: textTranslateTool;
-  code_interpreter: codeInterpreterTool;
-  js_run: jsRunTool;
-  python_run: pythonRunTool;
-  track_flight: flightTrackerTool;
-  datetime: datetimeTool;
-  // mcp_search: mcpSearchTool;
-  extreme_search: extremeSearch;
-  greeting: greetingTool;
+  datetime: datetimeToolType;
+  greeting: greetingToolType;
   ean_search: eanSearch;
-
-  connectors_search: createConnectorsSearchTool;
-  search_memories: createMemoryTools;
-  add_memory: addMemoryTools;
-
-  code_context: codeContextTool;
 };
 
 export type CustomUIDataTypes = {

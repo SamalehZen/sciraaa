@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const authRoutes = ['/sign-in', '/sign-up'];
-const protectedRoutes = ['/lookout', '/xql', '/settings'];
-const adminApiRoutes = ['/api/admin'];
+const protectedRoutes = ['/settings'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,19 +9,9 @@ export async function middleware(request: NextRequest) {
   let session;
   session = !!token;
 
-  // Guest sessions disabled: do not create arka_client_id cookie
   let response = NextResponse.next();
 
   if (pathname === '/api/search' || pathname.startsWith('/api/search/') || pathname.startsWith('/api/upload')) {
-    return response;
-  }
-
-  if (
-    pathname.startsWith('/api/payments/webhooks') ||
-    pathname.startsWith('/api/auth/polar/webhooks') ||
-    pathname.startsWith('/api/auth/dodopayments/webhooks') ||
-    pathname.startsWith('/api/raycast')
-  ) {
     return response;
   }
 
@@ -30,7 +19,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  if (!session && (protectedRoutes.some((route) => pathname.startsWith(route)) || adminApiRoutes.some((route) => pathname.startsWith(route)))) {
+  if (!session && protectedRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 

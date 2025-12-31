@@ -16,7 +16,6 @@ import {
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
-import { createMemoryTools } from '@/lib/tools/supermemory';
 import {
   hyper,
   requiresAuthentication,
@@ -44,34 +43,8 @@ import { geolocation } from '@vercel/functions';
 import { createStreamResponse } from '@/lib/streaming-heartbeat';
 
 import {
-  stockChartTool,
-  currencyConverterTool,
-  xSearchTool,
-  textTranslateTool,
-  webSearchTool,
-  movieTvSearchTool,
-  trendingMoviesTool,
-  trendingTvTool,
-  academicSearchTool,
-  youtubeSearchTool,
-  retrieveTool,
-  weatherTool,
-  codeInterpreterTool,
-  jsRunTool,
-  pythonRunTool,
-  findPlaceOnMapTool,
-  nearbyPlacesSearchTool,
-  flightTrackerTool,
-  coinDataTool,
-  coinDataByContractTool,
-  coinOhlcTool,
   datetimeTool,
   greetingTool,
-  // mcpSearchTool,
-  redditSearchTool,
-  extremeSearchTool,
-  createConnectorsSearchTool,
-  codeContextTool,
   eanSearchTool,
 } from '@/lib/tools';
 import { GroqProviderOptions } from '@ai-sdk/groq';
@@ -86,7 +59,6 @@ import { CohereChatModelOptions } from '@ai-sdk/cohere';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
-// Shared config promise to avoid duplicate calls
 let configPromise: Promise<any>;
 
 export function getStreamContext() {
@@ -129,40 +101,29 @@ export async function POST(req: Request) {
 
   console.log('🔍 Search API:', { model: resolvedModel, group, latitude, longitude });
 
-  // CRITICAL PATH: Get auth status first (required for all subsequent checks)
   const lightweightUser = await getLightweightUser();
 
 
-  // Early exit checks (no DB operations needed)
   if (!lightweightUser) {
     if (requiresAuthentication(resolvedModel)) {
       return new ChatSDKError('unauthorized:model', `${resolvedModel} requires authentication`).toResponse();
     }
-    if (group === 'extreme') {
-      return new ChatSDKError('unauthorized:auth', 'Authentication required to use Extreme Search mode').toResponse();
-    }
   } else {
-    // Fast auth checks using lightweight user (no additional DB calls)
     if (requiresProSubscription(resolvedModel) && !lightweightUser.isProUser) {
       return new ChatSDKError('upgrade_required:model', `${resolvedModel} requires a Pro subscription`).toResponse();
     }
   }
 
-  // START ALL CRITICAL PARALLEL OPERATIONS IMMEDIATELY
   const isProUser = lightweightUser?.isProUser ?? false;
 
-  // 1. Config (needed for streaming) - start immediately
   configPromise = getGroupConfig(group);
 
-  // 2. Full user data (needed for usage checks and custom instructions)
   const fullUserPromise = lightweightUser ? getCurrentUser() : Promise.resolve(null);
 
-  // 3. Custom instructions (only if enabled and authenticated)
   const customInstructionsPromise = lightweightUser && (isCustomInstructionsEnabled ?? true)
     ? fullUserPromise.then(user => user ? getCachedCustomInstructionsByUserId(user.id) : null)
     : Promise.resolve(null);
 
-  // 4. For authenticated users: start ALL operations in parallel
   let criticalChecksPromise: Promise<{
     canProceed: boolean;
     error?: any;
@@ -174,14 +135,11 @@ export async function POST(req: Request) {
   }>;
 
   if (lightweightUser) {
-    // Chat validation and creation (must be synchronous for DB consistency)
     const chatValidationPromise = getChatById({ id }).then(async (existingChat) => {
-      // Validate ownership if chat exists
       if (existingChat && existingChat.userId !== lightweightUser.userId) {
         throw new ChatSDKError('forbidden:chat', 'This chat belongs to another user');
       }
 
-      // Create chat if it doesn't exist (MUST be sync - other operations depend on it)
       if (!existingChat) {
         await saveChat({
           id,
@@ -190,7 +148,6 @@ export async function POST(req: Request) {
           visibility: selectedVisibilityType,
         });
 
-        // Generate better title in background (non-critical)
         after(async () => {
           try {
             const title = await generateTitleFromUserMessage({
@@ -203,13 +160,11 @@ export async function POST(req: Request) {
         });
       }
 
-      // Stream tracking (must be sync for proper stream management)
       await createStreamId({ streamId, chatId: id });
 
       return existingChat;
     });
 
-    // For non-Pro users: run usage checks in parallel
     if (!isProUser) {
       criticalChecksPromise = Promise.all([
         fullUserPromise,
@@ -248,7 +203,6 @@ export async function POST(req: Request) {
         throw new ChatSDKError('bad_request:api', 'Failed to verify user access');
       });
     } else {
-      // Pro users: just validate chat ownership
       criticalChecksPromise = Promise.all([
         fullUserPromise,
         chatValidationPromise,
@@ -264,7 +218,6 @@ export async function POST(req: Request) {
       }));
     }
   } else {
-    // Unauthenticated users: no checks needed
     criticalChecksPromise = Promise.resolve({
       canProceed: true,
       isProUser: false,
@@ -277,10 +230,8 @@ export async function POST(req: Request) {
 
   let customInstructions: CustomInstructions | null = null;
 
-  // Start streaming immediately while background operations continue
   const stream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer: dataStream }) => {
-      // Wait for critical checks and config in parallel (only what's needed to start streaming)
       const [criticalResult, { tools: activeTools, instructions }, customInstructionsResult, user] = await Promise.all([
         criticalChecksPromise,
         configPromise,
@@ -294,7 +245,6 @@ export async function POST(req: Request) {
 
       customInstructions = customInstructionsResult;
 
-      // Save user message BEFORE streaming (critical for conversation history)
       if (user) {
         await saveMessages({
           messages: [{
@@ -350,13 +300,10 @@ export async function POST(req: Request) {
           } satisfies GoogleGenerativeAIProviderOptions,
         },
         prepareStep: async ({ steps, messages }) => {
-          // Calculate total token usage across all steps
           const totalTokens = steps.reduce((sum, step) => sum + (step.usage?.totalTokens ?? 0), 0);
 
-          // Check if we need to prune messages
           const shouldPrune = messages.length > 10 || totalTokens > 100000;
           
-          // Always check if model supports reasoning
           const modelHasReasoning = hasReasoningSupport(resolvedModel);
 
           const totalToolCalls = steps.reduce(
@@ -377,50 +324,12 @@ export async function POST(req: Request) {
         },
         tools: (() => {
           const baseTools = {
-            stock_chart: stockChartTool,
-            currency_converter: currencyConverterTool,
-            coin_data: coinDataTool,
-            coin_data_by_contract: coinDataByContractTool,
-            coin_ohlc: coinOhlcTool,
-
-            x_search: xSearchTool,
-            web_search: webSearchTool(dataStream, searchProvider),
-            academic_search: academicSearchTool,
-            youtube_search: youtubeSearchTool,
-            reddit_search: redditSearchTool,
-            retrieve: retrieveTool,
-
-            movie_or_tv_search: movieTvSearchTool,
-            trending_movies: trendingMoviesTool,
-            trending_tv: trendingTvTool,
-
-            find_place_on_map: findPlaceOnMapTool,
-            nearby_places_search: nearbyPlacesSearchTool,
-            get_weather_data: weatherTool,
-
-            text_translate: textTranslateTool,
-            code_interpreter: codeInterpreterTool,
-            js_run: jsRunTool,
-            python_run: pythonRunTool,
-            track_flight: flightTrackerTool,
             datetime: datetimeTool,
-            extreme_search: extremeSearchTool(dataStream),
             ean_search: eanSearchTool(dataStream),
             greeting: greetingTool(timezone),
-            code_context: codeContextTool,
           };
 
-          if (!user) {
-            return baseTools;
-          }
-
-          const memoryTools = createMemoryTools(user.id);
-          return {
-            ...baseTools,
-            search_memories: memoryTools.searchMemories as any,
-            add_memory: memoryTools.addMemory as any,
-            connectors_search: createConnectorsSearchTool(user.id, selectedConnectors),
-          } as any;
+          return baseTools;
         })(),
         experimental_repairToolCall: async ({ toolCall, tools, inputSchema, error }) => {
           if (NoSuchToolError.isInstance(error)) {
@@ -448,8 +357,6 @@ export async function POST(req: Request) {
               `The tool accepts the following schema:`,
               JSON.stringify(inputSchema(toolCall)),
               'Please fix the arguments.',
-              'For the code interpreter tool do not use print statements.',
-              `For the web search make multiple queries to get the best results but avoid using the same query multiple times and do not use te include and exclude parameters.`,
               `Today's date is ${new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -478,21 +385,10 @@ export async function POST(req: Request) {
           console.log(`✅ Request completed: ${processingTime.toFixed(2)}s (${event.finishReason})`);
 
           if (user?.id && event.finishReason === 'stop') {
-            // Track usage in background
             after(async () => {
               try {
                 if (!shouldBypassRateLimits(resolvedModel, user)) {
                   await incrementMessageUsage({ userId: user.id });
-                }
-
-                // Track extreme search usage if used
-                if (group === 'extreme') {
-                  const extremeSearchUsed = event.steps?.some((step) =>
-                    step.toolCalls?.some((toolCall) => toolCall && toolCall.toolName === 'extreme_search'),
-                  );
-                  if (extremeSearchUsed) {
-                    await incrementExtremeSearchUsage({ userId: user.id });
-                  }
                 }
               } catch (error) {
                 console.error('Failed to track usage:', error);
@@ -555,15 +451,7 @@ export async function POST(req: Request) {
       }
     },
   });
-  // const streamContext = getStreamContext();
-
-  // if (streamContext) {
-  //   return new Response(
-  //     await streamContext.resumableStream(streamId, () => stream.pipeThrough(new JsonToSseTransformStream())),
-  //   );
-  // }
   
-  // Return streaming response with headers optimized for firewall/proxy compatibility
   return createStreamResponse(
     stream.pipeThrough(new JsonToSseTransformStream())
   );
