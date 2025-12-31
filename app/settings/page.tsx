@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +35,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { UploadIcon } from '@phosphor-icons/react';
+import { Spinner } from '@/components/ui/spinner';
 
 function SettingsPageInner() {
   const router = useRouter();
@@ -50,6 +52,9 @@ function SettingsPageInner() {
   const [selectedProfileIcon, setSelectedProfileIcon] = useState<string | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { refetch } = useUser();
 
   const predefinedAvatars = [
     'https://vucvdpamtrjkzmubwlts.supabase.co/storage/v1/object/public/users/user_2zMtrqo9RMaaIn4f8F2z3oeY497/avatar.png',
@@ -72,7 +77,7 @@ function SettingsPageInner() {
     } catch {}
   }, []);
 
-  const handleSelectAvatar = (url: string) => {
+  const handleSelectAvatar = async (url: string) => {
     setSelectedProfileIcon(url);
     try {
       const stored = localStorage.getItem('hyper:selected-profile');
@@ -82,9 +87,51 @@ function SettingsPageInner() {
         icon: url,
         t: Date.now()
       }));
+      await fetch('/api/user/update-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+      refetch();
     } catch {}
     setAvatarDialogOpen(false);
     toast.success('Photo de profil mise à jour');
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('L\'image doit faire moins de 10MB');
+      return;
+    }
+    
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadRes.ok) throw new Error('Upload failed');
+      
+      const { url } = await uploadRes.json();
+      await handleSelectAvatar(url);
+    } catch (error) {
+      toast.error('Échec de l\'upload');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleCustomAvatar = () => {
@@ -348,18 +395,42 @@ function SettingsPageInner() {
                 </button>
               ))}
             </div>
-            <div className="border-t pt-4">
-              <Label className="text-sm text-muted-foreground mb-2 block">Ou entrez une URL personnalisée</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://example.com/photo.jpg"
-                  value={customAvatarUrl}
-                  onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                  className="flex-1"
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Importer depuis votre galerie</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
                 />
-                <Button onClick={handleCustomAvatar} disabled={!customAvatarUrl.trim()}>
-                  Appliquer
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <><Spinner className="mr-2 h-4 w-4" /> Upload en cours...</>
+                  ) : (
+                    <><UploadIcon className="mr-2 h-4 w-4" /> Choisir une image</>
+                  )}
                 </Button>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Ou entrez une URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://example.com/photo.jpg"
+                    value={customAvatarUrl}
+                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleCustomAvatar} disabled={!customAvatarUrl.trim()}>
+                    Appliquer
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

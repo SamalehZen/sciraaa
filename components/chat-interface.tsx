@@ -157,6 +157,21 @@ const ChatInterface = memo(
       shouldBypassLimitsForModel,
     } = useUser();
 
+    useEffect(() => {
+      if (user?.id) {
+        const pendingAvatar = localStorage.getItem('hyper:pending-avatar');
+        if (pendingAvatar) {
+          fetch('/api/user/update-avatar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl: pendingAvatar }),
+          }).then(() => {
+            localStorage.removeItem('hyper:pending-avatar');
+          }).catch(() => {});
+        }
+      }
+    }, [user?.id]);
+
     const { setDataStream } = useDataStream();
 
     const initialState = useMemo(

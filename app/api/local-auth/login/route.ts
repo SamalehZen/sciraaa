@@ -55,13 +55,22 @@ export async function POST(req: Request) {
     const existing = await db.query.user.findFirst({ where: eq(appUser.id, localUserId) });
 
     if (!existing) {
+      const defaultAvatars = [
+        'https://vucvdpamtrjkzmubwlts.supabase.co/storage/v1/object/public/users/user_2zMtrqo9RMaaIn4f8F2z3oeY497/avatar.png',
+        'https://plus.unsplash.com/premium_photo-1739163838574-27c663e8a22b?auto=format&fit=crop&q=60&w=900',
+        'https://plus.unsplash.com/premium_photo-1739206781762-6b28bac44141?auto=format&fit=crop&q=60&w=900',
+        'https://images.unsplash.com/photo-1544006659-f0b21884ce1d?q=80&w=900&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=900&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=900&auto=format&fit=crop',
+      ];
+      const randomAvatar = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
       const now = new Date();
       await db.insert(appUser).values({
         id: localUserId,
         name: uname,
         email: localEmail,
         emailVerified: false,
-        image: null,
+        image: randomAvatar,
         createdAt: now,
         updatedAt: now,
       });
