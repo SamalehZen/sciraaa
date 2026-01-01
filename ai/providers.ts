@@ -8,6 +8,13 @@ const DEFAULT_MIMO_MODEL = 'mimo-v2-flash';
 const MIMO_API_KEY = process.env.MIMO_API_KEY || '';
 const MIMO_BASE_URL = 'https://api.xiaomimimo.com/v1';
 
+console.log('[MiMo Provider] Initializing with:', {
+  baseURL: MIMO_BASE_URL,
+  model: DEFAULT_MIMO_MODEL,
+  apiKeySet: !!MIMO_API_KEY,
+  apiKeyLength: MIMO_API_KEY.length,
+});
+
 const mimoProvider = createOpenAICompatible({
   name: 'mimo',
   baseURL: MIMO_BASE_URL,
@@ -18,7 +25,9 @@ const mimoProvider = createOpenAICompatible({
 
 function getMimoProvider() {
   if (!MIMO_API_KEY) {
-    console.warn('MIMO_API_KEY not set');
+    console.error('[MiMo Provider] ❌ MIMO_API_KEY is not set! Please add it to your .env file');
+  } else {
+    console.log('[MiMo Provider] ✅ API Key configured');
   }
   return mimoProvider(DEFAULT_MIMO_MODEL);
 }

@@ -401,7 +401,17 @@ export async function POST(req: Request) {
       );
     },
     onError(error) {
-      console.log('Error: ', error);
+      console.error('[MiMo API Error] Full error:', error);
+      console.error('[MiMo API Error] Error type:', typeof error);
+      console.error('[MiMo API Error] Error name:', error instanceof Error ? error.name : 'N/A');
+      console.error('[MiMo API Error] Error message:', error instanceof Error ? error.message : String(error));
+      if (error && typeof error === 'object') {
+        console.error('[MiMo API Error] Error keys:', Object.keys(error));
+        if ('cause' in error) console.error('[MiMo API Error] Cause:', (error as any).cause);
+        if ('statusCode' in error) console.error('[MiMo API Error] Status Code:', (error as any).statusCode);
+        if ('responseBody' in error) console.error('[MiMo API Error] Response Body:', (error as any).responseBody);
+        if ('url' in error) console.error('[MiMo API Error] URL:', (error as any).url);
+      }
       if (error instanceof Error && error.message.includes('Rate Limit')) {
         return 'Oops, you have reached the rate limit! Please try again later.';
       }
