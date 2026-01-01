@@ -4,7 +4,8 @@ import { z } from 'zod';
 
 export const serverEnv = createEnv({
   server: {
-    GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
+    ZAI_API_KEY: z.string().min(1, 'Z.ai API key is required for GLM models'),
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional().default('deprecated'),
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
     BLOB_READ_WRITE_TOKEN: z.string().min(1),

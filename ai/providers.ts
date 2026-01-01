@@ -1,71 +1,76 @@
 import { customProvider } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 
-// Arka backend: single provider mapping to Google Gemini Flash.
-// Default model is gemini-2.5-flash with intended fallbacks to gemini-2.0-flash then gemini-2.0-flash-exp
-// If 2.5 is unavailable in your project, adjust DEFAULT_GOOGLE_MODEL below.
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
-// Fallbacks (documented only; selection is handled at call sites when needed):
-const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+// Z.ai backend: single provider mapping to GLM-4.6V-Flash (FREE tier)
+// GLM-4.6V-Flash: 128K context, supports Video/Image/Text/File input, native function calling
+// API is OpenAI-compatible, so we use createOpenAI with custom baseURL
+const DEFAULT_ZAI_MODEL = 'glm-4.6v-flash';
+const FALLBACK_ZAI_MODELS = ['glm-4.5-flash', 'glm-4.6v'];
 
-const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+const ZAI_API_KEY = process.env.ZAI_API_KEY || '';
 
-function getGoogleProvider() {
-  const apiKey = DEFAULT_API_KEY;
-  if (!apiKey) {
-    console.warn('GOOGLE_GENERATIVE_AI_API_KEY not set, falling back to environment variable');
+const zai = createOpenAI({
+  baseURL: 'https://api.z.ai/api/paas/v4',
+  apiKey: ZAI_API_KEY,
+  compatibility: 'compatible',
+});
+
+function getZaiProvider(model: string = DEFAULT_ZAI_MODEL) {
+  if (!ZAI_API_KEY) {
+    console.warn('ZAI_API_KEY not set, GLM models will not work');
   }
-  return google(DEFAULT_GOOGLE_MODEL, { apiKey: apiKey || undefined });
+  return zai(model);
 }
 
-// Single Google provider for all hyper-* model ids expected by the UI.
-// We keep all original model ids/labels for UI parity, but route everything to Gemini Flash.
+// Z.ai provider for all hyper-* model ids expected by the UI.
+// All models route to GLM-4.6V-Flash (FREE, 128K context, multimodal, native function calling)
 export const hyper = customProvider({
   languageModels: {
-    'hyper-default': getGoogleProvider(),
-    'hyper-nano': getGoogleProvider(),
-    'hyper-name': getGoogleProvider(),
-    'hyper-grok-3': getGoogleProvider(),
-    'hyper-grok-4': getGoogleProvider(),
-    'hyper-grok-4-fast': getGoogleProvider(),
-    'hyper-grok-4-fast-think': getGoogleProvider(),
-    'hyper-code': getGoogleProvider(),
-    'hyper-enhance': getGoogleProvider(),
-    'hyper-qwen-4b': getGoogleProvider(),
-    'hyper-qwen-4b-thinking': getGoogleProvider(),
-    'hyper-gpt5': getGoogleProvider(),
-    'hyper-gpt5-mini': getGoogleProvider(),
-    'hyper-gpt5-nano': getGoogleProvider(),
-    'hyper-o3': getGoogleProvider(),
-    'hyper-qwen-32b': getGoogleProvider(),
-    'hyper-gpt-oss-20': getGoogleProvider(),
-    'hyper-gpt-oss-120': getGoogleProvider(),
-    'hyper-deepseek-chat': getGoogleProvider(),
-    'hyper-deepseek-chat-think': getGoogleProvider(),
-    'hyper-deepseek-r1': getGoogleProvider(),
-    'hyper-qwen-coder': getGoogleProvider(),
-    'hyper-qwen-30': getGoogleProvider(),
-    'hyper-qwen-30-think': getGoogleProvider(),
-    'hyper-qwen-3-next': getGoogleProvider(),
-    'hyper-qwen-3-next-think': getGoogleProvider(),
-    'hyper-qwen-3-max': getGoogleProvider(),
-    'hyper-qwen-3-max-preview': getGoogleProvider(),
-    'hyper-qwen-235': getGoogleProvider(),
-    'hyper-qwen-235-think': getGoogleProvider(),
-    'hyper-glm-air': getGoogleProvider(),
-    'hyper-glm': getGoogleProvider(),
-    'hyper-glm-4.6': getGoogleProvider(),
-    'hyper-kimi-k2-v2': getGoogleProvider(),
-    'hyper-haiku': getGoogleProvider(),
-    'hyper-mistral-medium': getGoogleProvider(),
-    'hyper-magistral-small': getGoogleProvider(),
-    'hyper-magistral-medium': getGoogleProvider(),
-    'hyper-google-lite': getGoogleProvider(),
-    'hyper-google': getGoogleProvider(),
-    'hyper-google-think': getGoogleProvider(),
-    'hyper-google-think-v2': getGoogleProvider(),
-    'hyper-google-think-v3': getGoogleProvider(),
-    'hyper-anthropic': getGoogleProvider(),
+    'hyper-default': getZaiProvider(),
+    'hyper-nano': getZaiProvider(),
+    'hyper-name': getZaiProvider(),
+    'hyper-grok-3': getZaiProvider(),
+    'hyper-grok-4': getZaiProvider(),
+    'hyper-grok-4-fast': getZaiProvider(),
+    'hyper-grok-4-fast-think': getZaiProvider(),
+    'hyper-code': getZaiProvider(),
+    'hyper-enhance': getZaiProvider(),
+    'hyper-qwen-4b': getZaiProvider(),
+    'hyper-qwen-4b-thinking': getZaiProvider(),
+    'hyper-gpt5': getZaiProvider(),
+    'hyper-gpt5-mini': getZaiProvider(),
+    'hyper-gpt5-nano': getZaiProvider(),
+    'hyper-o3': getZaiProvider(),
+    'hyper-qwen-32b': getZaiProvider(),
+    'hyper-gpt-oss-20': getZaiProvider(),
+    'hyper-gpt-oss-120': getZaiProvider(),
+    'hyper-deepseek-chat': getZaiProvider(),
+    'hyper-deepseek-chat-think': getZaiProvider(),
+    'hyper-deepseek-r1': getZaiProvider(),
+    'hyper-qwen-coder': getZaiProvider(),
+    'hyper-qwen-30': getZaiProvider(),
+    'hyper-qwen-30-think': getZaiProvider(),
+    'hyper-qwen-3-next': getZaiProvider(),
+    'hyper-qwen-3-next-think': getZaiProvider(),
+    'hyper-qwen-3-max': getZaiProvider(),
+    'hyper-qwen-3-max-preview': getZaiProvider(),
+    'hyper-qwen-235': getZaiProvider(),
+    'hyper-qwen-235-think': getZaiProvider(),
+    'hyper-glm-air': getZaiProvider('glm-4.5-air'),
+    'hyper-glm': getZaiProvider('glm-4.5'),
+    'hyper-glm-4.6': getZaiProvider('glm-4.6'),
+    'hyper-glm-4.6v-flash': getZaiProvider('glm-4.6v-flash'),
+    'hyper-kimi-k2-v2': getZaiProvider(),
+    'hyper-haiku': getZaiProvider(),
+    'hyper-mistral-medium': getZaiProvider(),
+    'hyper-magistral-small': getZaiProvider(),
+    'hyper-magistral-medium': getZaiProvider(),
+    'hyper-google-lite': getZaiProvider(),
+    'hyper-google': getZaiProvider(),
+    'hyper-google-think': getZaiProvider(),
+    'hyper-google-think-v2': getZaiProvider(),
+    'hyper-google-think-v3': getZaiProvider(),
+    'hyper-anthropic': getZaiProvider(),
   },
 });
 
@@ -588,6 +593,22 @@ export const models: Model[] = [
     freeUnlimited: false,
     maxOutputTokens: 130000,
     isNew: true,
+  },
+  {
+    value: 'hyper-glm-4.6v-flash',
+    label: 'GLM 4.6V Flash',
+    description: "LLM multimodal gratuit de Zhipu AI - Vision, Video, PDF",
+    vision: true,
+    reasoning: false,
+    experimental: false,
+    category: 'Free',
+    pdf: true,
+    pro: false,
+    requiresAuth: false,
+    freeUnlimited: true,
+    maxOutputTokens: 32000,
+    isNew: true,
+    fast: true,
   },
   {
     value: 'hyper-glm-air',

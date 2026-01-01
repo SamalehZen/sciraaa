@@ -51,9 +51,6 @@ import { ChatMessage } from '@/lib/types';
 import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { getCachedCustomInstructionsByUserId } from '@/lib/user-data-server';
-import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-
-import { CohereChatModelOptions } from '@ai-sdk/cohere';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -275,19 +272,6 @@ export async function POST(req: Request) {
             : '\n') +
           (latitude && longitude ? `\n\nThe user's location is ${latitude}, ${longitude}.` : ''),
         toolChoice: 'auto',
-        providerOptions: {
-          google: {
-            ...(resolvedModel === 'hyper-google-think' || resolvedModel === 'hyper-google-pro-think'
-              ? {
-                thinkingConfig: {
-                  thinkingBudget: 400,
-                  includeThoughts: true,
-                },
-              }
-              : {}),
-            threshold: "OFF",
-          } satisfies GoogleGenerativeAIProviderOptions,
-        },
         prepareStep: async ({ steps, messages }) => {
           const totalTokens = steps.reduce((sum, step) => sum + (step.usage?.totalTokens ?? 0), 0);
 
