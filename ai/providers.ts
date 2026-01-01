@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 
 // Z.ai backend: single provider mapping to GLM-4.6V-Flash (FREE tier)
 // GLM-4.6V-Flash: 128K context, supports Video/Image/Text/File input, native function calling
-// API is OpenAI-compatible, so we use createOpenAI with custom baseURL
+// API is OpenAI-compatible, using .chat() to force chat completions format (not responses)
 const DEFAULT_ZAI_MODEL = 'glm-4.6v-flash';
 const FALLBACK_ZAI_MODELS = ['glm-4.5-flash', 'glm-4.6v'];
 
@@ -12,7 +12,7 @@ const ZAI_API_KEY = process.env.ZAI_API_KEY || '';
 const zai = createOpenAI({
   baseURL: 'https://api.z.ai/api/paas/v4',
   apiKey: ZAI_API_KEY,
-  compatibility: 'compatible',
+  compatibility: 'strict',
   fetch: async (url, options) => {
     console.log('[Z.ai] Request to:', url);
     console.log('[Z.ai] API Key present:', !!ZAI_API_KEY);
@@ -101,7 +101,7 @@ function getZaiProvider(model: string = DEFAULT_ZAI_MODEL) {
   if (!ZAI_API_KEY) {
     console.warn('ZAI_API_KEY not set, GLM models will not work');
   }
-  return zai(model);
+  return zai.chat(model);
 }
 
 // Z.ai provider for all hyper-* model ids expected by the UI.
