@@ -215,18 +215,25 @@ export async function suggestQuestions(history: any[], groupId: LegacyGroupId = 
 
   const systemPrompt = getSystemPromptByGroup(groupId);
 
-  const { object } = await generateObject({
-    model: hyper.languageModel('hyper-grok-3'),
-    system: systemPrompt,
-    messages: history,
-    schema: z.object({
-      questions: z.array(z.string().max(150)).describe('Les questions générées basées sur l\'historique du message.').max(3),
-    }),
-  });
+  try {
+    const { object } = await generateObject({
+      model: hyper.languageModel('hyper-grok-3'),
+      system: systemPrompt,
+      messages: history,
+      schema: z.object({
+        questions: z.array(z.string().max(150)).describe('Les questions générées basées sur l\'historique du message.').max(3),
+      }),
+    });
 
-  return {
-    questions: object.questions,
-  };
+    return {
+      questions: object.questions,
+    };
+  } catch (error) {
+    console.error('Error generating suggested questions:', error);
+    return {
+      questions: [],
+    };
+  }
 }
 
 export async function checkImageModeration(images: string[]) {
