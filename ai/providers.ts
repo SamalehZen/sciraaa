@@ -13,6 +13,14 @@ const zai = createOpenAI({
   baseURL: 'https://api.z.ai/api/paas/v4',
   apiKey: ZAI_API_KEY,
   compatibility: 'compatible',
+  fetch: async (url, options) => {
+    const body = options?.body ? JSON.parse(options.body as string) : {};
+    body.thinking = { type: 'disabled' };
+    return fetch(url, {
+      ...options,
+      body: JSON.stringify(body),
+    });
+  },
 });
 
 function getZaiProvider(model: string = DEFAULT_ZAI_MODEL) {
