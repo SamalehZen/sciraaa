@@ -43,6 +43,32 @@ export function classifyByKeywords(productName: string): Omit<ClassifiedRow, 'pr
     };
   }
 
+  if (/\b(COCA\s*COLA|COCA-COLA|COLA|PEPSI)\b/.test(normalizedName)) {
+    return {
+      sectorNumber: '04',
+      sectorName: 'LIQUIDES',
+      deptNumber: '041',
+      deptName: 'LIQUIDES',
+      familyNumber: '411',
+      familyName: 'LIMONADES SODAS EXTRAIT',
+      subfamilyCode: '108',
+      subfamilyName: 'COLAS',
+    };
+  }
+
+  if (/\b(LIMONADE|SPRITE|7UP)\b/.test(normalizedName)) {
+    return {
+      sectorNumber: '04',
+      sectorName: 'LIQUIDES',
+      deptNumber: '041',
+      deptName: 'LIQUIDES',
+      familyNumber: '411',
+      familyName: 'LIMONADES SODAS EXTRAIT',
+      subfamilyCode: '101',
+      subfamilyName: 'LIMONADES',
+    };
+  }
+
   if (/\bSARDINE(S)?\b/.test(normalizedName)) {
     return {
       sectorNumber: '03',
