@@ -15,10 +15,61 @@ const zai = createOpenAI({
   compatibility: 'compatible',
   fetch: async (url, options) => {
     const body = options?.body ? JSON.parse(options.body as string) : {};
-    body.thinking = { type: 'disabled' };
-    return fetch(url, {
+    body.thinking = { type: 'enabled', clear_thinking: true };
+    
+    const response = await fetch(url, {
       ...options,
       body: JSON.stringify(body),
+    });
+
+    if (!body.stream) {
+      return response;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) return response;
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const text = decoder.decode(value, { stream: true });
+          const lines = text.split('\n');
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ') || line === 'data: [DONE]') {
+              controller.enqueue(encoder.encode(line + '\n'));
+              continue;
+            }
+
+            try {
+              const json = JSON.parse(line.slice(6));
+              const delta = json.choices?.[0]?.delta;
+              
+              if (delta?.reasoning_content) {
+                delta.reasoning = delta.reasoning_content;
+                delete delta.reasoning_content;
+              }
+              
+              controller.enqueue(encoder.encode('data: ' + JSON.stringify(json) + '\n'));
+            } catch {
+              controller.enqueue(encoder.encode(line + '\n'));
+            }
+          }
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: response.headers,
+      status: response.status,
+      statusText: response.statusText,
     });
   },
 });
