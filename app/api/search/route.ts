@@ -398,11 +398,18 @@ export async function POST(req: Request) {
       );
     },
     onError(error) {
-      console.log('Error: ', error);
+      console.error('=== STREAM ERROR DEBUG ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error cause:', error?.cause);
+      console.error('Error stack:', error?.stack);
+      console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2));
+      console.error('=== END ERROR DEBUG ===');
+      
       if (error instanceof Error && error.message.includes('Rate Limit')) {
         return 'Oops, you have reached the rate limit! Please try again later.';
       }
-      return 'Oops, an error occurred!';
+      return `Error: ${error?.message || error?.cause || 'Unknown error occurred'}`;
     },
     onFinish: async ({ messages }) => {
       if (lightweightUser) {

@@ -14,63 +14,86 @@ const zai = createOpenAI({
   apiKey: ZAI_API_KEY,
   compatibility: 'compatible',
   fetch: async (url, options) => {
+    console.log('[Z.ai] Request to:', url);
+    console.log('[Z.ai] API Key present:', !!ZAI_API_KEY);
+    
     const body = options?.body ? JSON.parse(options.body as string) : {};
     body.thinking = { type: 'enabled', clear_thinking: true };
     
-    const response = await fetch(url, {
-      ...options,
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        body: JSON.stringify(body),
+      });
 
-    if (!body.stream) {
-      return response;
-    }
+      console.log('[Z.ai] Response status:', response.status, response.statusText);
 
-    const reader = response.body?.getReader();
-    if (!reader) return response;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Z.ai] API Error:', response.status, errorText);
+        throw new Error(`Z.ai API error: ${response.status} - ${errorText}`);
+      }
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const decoder = new TextDecoder();
-        const encoder = new TextEncoder();
+      if (!body.stream) {
+        return response;
+      }
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      const reader = response.body?.getReader();
+      if (!reader) return response;
 
-          const text = decoder.decode(value, { stream: true });
-          const lines = text.split('\n');
+      const stream = new ReadableStream({
+        async start(controller) {
+          const decoder = new TextDecoder();
+          const encoder = new TextEncoder();
 
-          for (const line of lines) {
-            if (!line.startsWith('data: ') || line === 'data: [DONE]') {
-              controller.enqueue(encoder.encode(line + '\n'));
-              continue;
-            }
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            try {
-              const json = JSON.parse(line.slice(6));
-              const delta = json.choices?.[0]?.delta;
-              
-              if (delta?.reasoning_content) {
-                delta.reasoning = delta.reasoning_content;
-                delete delta.reasoning_content;
+              const text = decoder.decode(value, { stream: true });
+              const lines = text.split('\n');
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ') || line === 'data: [DONE]') {
+                  controller.enqueue(encoder.encode(line + '\n'));
+                  continue;
+                }
+
+                try {
+                  const json = JSON.parse(line.slice(6));
+                  const delta = json.choices?.[0]?.delta;
+                  
+                  if (delta?.reasoning_content) {
+                    delta.reasoning = delta.reasoning_content;
+                    delete delta.reasoning_content;
+                  }
+                  
+                  controller.enqueue(encoder.encode('data: ' + JSON.stringify(json) + '\n'));
+                } catch (parseError) {
+                  console.warn('[Z.ai] Parse warning:', parseError);
+                  controller.enqueue(encoder.encode(line + '\n'));
+                }
               }
-              
-              controller.enqueue(encoder.encode('data: ' + JSON.stringify(json) + '\n'));
-            } catch {
-              controller.enqueue(encoder.encode(line + '\n'));
             }
+          } catch (streamError) {
+            console.error('[Z.ai] Stream error:', streamError);
+            controller.error(streamError);
+          } finally {
+            controller.close();
           }
-        }
-        controller.close();
-      },
-    });
+        },
+      });
 
-    return new Response(stream, {
-      headers: response.headers,
-      status: response.status,
-      statusText: response.statusText,
-    });
+      return new Response(stream, {
+        headers: response.headers,
+        status: response.status,
+        statusText: response.statusText,
+      });
+    } catch (fetchError) {
+      console.error('[Z.ai] Fetch error:', fetchError);
+      throw fetchError;
+    }
   },
 });
 
