@@ -401,9 +401,10 @@ const ChatInterface = memo(
             });
           }
         } else {
-          console.error('Chat error:', error.cause, error.message);
+          const errorDetail = error?.cause || error?.message || 'Unknown error';
+          console.error('Chat error:', errorDetail);
           toast.error('An error occurred.', {
-            description: `Oops! An error occurred while processing your request. ${error.cause || error.message}`,
+            description: `Oops! An error occurred while processing your request. ${errorDetail}`,
           });
         }
         try {
