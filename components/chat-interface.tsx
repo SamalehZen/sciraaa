@@ -330,7 +330,12 @@ const ChatInterface = memo(
         setDataStream((ds) => (ds ? [...ds, dataPart] : []));
       },
       onFinish: ({ message }) => {
-        console.log('onFinish<Client>', message.parts);
+        const safeMessage = message && typeof message === 'object' ? message : null;
+        const messageParts = safeMessage?.parts ?? [];
+        const messageRole = safeMessage?.role ?? 'unknown';
+        
+        console.log('onFinish<Client>', safeMessage ? messageParts : '[no message]');
+        
         try {
           if (user) {
             refetchUsage();
@@ -354,9 +359,9 @@ const ChatInterface = memo(
             }, 1000);
           }
 
-          if (message.parts && message.role === 'assistant' && (user || chatState.selectedVisibilityType === 'private')) {
-            const lastPart = message.parts[message.parts.length - 1];
-            const lastPartText = lastPart.type === 'text' ? lastPart.text : '';
+          if (safeMessage && messageParts.length > 0 && messageRole === 'assistant' && (user || chatState.selectedVisibilityType === 'private')) {
+            const lastPart = messageParts[messageParts.length - 1];
+            const lastPartText = lastPart && lastPart.type === 'text' ? lastPart.text : '';
             const newHistory = [
               { role: 'user', content: lastSubmittedQueryRef.current },
               { role: 'assistant', content: lastPartText },
