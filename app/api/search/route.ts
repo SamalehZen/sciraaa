@@ -13,10 +13,12 @@ import {
   NoSuchToolError,
   createUIMessageStream,
   generateObject,
+  generateId,
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
 import { createMemoryTools } from '@/lib/tools/supermemory';
+import { classifyProducts, parseArticlesFromText } from '@/lib/product-classifier';
 import {
   hyper,
   requiresAuthentication,
@@ -125,7 +127,10 @@ export async function POST(req: Request) {
   const streamId = 'stream-' + uuidv7();
 
   const rawModel = typeof model === 'string' ? model.trim() : '';
-  const resolvedModel = getModelConfig(rawModel) ? rawModel : 'hyper-default';
+  let resolvedModel = getModelConfig(rawModel) ? rawModel : 'hyper-default';
+  if (group === 'cyrusMCP') {
+    resolvedModel = 'hyper-default';
+  }
 
   console.log('🔍 Search API:', { model: resolvedModel, group, latitude, longitude });
 
@@ -183,24 +188,41 @@ export async function POST(req: Request) {
 
       // Create chat if it doesn't exist (MUST be sync - other operations depend on it)
       if (!existingChat) {
+        const cyrusMcpTitle = (() => {
+          const last = messages[messages.length - 1] as any;
+          const content = Array.isArray(last?.parts)
+            ? last.parts
+                .filter((p: any) => p?.type === 'text')
+                .map((p: any) => String(p?.text ?? ''))
+                .join('\n')
+                .trim()
+            : '';
+          const articles = parseArticlesFromText(content);
+          const head = articles[0]?.slice(0, 60)?.trim();
+          if (head) return `CyrusMCP: ${head}`;
+          return 'CyrusMCP';
+        })();
+
         await saveChat({
           id,
           userId: lightweightUser.userId,
-          title: 'New Chat',
+          title: group === 'cyrusMCP' ? cyrusMcpTitle : 'New Chat',
           visibility: selectedVisibilityType,
         });
 
-        // Generate better title in background (non-critical)
-        after(async () => {
-          try {
-            const title = await generateTitleFromUserMessage({
-              message: messages[messages.length - 1],
-            });
-            await updateChatTitleById({ chatId: id, title });
-          } catch (error) {
-            console.error('Background title generation failed:', error);
-          }
-        });
+        if (group !== 'cyrusMCP') {
+          // Generate better title in background (non-critical)
+          after(async () => {
+            try {
+              const title = await generateTitleFromUserMessage({
+                message: messages[messages.length - 1],
+              });
+              await updateChatTitleById({ chatId: id, title });
+            } catch (error) {
+              console.error('Background title generation failed:', error);
+            }
+          });
+        }
       }
 
       // Stream tracking (must be sync for proper stream management)
@@ -317,6 +339,65 @@ export async function POST(req: Request) {
       console.log(`🚀 Time to streamText: ${setupTime.toFixed(2)}s`);
 
       const streamStartTime = Date.now();
+
+      if (group === 'cyrusMCP') {
+        const last = messages[messages.length - 1] as any;
+        const content = Array.isArray(last?.parts)
+          ? last.parts
+              .filter((p: any) => p?.type === 'text')
+              .map((p: any) => String(p?.text ?? ''))
+              .join('\n')
+              .trim()
+          : '';
+
+        const articles = parseArticlesFromText(content);
+
+        const markdown =
+          articles.length > 0
+            ? classifyProducts(articles)
+            : `CyrusMCP attend une liste d'articles.\n\nFormats supportés:\n- 1 produit par ligne\n- Copie Excel (colonne)\n- CSV séparé par ; ou ,\n- Tableau Markdown (1ère colonne)\n\nColle ta liste et renvoie.`;
+
+        const assistantMessage: ChatMessage = {
+          id: generateId(),
+          role: 'assistant',
+          parts: [{ type: 'text', text: markdown }],
+          metadata: {
+            createdAt: new Date().toISOString(),
+            model: 'cyrus-mcp',
+            completionTime: (Date.now() - streamStartTime) / 1000,
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          },
+        };
+
+        if (user) {
+          await saveMessages({
+            messages: [
+              {
+                id: assistantMessage.id,
+                role: assistantMessage.role,
+                parts: assistantMessage.parts,
+                createdAt: new Date(),
+                attachments: [],
+                chatId: id,
+                model: assistantMessage.metadata?.model ?? resolvedModel,
+                completionTime: assistantMessage.metadata?.completionTime ?? 0,
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+              },
+            ],
+          });
+        }
+
+        dataStream.write({
+          type: 'data-appendMessage',
+          data: JSON.stringify(assistantMessage),
+        });
+
+        return;
+      }
 
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
@@ -536,6 +617,10 @@ export async function POST(req: Request) {
       return 'Oops, an error occurred!';
     },
     onFinish: async ({ messages }) => {
+      if (group === 'cyrusMCP') {
+        return;
+      }
+
       if (lightweightUser) {
         await saveMessages({
           messages: messages.map((message) => ({

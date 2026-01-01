@@ -113,6 +113,8 @@ function getSystemPromptByGroup(groupId: LegacyGroupId): string {
 - Demande le type de public cible ou le ton souhaité
 - Suggestions pour enrichir le contenu`,
 
+    cyrusMCP: `${baseGuidelines}`,
+
     libeller: `Tu es un assistant pour la correction et l'amélioration de texte. ${baseGuidelines}
 
 ### Types de questions spécifiques (pour l'agent Libeller - Correction):
@@ -222,6 +224,10 @@ function getSystemPromptByGroup(groupId: LegacyGroupId): string {
 
 export async function suggestQuestions(history: any[], groupId: LegacyGroupId = 'web') {
   'use server';
+
+  if (groupId === 'cyrusMCP') {
+    return { questions: [] as string[] };
+  }
 
   console.log(history, groupId);
 
@@ -334,6 +340,7 @@ const groupTools = {
   crypto: ['coin_data', 'coin_ohlc', 'coin_data_by_contract', 'datetime'] as const,
   chat: ['js_run', 'python_run'] as const,
   cyrus: [] as const,
+  cyrusMCP: [] as const,
   libeller: [] as const,
   nomenclature: [] as const,
   pdfExcel: [] as const,
@@ -1446,6 +1453,7 @@ $$
   - Maintain accuracy to the source documents
   - Use the document content to provide comprehensive answers`,
   cyrus: `${CYRUS_PROMPT}\n\n${CYRUS_OUTPUT_RULES}`,
+  cyrusMCP: `Tu es CyrusMCP. Tu ne dois PAS utiliser de modèle IA. Tu dois uniquement exécuter une classification déterministe et renvoyer un tableau Markdown.`,
   libeller: LIBELLER_PROMPT,
   nomenclature: NOMENCLATURE_DOUANIERE_PROMPT,
   pdfExcel: SMART_PDF_TO_EXCEL_PROMPT,

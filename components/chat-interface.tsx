@@ -339,7 +339,7 @@ const ChatInterface = memo(
             }, 1000);
           }
 
-          if (message.parts && message.role === 'assistant' && (user || chatState.selectedVisibilityType === 'private')) {
+          if (selectedGroup !== 'cyrusMCP' && message.parts && message.role === 'assistant' && (user || chatState.selectedVisibilityType === 'private')) {
             const lastPart = message.parts[message.parts.length - 1];
             const lastPartText = lastPart.type === 'text' ? lastPart.text : '';
             const newHistory = [
@@ -513,8 +513,10 @@ const ChatInterface = memo(
               { role: 'assistant', content: getAssistantContent(lastAssistantMessage) },
             ];
             try {
-              const { questions } = await suggestQuestions(newHistory, selectedGroup);
-              dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
+              if (selectedGroup !== 'cyrusMCP') {
+                const { questions } = await suggestQuestions(newHistory, selectedGroup);
+                dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
+              }
             } catch (error) {
               console.error('Error generating suggested questions:', error);
             }

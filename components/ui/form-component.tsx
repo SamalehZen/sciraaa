@@ -1714,7 +1714,7 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(
     const visibleGroupIds = useMemo(() => visibleGroups.map((g) => g.id), [visibleGroups]);
 
     const defaultAgentOrder = useMemo(() => {
-      const preferred: SearchGroupId[] = ['cyrus', 'libeller', 'nomenclature'].filter((id) =>
+      const preferred: SearchGroupId[] = ['cyrus', 'cyrusMCP', 'libeller', 'nomenclature'].filter((id) =>
         visibleGroupIds.includes(id as SearchGroupId),
       ) as SearchGroupId[];
       const rest = visibleGroupIds.filter((id) => !preferred.includes(id as SearchGroupId)) as SearchGroupId[];

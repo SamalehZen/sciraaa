@@ -283,6 +283,10 @@ const Messages: React.FC<MessagesProps> = ({
     return (status === 'submitted' || status === 'streaming') && selectedGroup === 'cyrus' && !hasActiveToolInvocations;
   }, [status, selectedGroup, hasActiveToolInvocations]);
 
+  const shouldShowCyrusMCPLoader = useMemo(() => {
+    return (status === 'submitted' || status === 'streaming') && selectedGroup === 'cyrusMCP' && !hasActiveToolInvocations;
+  }, [status, selectedGroup, hasActiveToolInvocations]);
+
   const shouldShowNomenclatureLoader = useMemo(() => {
     return (status === 'submitted' || status === 'streaming') && selectedGroup === 'nomenclature' && !hasActiveToolInvocations;
   }, [status, selectedGroup, hasActiveToolInvocations]);
@@ -501,7 +505,18 @@ const Messages: React.FC<MessagesProps> = ({
         </div>
       )}
 
-      {!shouldShowCyrusLoader && !shouldShowNomenclatureLoader && !shouldShowLibellerLoader && !shouldShowPdfExcelLoader && !shouldShowEANLoader && shouldShowLoading && (
+      {/* CyrusMCP loader only during streaming in CyrusMCP group and no active tools */}
+      {shouldShowCyrusMCPLoader && (
+        <div
+          className={`flex items-start ${shouldReserveLoaderMinHeight ? 'min-h-[calc(100vh-18rem)]' : ''} !m-0 !p-0`}
+        >
+          <div className="w-full !m-0 !p-0">
+            <CyrusLoadingState />
+          </div>
+        </div>
+      )}
+
+      {!shouldShowCyrusLoader && !shouldShowCyrusMCPLoader && !shouldShowNomenclatureLoader && !shouldShowLibellerLoader && !shouldShowPdfExcelLoader && !shouldShowEANLoader && shouldShowLoading && (
         <div
           className={`flex items-start ${shouldReserveLoaderMinHeight ? 'min-h-[calc(100vh-18rem)]' : ''} !m-0 !p-0`}
         >

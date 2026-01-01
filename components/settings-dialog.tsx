@@ -341,7 +341,7 @@ export function PreferencesSection({
   const reorderVisibleIds = useMemo(() => reorderVisibleGroups.map((g) => g.id), [reorderVisibleGroups]);
 
   const defaultAgentOrder = useMemo(() => {
-    const preferred: SearchGroupId[] = ['cyrus', 'libeller', 'nomenclature'].filter((id) =>
+    const preferred: SearchGroupId[] = ['cyrus', 'cyrusMCP', 'libeller', 'nomenclature'].filter((id) =>
       reorderVisibleIds.includes(id as SearchGroupId),
     ) as SearchGroupId[];
     const rest = reorderVisibleIds.filter((id) => !preferred.includes(id as SearchGroupId)) as SearchGroupId[];

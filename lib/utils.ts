@@ -37,6 +37,7 @@ export type SearchGroupId =
   | 'code'
   | 'connectors'
   | 'cyrus'
+  | 'cyrusMCP'
   | 'libeller'
   | 'nomenclature'
   | 'pdfExcel'
@@ -152,6 +153,13 @@ function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
       id: 'cyrus' as const,
       name: 'Cyrus Structure',
       description: 'Classifie les articles par hiérarchie (Markdown)',
+      icon: HierarchyIcon,
+      show: true,
+    },
+    {
+      id: 'cyrusMCP' as const,
+      name: 'CyrusMCP',
+      description: 'Classification déterministe (0 token)',
       icon: HierarchyIcon,
       show: true,
     },
