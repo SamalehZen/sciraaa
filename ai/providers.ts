@@ -64,23 +64,33 @@ const zai = createOpenAI({
         async start(controller) {
           const decoder = new TextDecoder();
           const encoder = new TextEncoder();
+          let buffer = '';
 
           try {
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) {
+                if (buffer.trim()) {
+                  controller.enqueue(encoder.encode(buffer + '\n'));
+                }
+                break;
+              }
 
-              const text = decoder.decode(value, { stream: true });
-              const lines = text.split('\n');
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
 
               for (const line of lines) {
-                if (!line.startsWith('data: ') || line === 'data: [DONE]') {
-                  controller.enqueue(encoder.encode(line + '\n'));
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue;
+                
+                if (!trimmedLine.startsWith('data: ') || trimmedLine === 'data: [DONE]') {
+                  controller.enqueue(encoder.encode(trimmedLine + '\n'));
                   continue;
                 }
 
                 try {
-                  const json = JSON.parse(line.slice(6));
+                  const json = JSON.parse(trimmedLine.slice(6));
                   const delta = json.choices?.[0]?.delta;
                   
                   if (delta?.reasoning_content) {
@@ -91,7 +101,7 @@ const zai = createOpenAI({
                   controller.enqueue(encoder.encode('data: ' + JSON.stringify(json) + '\n'));
                 } catch (parseError) {
                   console.warn('[Z.ai] Parse warning:', parseError);
-                  controller.enqueue(encoder.encode(line + '\n'));
+                  controller.enqueue(encoder.encode(trimmedLine + '\n'));
                 }
               }
             }
