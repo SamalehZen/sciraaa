@@ -4,7 +4,9 @@ import { z } from 'zod';
 
 export const serverEnv = createEnv({
   server: {
-    GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
+    XIAOMI_MIMO_API_KEY: z.string().min(1),
+    XIAOMI_MIMO_BASE_URL: z.string().optional().default('https://api.xiaomimimo.com/v1'),
+
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
     BLOB_READ_WRITE_TOKEN: z.string().min(1),
@@ -12,6 +14,7 @@ export const serverEnv = createEnv({
     LOCAL_AUTH_SECRET: z.string().optional(),
 
     // Deprecated / unused at runtime (kept for compile-time compatibility)
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional().default('deprecated'),
     XAI_API_KEY: z.string().optional().default('deprecated'),
     OPENAI_API_KEY: z.string().optional().default('deprecated'),
     ANTHROPIC_API_KEY: z.string().optional().default('deprecated'),

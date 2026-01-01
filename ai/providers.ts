@@ -1,71 +1,72 @@
 import { customProvider } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-// Arka backend: single provider mapping to Google Gemini Flash.
-// Default model is gemini-2.5-flash with intended fallbacks to gemini-2.0-flash then gemini-2.0-flash-exp
-// If 2.5 is unavailable in your project, adjust DEFAULT_GOOGLE_MODEL below.
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
-// Fallbacks (documented only; selection is handled at call sites when needed):
-const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+const DEFAULT_MIMO_MODEL = 'mimo-v2-flash';
+const MIMO_BASE_URL = process.env.XIAOMI_MIMO_BASE_URL || 'https://api.xiaomimimo.com/v1';
+const DEFAULT_API_KEY = process.env.XIAOMI_MIMO_API_KEY || '';
 
-const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+const mimo = createOpenAICompatible({
+  name: 'xiaomi-mimo',
+  baseURL: MIMO_BASE_URL,
+  apiKey: DEFAULT_API_KEY || undefined,
+});
 
-function getGoogleProvider() {
+function getMiMoProvider() {
   const apiKey = DEFAULT_API_KEY;
   if (!apiKey) {
-    console.warn('GOOGLE_GENERATIVE_AI_API_KEY not set, falling back to environment variable');
+    console.warn('XIAOMI_MIMO_API_KEY not set');
   }
-  return google(DEFAULT_GOOGLE_MODEL, { apiKey: apiKey || undefined });
+  return mimo(DEFAULT_MIMO_MODEL);
 }
 
-// Single Google provider for all hyper-* model ids expected by the UI.
-// We keep all original model ids/labels for UI parity, but route everything to Gemini Flash.
+// Single provider for all hyper-* model ids expected by the UI.
+// We keep all original model ids/labels for UI parity, but route everything to MiMo.
 export const hyper = customProvider({
   languageModels: {
-    'hyper-default': getGoogleProvider(),
-    'hyper-nano': getGoogleProvider(),
-    'hyper-name': getGoogleProvider(),
-    'hyper-grok-3': getGoogleProvider(),
-    'hyper-grok-4': getGoogleProvider(),
-    'hyper-grok-4-fast': getGoogleProvider(),
-    'hyper-grok-4-fast-think': getGoogleProvider(),
-    'hyper-code': getGoogleProvider(),
-    'hyper-enhance': getGoogleProvider(),
-    'hyper-qwen-4b': getGoogleProvider(),
-    'hyper-qwen-4b-thinking': getGoogleProvider(),
-    'hyper-gpt5': getGoogleProvider(),
-    'hyper-gpt5-mini': getGoogleProvider(),
-    'hyper-gpt5-nano': getGoogleProvider(),
-    'hyper-o3': getGoogleProvider(),
-    'hyper-qwen-32b': getGoogleProvider(),
-    'hyper-gpt-oss-20': getGoogleProvider(),
-    'hyper-gpt-oss-120': getGoogleProvider(),
-    'hyper-deepseek-chat': getGoogleProvider(),
-    'hyper-deepseek-chat-think': getGoogleProvider(),
-    'hyper-deepseek-r1': getGoogleProvider(),
-    'hyper-qwen-coder': getGoogleProvider(),
-    'hyper-qwen-30': getGoogleProvider(),
-    'hyper-qwen-30-think': getGoogleProvider(),
-    'hyper-qwen-3-next': getGoogleProvider(),
-    'hyper-qwen-3-next-think': getGoogleProvider(),
-    'hyper-qwen-3-max': getGoogleProvider(),
-    'hyper-qwen-3-max-preview': getGoogleProvider(),
-    'hyper-qwen-235': getGoogleProvider(),
-    'hyper-qwen-235-think': getGoogleProvider(),
-    'hyper-glm-air': getGoogleProvider(),
-    'hyper-glm': getGoogleProvider(),
-    'hyper-glm-4.6': getGoogleProvider(),
-    'hyper-kimi-k2-v2': getGoogleProvider(),
-    'hyper-haiku': getGoogleProvider(),
-    'hyper-mistral-medium': getGoogleProvider(),
-    'hyper-magistral-small': getGoogleProvider(),
-    'hyper-magistral-medium': getGoogleProvider(),
-    'hyper-google-lite': getGoogleProvider(),
-    'hyper-google': getGoogleProvider(),
-    'hyper-google-think': getGoogleProvider(),
-    'hyper-google-think-v2': getGoogleProvider(),
-    'hyper-google-think-v3': getGoogleProvider(),
-    'hyper-anthropic': getGoogleProvider(),
+    'hyper-default': getMiMoProvider(),
+    'hyper-nano': getMiMoProvider(),
+    'hyper-name': getMiMoProvider(),
+    'hyper-grok-3': getMiMoProvider(),
+    'hyper-grok-4': getMiMoProvider(),
+    'hyper-grok-4-fast': getMiMoProvider(),
+    'hyper-grok-4-fast-think': getMiMoProvider(),
+    'hyper-code': getMiMoProvider(),
+    'hyper-enhance': getMiMoProvider(),
+    'hyper-qwen-4b': getMiMoProvider(),
+    'hyper-qwen-4b-thinking': getMiMoProvider(),
+    'hyper-gpt5': getMiMoProvider(),
+    'hyper-gpt5-mini': getMiMoProvider(),
+    'hyper-gpt5-nano': getMiMoProvider(),
+    'hyper-o3': getMiMoProvider(),
+    'hyper-qwen-32b': getMiMoProvider(),
+    'hyper-gpt-oss-20': getMiMoProvider(),
+    'hyper-gpt-oss-120': getMiMoProvider(),
+    'hyper-deepseek-chat': getMiMoProvider(),
+    'hyper-deepseek-chat-think': getMiMoProvider(),
+    'hyper-deepseek-r1': getMiMoProvider(),
+    'hyper-qwen-coder': getMiMoProvider(),
+    'hyper-qwen-30': getMiMoProvider(),
+    'hyper-qwen-30-think': getMiMoProvider(),
+    'hyper-qwen-3-next': getMiMoProvider(),
+    'hyper-qwen-3-next-think': getMiMoProvider(),
+    'hyper-qwen-3-max': getMiMoProvider(),
+    'hyper-qwen-3-max-preview': getMiMoProvider(),
+    'hyper-qwen-235': getMiMoProvider(),
+    'hyper-qwen-235-think': getMiMoProvider(),
+    'hyper-glm-air': getMiMoProvider(),
+    'hyper-glm': getMiMoProvider(),
+    'hyper-glm-4.6': getMiMoProvider(),
+    'hyper-kimi-k2-v2': getMiMoProvider(),
+    'hyper-haiku': getMiMoProvider(),
+    'hyper-mistral-medium': getMiMoProvider(),
+    'hyper-magistral-small': getMiMoProvider(),
+    'hyper-magistral-medium': getMiMoProvider(),
+    'hyper-google-lite': getMiMoProvider(),
+    'hyper-google': getMiMoProvider(),
+    'hyper-google-think': getMiMoProvider(),
+    'hyper-google-think-v2': getMiMoProvider(),
+    'hyper-google-think-v3': getMiMoProvider(),
+    'hyper-anthropic': getMiMoProvider(),
   },
 });
 
