@@ -127,8 +127,8 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
     annotations,
     selectedGroup,
   }) => {
-    if (part.type === 'text') {
-      const hasReasoningParts = parts.some((p) => p.type === 'reasoning');
+    if (part?.type === 'text') {
+      const hasReasoningParts = parts.some((p) => p?.type === 'reasoning');
       
       if ((!part.text || part.text.trim() === '') && status === 'streaming' && !hasActiveToolInvocations && !hasReasoningParts) {
         return (
@@ -376,9 +376,9 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
       );
     }
 
-    if (part.type === 'reasoning') {
+    if (part?.type === 'reasoning') {
       const prevPart = parts[partIndex - 1];
-      if (prevPart && prevPart.type === 'reasoning') {
+      if (prevPart && prevPart?.type === 'reasoning') {
         return null;
       }
 
@@ -395,13 +395,13 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
       const mergedPart: ReasoningUIPart = { ...(part as ReasoningUIPart), text: mergedTexts.join('\n\n') };
 
       const sectionKey = `${messageIndex}-${partIndex}`;
-      const hasParallelToolInvocation = parts.some((p: ChatMessage['parts'][number]) => p.type.startsWith('tool-'));
+      const hasParallelToolInvocation = parts.some((p: ChatMessage['parts'][number]) => p?.type?.startsWith?.('tool-'));
       const isComplete = parts.some(
         (p: ChatMessage['parts'][number], i: number) =>
-          i > partIndex && (p.type === 'text' || p.type.startsWith('tool-')),
+          i > partIndex && p?.type && (p.type === 'text' || p.type.startsWith('tool-')),
       );
       const parallelTool = hasParallelToolInvocation
-        ? (parts.find((p: ChatMessage['parts'][number]) => p.type.includes('tool-'))?.type.split('-')[1] ?? null)
+        ? (parts.find((p: ChatMessage['parts'][number]) => p?.type?.includes?.('tool-'))?.type?.split('-')[1] ?? null)
         : null;
 
       const isExpanded = reasoningVisibilityMap[sectionKey] ?? !isComplete;
@@ -424,8 +424,8 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
       );
     }
 
-    if (part.type === 'step-start') {
-      const firstStepStartIndex = parts.findIndex((p) => p.type === 'step-start');
+    if (part?.type === 'step-start') {
+      const firstStepStartIndex = parts.findIndex((p) => p?.type === 'step-start');
       if (partIndex === firstStepStartIndex) {
         return (
           <div key={`${messageIndex}-${partIndex}-step-start-logo`} className="!m-0 !p-0">
