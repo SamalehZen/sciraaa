@@ -1,5 +1,5 @@
 import { customProvider } from 'ai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI } from '@ai-sdk/openai';
 
 // Arka backend: single provider mapping to Xiaomi MiMo API.
 // Default model is mimo-v2-flash
@@ -15,9 +15,10 @@ console.log('[MiMo Provider] Initializing with:', {
   apiKeyLength: MIMO_API_KEY.length,
 });
 
-const mimoProvider = createOpenAICompatible({
-  name: 'mimo',
+const mimoProvider = createOpenAI({
   baseURL: MIMO_BASE_URL,
+  apiKey: MIMO_API_KEY,
+  compatibility: 'compatible',
   headers: {
     'api-key': MIMO_API_KEY,
   },
