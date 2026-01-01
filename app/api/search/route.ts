@@ -285,7 +285,6 @@ export async function POST(req: Request) {
                 },
               }
               : {}),
-            threshold: "OFF",
           } satisfies GoogleGenerativeAIProviderOptions,
         },
         prepareStep: async ({ steps, messages }) => {
