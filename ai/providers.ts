@@ -30,7 +30,7 @@ function getMimoProvider() {
   } else {
     console.log('[MiMo Provider] ✅ API Key configured');
   }
-  return mimoProvider(DEFAULT_MIMO_MODEL);
+  return mimoProvider.chat(DEFAULT_MIMO_MODEL);
 }
 
 // Single MiMo provider for all hyper-* model ids expected by the UI.
