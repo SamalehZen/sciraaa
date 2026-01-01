@@ -9,6 +9,22 @@ const FALLBACK_ZAI_MODELS = ['glm-4.5-flash', 'glm-4.6v'];
 
 const ZAI_API_KEY = process.env.ZAI_API_KEY || '';
 
+type ZaiMessage = Record<string, unknown> & { role?: string };
+
+function normalizeZaiMessages(messages: unknown) {
+  if (!Array.isArray(messages)) {
+    return messages;
+  }
+  return messages.map((message) => {
+    if (!message || typeof message !== 'object') return message;
+    const normalized = message as ZaiMessage;
+    if (normalized.role === 'developer') {
+      return { ...normalized, role: 'system' };
+    }
+    return normalized;
+  });
+}
+
 const zai = createOpenAI({
   baseURL: 'https://api.z.ai/api/paas/v4',
   apiKey: ZAI_API_KEY,
@@ -19,6 +35,9 @@ const zai = createOpenAI({
     
     const body = options?.body ? JSON.parse(options.body as string) : {};
     body.thinking = { type: 'enabled', clear_thinking: true };
+    if (body.messages) {
+      body.messages = normalizeZaiMessages(body.messages);
+    }
     
     try {
       const response = await fetch(url, {
