@@ -150,7 +150,10 @@ const Messages: React.FC<MessagesProps> = ({
         (part: ChatMessage['parts'][number]) => part.type === 'text' && part.text && part.text.trim() !== '',
       );
       const hasToolInvocations = parts.some((part: ChatMessage['parts'][number]) => isToolUIPart(part));
-      const hasVisibleContent = hasVisibleText || hasToolInvocations;
+      const hasReasoning = parts.some(
+        (part: ChatMessage['parts'][number]) => part.type === 'reasoning' && part.reasoning && part.reasoning.trim() !== '',
+      );
+      const hasVisibleContent = hasVisibleText || hasToolInvocations || hasReasoning;
 
       // If there is no visible content at all, consider the response missing
       if (!hasVisibleContent) {
