@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   },
   description:
     'Hyper - Moteur de recherche et de gestion propulsé par l\'intelligence artificielle, conçu pour les entreprises.',
+  applicationName: 'Hyper',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'Hyper',
+    statusBarStyle: 'default',
+  },
   openGraph: {
     url: 'https://hyper.vercel.app',
     siteName: 'Hyper AI',

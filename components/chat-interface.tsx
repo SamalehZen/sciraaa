@@ -44,6 +44,7 @@ import { chatReducer, createInitialState } from '@/components/chat-state';
 import { useDataStream } from './data-stream-provider';
 import { DefaultChatTransport } from 'ai';
 import { ChatMessage } from '@/lib/types';
+import { deleteOutboxItem, enqueueOutboxItem, listOutboxItems, loadChatSnapshot, saveChatSnapshot } from '@/lib/pwa/offline-db';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
@@ -66,6 +67,7 @@ const ChatInterface = memo(
 
     const [selectedModel, setSelectedModel] = useLocalStorage('hyper-selected-model', 'hyper-default');
     const [selectedGroup, setSelectedGroup] = useLocalStorage<SearchGroupId>('hyper-selected-group', 'web');
+    const [lastChatIds, setLastChatIds] = useLocalStorage<Record<string, string>>('hyper:last-chat-ids', {});
     const [selectedConnectors, setSelectedConnectors] = useState<ConnectorProvider[]>([]);
     const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
       'hyper-custom-instructions-enabled',
@@ -157,6 +159,9 @@ const ChatInterface = memo(
       shouldBypassLimitsForModel,
     } = useUser();
 
+    const userId = user?.id ?? 'anon';
+    const persistedChatId = initialChatId ? null : (lastChatIds[userId] ?? null);
+
     const { setDataStream } = useDataStream();
 
     const initialState = useMemo(
@@ -193,7 +198,7 @@ const ChatInterface = memo(
     const signInTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Generate a consistent ID for new chats
-    const chatId = useMemo(() => initialChatId ?? uuidv4(), [initialChatId]);
+    const chatId = useMemo(() => initialChatId ?? persistedChatId ?? uuidv4(), [initialChatId, persistedChatId]);
 
     // Pro users bypass all limit checks - much cleaner!
     const shouldBypassLimits = shouldBypassLimitsForModel(selectedModel);
@@ -401,6 +406,148 @@ const ChatInterface = memo(
       messages: initialMessages || [],
     });
 
+    const flushLockRef = useRef(false);
+    const snapshotTimerRef = useRef<number | null>(null);
+
+    const sendMessageWithOffline = useCallback(
+      async (message: any) => {
+        if (typeof window === 'undefined') return;
+
+        if (navigator.onLine) {
+          return sendMessage(message);
+        }
+
+        const parts = Array.isArray(message?.parts) ? message.parts : [];
+        const hasFiles = parts.some((p: any) => p?.type === 'file');
+
+        if (hasFiles) {
+          toast.error('Hors ligne: les pièces jointes ne peuvent pas être envoyées.');
+          return;
+        }
+
+        const id = `outbox:${uuidv4()}`;
+        const placeholderMessageId = `queued:${id}`;
+
+        try {
+          await enqueueOutboxItem({
+            id,
+            userId,
+            chatId,
+            userChatKey: `${userId}:${chatId}`,
+            createdAt: Date.now(),
+            payload: { role: message?.role ?? 'user', parts },
+            placeholderMessageId,
+            model: selectedModel,
+            group: selectedGroup,
+          });
+        } catch {}
+
+        setMessages((prev) => [
+          ...(Array.isArray(prev) ? prev : []),
+          { id: placeholderMessageId, role: message?.role ?? 'user', parts } as any,
+        ]);
+
+        toast('Hors ligne', {
+          description: 'Message mis en file d’attente. Il sera envoyé automatiquement dès que la connexion revient.',
+        });
+      },
+      [userId, chatId, selectedModel, selectedGroup, sendMessage, setMessages],
+    );
+
+    const flushQueuedMessages = useCallback(async () => {
+      if (typeof window === 'undefined') return;
+      if (!navigator.onLine) return;
+      if (status !== 'ready') return;
+      if (flushLockRef.current) return;
+
+      flushLockRef.current = true;
+      try {
+        const items = await listOutboxItems(userId, chatId);
+        const next = items[0];
+        if (!next) return;
+
+        if (next.placeholderMessageId) {
+          setMessages((prev) => prev.filter((m: any) => m?.id !== next.placeholderMessageId));
+        }
+
+        await deleteOutboxItem(next.id).catch(() => {});
+
+        if (next.model && next.model !== selectedModel) {
+          setSelectedModel(next.model);
+        }
+
+        if (next.group && next.group !== selectedGroup) {
+          setSelectedGroup(next.group as SearchGroupId);
+        }
+
+        try {
+          if (user && !initialChatId) {
+            window.history.replaceState({}, '', `/search/${chatId}`);
+          }
+        } catch {}
+
+        sendMessage(next.payload as any);
+      } catch {
+      } finally {
+        flushLockRef.current = false;
+      }
+    }, [
+      userId,
+      chatId,
+      status,
+      sendMessage,
+      setMessages,
+      selectedModel,
+      selectedGroup,
+      setSelectedModel,
+      setSelectedGroup,
+    ]);
+
+    useEffect(() => {
+      if (messages.length > 0) {
+        setLastChatIds((prev) => ({ ...(prev && typeof prev === 'object' ? prev : {}), [userId]: chatId }));
+      }
+    }, [userId, chatId, messages.length, setLastChatIds]);
+
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      if (snapshotTimerRef.current) window.clearTimeout(snapshotTimerRef.current);
+      snapshotTimerRef.current = window.setTimeout(() => {
+        saveChatSnapshot({ userId, chatId, updatedAt: Date.now(), messages: messages as unknown[] }).catch(() => {});
+      }, 400);
+      return () => {
+        if (snapshotTimerRef.current) window.clearTimeout(snapshotTimerRef.current);
+      };
+    }, [userId, chatId, messages]);
+
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      if (initialChatId) return;
+      if (messages.length > 0) return;
+      if (navigator.onLine) return;
+
+      loadChatSnapshot(userId, chatId)
+        .then((snap) => {
+          if (snap?.messages && Array.isArray(snap.messages) && snap.messages.length > 0) {
+            setMessages(snap.messages as any);
+          }
+        })
+        .catch(() => {});
+    }, [userId, chatId, initialChatId, messages.length, setMessages]);
+
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      const onOnline = () => {
+        flushQueuedMessages();
+      };
+      window.addEventListener('online', onOnline);
+      return () => window.removeEventListener('online', onOnline);
+    }, [flushQueuedMessages]);
+
+    useEffect(() => {
+      flushQueuedMessages();
+    }, [flushQueuedMessages, status]);
+
     // Handle text highlighting and quoting
     const handleHighlight = useCallback(
       (text: string) => {
@@ -468,12 +615,12 @@ const ChatInterface = memo(
       if (!initializedRef.current && initialState.query && !messages.length && !initialChatId) {
         initializedRef.current = true;
         console.log('[initial query]:', initialState.query);
-        sendMessage({
+        sendMessageWithOffline({
           parts: [{ type: 'text', text: initialState.query }],
           role: 'user',
         });
       }
-    }, [initialState.query, sendMessage, setInput, messages.length, initialChatId]);
+    }, [initialState.query, sendMessageWithOffline, setInput, messages.length, initialChatId]);
 
     // Generate suggested questions when opening a chat directly
     useEffect(() => {
@@ -802,7 +949,7 @@ const ChatInterface = memo(
                 setMessages={(messages) => {
                   setMessages(messages as ChatMessage[]);
                 }}
-                sendMessage={sendMessage}
+                sendMessage={sendMessageWithOffline}
                 regenerate={regenerate}
                 suggestedQuestions={chatState.suggestedQuestions}
                 setSuggestedQuestions={(questions) => dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions })}
@@ -849,7 +996,7 @@ const ChatInterface = memo(
                   inputRef={inputRef}
                   stop={stop}
                   messages={messages as ChatMessage[]}
-                  sendMessage={sendMessage}
+                  sendMessage={sendMessageWithOffline}
                   selectedModel={selectedModel}
                   setSelectedModel={handleModelChange}
                   resetSuggestedQuestions={resetSuggestedQuestions}

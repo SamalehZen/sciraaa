@@ -7,9 +7,12 @@ export default function manifest(): MetadataRoute.Manifest {
     description:
       'Moteur de recherche et de gestion propulsé par l\'intelligence artificielle, conçu pour les entreprises. Hyper utilise des modèles IA avancés comme GPT-4, Claude et Grok.',
     start_url: '/',
+    scope: '/',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui', 'browser'],
     categories: ['search', 'ai', 'productivity'],
     background_color: '#171717',
+    theme_color: '#111111',
     icons: [
       {
         src: '/icon-maskable.png',

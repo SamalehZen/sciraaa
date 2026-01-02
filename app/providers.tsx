@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { UserProvider } from '@/contexts/user-context';
 import { DataStreamProvider } from '@/components/data-stream-provider';
+import { PwaManager } from '@/components/pwa/PwaManager';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -28,7 +30,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <UserProvider>
         <DataStreamProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <PwaManager />
+              {children}
+              <InstallPrompt />
+            </TooltipProvider>
           </ThemeProvider>
         </DataStreamProvider>
       </UserProvider>

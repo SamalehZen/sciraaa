@@ -3253,7 +3253,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
           model: selectedModel,
         });
 
-        if (user) {
+        if (user && typeof window !== 'undefined' && navigator.onLine) {
           window.history.replaceState({}, '', `/search/${chatId}`);
         }
 

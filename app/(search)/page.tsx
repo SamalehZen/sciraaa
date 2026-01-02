@@ -22,7 +22,6 @@ const ChatInterface = dynamic(() => import('@/components/chat-interface').then((
   loading: () => <div style={{ minHeight: 240 }} />,
 });
 
-import { InstallPrompt } from '@/components/InstallPrompt';
 
 export default function Home() {
   const router = useRouter();
@@ -66,7 +65,6 @@ export default function Home() {
     return (
       <React.Fragment>
         <ChatInterface />
-        <InstallPrompt />
       </React.Fragment>
     );
   }
