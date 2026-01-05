@@ -263,7 +263,7 @@ export async function POST(req: Request) {
       const result = streamText({
         model: openRouterKey
           ? createOpenRouter({ apiKey: openRouterKey, baseURL: openRouterUrl || undefined })(
-            model && model !== 'hyper-default' ? model : 'google/gemini-2.0-flash-exp:free',
+            model && !model.startsWith('hyper-') ? model : 'google/gemini-2.0-flash-exp:free',
           )
           : hyper.languageModel(resolvedModel),
         messages: convertToModelMessages(messages),
