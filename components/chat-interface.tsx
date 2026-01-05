@@ -137,6 +137,10 @@ const ChatInterface = memo(
       'parallel',
     );
 
+    // OpenRouter Settings
+    const [openRouterKey] = useLocalStorage('hyper-openrouter-key', '');
+    const [openRouterUrl] = useLocalStorage('hyper-openrouter-url', '');
+
     // Use reducer for complex state management
     const [chatState, dispatch] = useReducer(
       chatReducer,
@@ -167,7 +171,7 @@ const ChatInterface = memo(
             body: JSON.stringify({ imageUrl: pendingAvatar }),
           }).then(() => {
             localStorage.removeItem('hyper:pending-avatar');
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
     }, [user?.id]);
@@ -294,6 +298,8 @@ const ChatInterface = memo(
     const isCustomInstructionsEnabledRef = useRef(isCustomInstructionsEnabled);
     const searchProviderRef = useRef(searchProvider);
     const selectedConnectorsRef = useRef(selectedConnectors);
+    const openRouterKeyRef = useRef(openRouterKey);
+    const openRouterUrlRef = useRef(openRouterUrl);
 
     // Update refs whenever state changes - this ensures we always have current values
     selectedModelRef.current = selectedModel;
@@ -301,11 +307,14 @@ const ChatInterface = memo(
     isCustomInstructionsEnabledRef.current = isCustomInstructionsEnabled;
     searchProviderRef.current = searchProvider;
     selectedConnectorsRef.current = selectedConnectors;
+    openRouterKeyRef.current = openRouterKey;
+    openRouterUrlRef.current = openRouterUrl;
 
     const { messages, sendMessage, setMessages, regenerate, stop, status, error, resumeStream } = useChat<ChatMessage>({
       id: chatId,
       transport: new DefaultChatTransport({
         api: '/api/search',
+
         prepareSendMessagesRequest({ messages, body }) {
           // Use ref values to get current state
           return {
@@ -318,6 +327,8 @@ const ChatInterface = memo(
               isCustomInstructionsEnabled: isCustomInstructionsEnabledRef.current,
               searchProvider: searchProviderRef.current,
               selectedConnectors: selectedConnectorsRef.current,
+              openRouterKey: openRouterKeyRef.current,
+              openRouterUrl: openRouterUrlRef.current,
               ...(initialChatId ? { chat_id: initialChatId } : {}),
               ...body,
             },
@@ -371,20 +382,20 @@ const ChatInterface = memo(
                   console.error('Error generating suggested questions:', err);
                 }
               })
-              .catch(() => {});
+              .catch(() => { });
           }
         } finally {
           try {
             setDataStream(() => []);
-          } catch {}
+          } catch { }
           try {
             invalidateChatsCache();
-          } catch {}
+          } catch { }
           try {
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('chat-stream-finished'));
             }
-          } catch {}
+          } catch { }
         }
       },
       onError: (error) => {
@@ -403,15 +414,15 @@ const ChatInterface = memo(
         }
         try {
           setDataStream(() => []);
-        } catch {}
+        } catch { }
         try {
           invalidateChatsCache();
-        } catch {}
+        } catch { }
         try {
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('chat-stream-finished'));
           }
-        } catch {}
+        } catch { }
       },
       messages: initialMessages || [],
     });
@@ -675,8 +686,8 @@ const ChatInterface = memo(
 
     return (
       <div className="flex flex-col font-sans! items-center h-screen bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground">
-        <StreamingStatus 
-          isStreaming={status === 'streaming'} 
+        <StreamingStatus
+          isStreaming={status === 'streaming'}
           isPolling={isStreamingComplete === false && (status === 'streaming' || status === 'waiting')}
           statusMessage={status === 'waiting' ? 'Preparing response...' : undefined}
         />
@@ -730,11 +741,10 @@ const ChatInterface = memo(
 
 
         <div
-          className={`w-full p-2 sm:p-4 relative ${
-            status === 'ready' && messages.length === 0
-              ? 'flex-1 !flex !flex-col !items-center !justify-center' // Center everything when no messages
-              : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
-          }`}
+          className={`w-full p-2 sm:p-4 relative ${status === 'ready' && messages.length === 0
+            ? 'flex-1 !flex !flex-col !items-center !justify-center' // Center everything when no messages
+            : '!mt-20 sm:!mt-16 flex !flex-col' // Add top margin when showing messages
+            }`}
         >
           <div className={`w-full max-w-[95%] sm:max-w-2xl space-y-6 p-0 mx-auto transition-all duration-300`}>
             {status === 'ready' && messages.length === 0 && (
@@ -745,8 +755,8 @@ const ChatInterface = memo(
                   </h1>
                   {isUserPro && (
                     <h1 className="text-2xl font-baumans! leading-4 inline-block relative !px-3 !pt-1 !pb-2.5 rounded-xl shadow-sm !m-0 !mt-2 bg-gradient-to-br from-secondary/25 via-primary/20 to-accent/25 text-foreground ring-1 ring-ring/35 ring-offset-1 ring-offset-background dark:bg-gradient-to-br dark:from-primary dark:via-secondary dark:to-primary dark:text-foreground">
-                
-                <span className="invisible">pro</span>
+
+                      <span className="invisible">pro</span>
                       <span className="absolute inset-0 flex items-center justify-center">Fix</span>
                     </h1>
                   )}

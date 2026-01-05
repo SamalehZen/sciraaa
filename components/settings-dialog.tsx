@@ -1,4 +1,5 @@
 'use client';
+import { OpenRouterKeyInput, OpenRouterUrlInput } from '@/components/openrouter-inputs';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -582,6 +583,35 @@ export function PreferencesSection({
         </div>
       </div>
 
+      {/* OpenRouter Configuration Section */}
+      <div className="space-y-3">
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <LightningIcon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm">Configuration OpenRouter</h4>
+              <p className="text-xs text-muted-foreground">Utilisez votre propre clé API pour tester tous les modèles</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-3 rounded-lg border bg-card">
+            <div>
+              <Label htmlFor="openrouter-key" className="text-sm font-medium">Clé API OpenRouter</Label>
+              <OpenRouterKeyInput />
+            </div>
+            <div>
+              <Label htmlFor="openrouter-url" className="text-sm font-medium">Base URL (Optionnel)</Label>
+              <OpenRouterUrlInput />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Laissez vide pour utiliser la configuration par défaut. Si renseigné, cette clé sera utilisée pour les appels IA.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Agents Reorder Section */}
       <div className="space-y-3">
         <div className="space-y-2.5">
@@ -607,10 +637,10 @@ export function PreferencesSection({
 
           <p className="text-xs text-muted-foreground">L’ordre sera sauvegardé automatiquement.</p>
         </div>
-      </div>
+      </div >
 
       {/* Agent Visibility Section */}
-      <div className="space-y-3">
+      < div className="space-y-3" >
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -655,10 +685,10 @@ export function PreferencesSection({
           </div>
           <p className="text-xs text-muted-foreground">Les modifications sont sauvegardées automatiquement.</p>
         </div>
-      </div>
+      </div >
 
       {/* Custom Instructions Section */}
-      <div className="space-y-3">
+      < div className="space-y-3" >
         <div className="space-y-2.5">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-primary/10">
@@ -754,8 +784,8 @@ export function PreferencesSection({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 

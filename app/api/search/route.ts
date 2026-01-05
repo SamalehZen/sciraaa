@@ -15,6 +15,7 @@ import {
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import {
   hyper,
   requiresAuthentication,
@@ -90,6 +91,8 @@ export async function POST(req: Request) {
     isCustomInstructionsEnabled,
     searchProvider,
     selectedConnectors,
+    openRouterKey,
+    openRouterUrl,
   } = await req.json();
   const { latitude, longitude } = geolocation(req);
   const streamId = 'stream-' + uuidv7();
@@ -258,7 +261,9 @@ export async function POST(req: Request) {
       const streamStartTime = Date.now();
 
       const result = streamText({
-        model: hyper.languageModel(resolvedModel),
+        model: openRouterKey
+          ? createOpenRouter({ apiKey: openRouterKey, baseURL: openRouterUrl || undefined })('google/gemini-2.0-flash-exp:free')
+          : hyper.languageModel(resolvedModel),
         messages: convertToModelMessages(messages),
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
@@ -292,7 +297,7 @@ export async function POST(req: Request) {
           const totalTokens = steps.reduce((sum, step) => sum + (step.usage?.totalTokens ?? 0), 0);
 
           const shouldPrune = messages.length > 10 || totalTokens > 100000;
-          
+
           const modelHasReasoning = hasReasoningSupport(resolvedModel);
 
           const totalToolCalls = steps.reduce(
@@ -440,7 +445,7 @@ export async function POST(req: Request) {
       }
     },
   });
-  
+
   return createStreamResponse(
     stream.pipeThrough(new JsonToSseTransformStream())
   );
