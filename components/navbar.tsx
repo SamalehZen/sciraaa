@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { ShareButton } from '@/components/share';
 import { cn } from '@/lib/utils';
+import { ModelSelector } from '@/components/model-selector';
 
 import { useRouter, usePathname } from 'next/navigation';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
@@ -32,6 +33,11 @@ interface NavbarProps {
   isProStatusLoading?: boolean;
   isCustomInstructionsEnabled?: boolean;
   setIsCustomInstructionsEnabled?: (value: boolean | ((val: boolean) => boolean)) => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
+  settingsOpen?: boolean;
+  setSettingsOpen?: (open: boolean) => void;
+  settingsInitialTab?: string;
 }
 
 const Navbar = memo(
@@ -49,6 +55,11 @@ const Navbar = memo(
     isProStatusLoading,
     isCustomInstructionsEnabled,
     setIsCustomInstructionsEnabled,
+    selectedModel,
+    onModelChange,
+    settingsOpen,
+    setSettingsOpen,
+    settingsInitialTab,
   }: NavbarProps) => {
     const router = useRouter();
     const pathname = usePathname();
@@ -94,6 +105,12 @@ const Navbar = memo(
                 <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">Nouveau</span>
               </Button>
             </Link>
+
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={onModelChange}
+              className="hidden sm:flex"
+            />
 
             {/* Mobile-only Mettre à niveau (avoids overlap with share on small screens) */}
             {user && !hasActiveSubscription && !showProLoading && (

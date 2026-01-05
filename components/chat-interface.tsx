@@ -708,6 +708,8 @@ const ChatInterface = memo(
           settingsOpen={settingsOpen}
           setSettingsOpen={setSettingsOpen}
           settingsInitialTab={settingsInitialTab}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
         />
 
         {/* Chat Dialogs Component */}
