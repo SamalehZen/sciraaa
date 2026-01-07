@@ -157,7 +157,7 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
 
     const isSubscriptionLoading = useMemo(() => user && !subscriptionData, [user, subscriptionData]);
 
-    const THINK_MODELS = ['hyper-google-think', 'hyper-google-think-v2', 'hyper-google-think-v3'];
+    const THINK_MODELS = ['hyper-google-think', 'hyper-gpt5-nano', 'hyper-google-think-v2', 'hyper-google-think-v3'];
     const COMING_SOON_MODELS = new Set(['hyper-google-think-v2', 'hyper-google-think-v3']);
     const availableModels = useMemo(() => models.filter(m => THINK_MODELS.includes(m.value)), []);
 

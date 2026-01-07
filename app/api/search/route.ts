@@ -99,6 +99,10 @@ export async function POST(req: Request) {
 
   console.log('🔍 Search API:', { model: resolvedModel, group, latitude, longitude });
 
+  if (resolvedModel === 'hyper-gpt5-nano' && !process.env.OPENAI_API_KEY) {
+    return new ChatSDKError('bad_request:model', 'OPENAI_API_KEY is not configured').toResponse();
+  }
+
   const lightweightUser = await getLightweightUser();
 
 
@@ -415,8 +419,11 @@ export async function POST(req: Request) {
     },
     onError(error) {
       console.log('Error: ', error);
-      if (error instanceof Error && error.message.includes('Rate Limit')) {
-        return 'Oops, you have reached the rate limit! Please try again later.';
+      if (error instanceof Error) {
+        if (error.message.includes('Rate Limit')) {
+          return 'Oops, you have reached the rate limit! Please try again later.';
+        }
+        return error.message;
       }
       return 'Oops, an error occurred!';
     },
