@@ -261,9 +261,11 @@ export async function POST(req: Request) {
 
       const streamStartTime = Date.now();
 
+      const modelMessages = await convertToModelMessages(messages);
+
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: modelMessages,
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
