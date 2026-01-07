@@ -44,7 +44,7 @@ export const hyper = customProvider({
     'hyper-qwen-4b-thinking': getGoogleProvider(),
     'hyper-gpt5': getGoogleProvider(),
     'hyper-gpt5-mini': getGoogleProvider(),
-    'hyper-gpt5-nano': getOpenAIProvider('gpt-4.1-nano'),
+    'hyper-gpt5-nano': getOpenAIProvider('gpt-5-nano'),
     'hyper-o3': getGoogleProvider(),
     'hyper-qwen-32b': getGoogleProvider(),
     'hyper-gpt-oss-20': getGoogleProvider(),
