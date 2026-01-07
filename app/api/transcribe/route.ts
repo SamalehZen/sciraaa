@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-type STTProvider = 'openai' | 'assemblyai' | 'deepgram';
+type STTProvider = 'openai' | 'openai-whisper' | 'assemblyai' | 'deepgram';
 
 const ASSEMBLYAI_API_URL = 'https://api.assemblyai.com/v2';
 const DEEPGRAM_API_URL = 'https://api.deepgram.com/v1/listen';
 const OPENAI_API_URL = 'https://api.openai.com/v1/audio/transcriptions';
 
-async function transcribeWithOpenAI(audioBlob: Blob, filename: string): Promise<string> {
+async function transcribeWithOpenAI(audioBlob: Blob, filename: string, model: 'gpt-4o-mini-transcribe' | 'whisper-1' = 'gpt-4o-mini-transcribe'): Promise<string> {
   const apiKey = process.env.OPENAI_STT_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_STT_API_KEY is not configured');
@@ -17,7 +17,7 @@ async function transcribeWithOpenAI(audioBlob: Blob, filename: string): Promise<
 
   const formData = new FormData();
   formData.append('file', audioBlob, filename);
-  formData.append('model', 'gpt-4o-mini-transcribe');
+  formData.append('model', model);
   formData.append('response_format', 'json');
 
   const response = await fetch(OPENAI_API_URL, {
@@ -168,9 +168,12 @@ export async function POST(request: NextRequest) {
       case 'deepgram':
         text = await transcribeWithDeepgram(audioBlob, contentType);
         break;
+      case 'openai-whisper':
+        text = await transcribeWithOpenAI(audioBlob, filename, 'whisper-1');
+        break;
       case 'openai':
       default:
-        text = await transcribeWithOpenAI(audioBlob, filename);
+        text = await transcribeWithOpenAI(audioBlob, filename, 'gpt-4o-mini-transcribe');
         break;
     }
 

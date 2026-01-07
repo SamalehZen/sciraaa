@@ -236,7 +236,7 @@ const FirecrawlIcon = ({ className }: { className?: string }) => (
 );
 
 // STT Provider Options
-export type STTProvider = 'openai' | 'assemblyai' | 'deepgram';
+export type STTProvider = 'openai' | 'openai-whisper' | 'assemblyai' | 'deepgram';
 
 const sttProviders = [
   {
@@ -244,6 +244,12 @@ const sttProviders = [
     label: 'OpenAI GPT-4o-mini-transcribe',
     description: 'Transcription rapide et précise avec le modèle GPT-4o-mini',
     default: true,
+  },
+  {
+    value: 'openai-whisper' as STTProvider,
+    label: 'OpenAI Whisper-1',
+    description: 'Modèle Whisper classique, fiable et multilingue',
+    default: false,
   },
   {
     value: 'assemblyai' as STTProvider,
@@ -483,6 +489,7 @@ export function PreferencesSection({
     setSTTProvider(newProvider);
     const providerNames: Record<STTProvider, string> = {
       openai: 'OpenAI GPT-4o-mini-transcribe',
+      'openai-whisper': 'OpenAI Whisper-1',
       assemblyai: 'AssemblyAI',
       deepgram: 'Deepgram Nova-2',
     };
