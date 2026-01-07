@@ -235,6 +235,104 @@ const FirecrawlIcon = ({ className }: { className?: string }) => (
   <span className={cn('text-base sm:text-lg !mb-3 !pr-1', className)}>🔥</span>
 );
 
+// STT Provider Options
+export type STTProvider = 'openai' | 'assemblyai' | 'deepgram';
+
+const sttProviders = [
+  {
+    value: 'openai' as STTProvider,
+    label: 'OpenAI GPT-4o-mini-transcribe',
+    description: 'Transcription rapide et précise avec le modèle GPT-4o-mini',
+    default: true,
+  },
+  {
+    value: 'assemblyai' as STTProvider,
+    label: 'AssemblyAI',
+    description: 'Transcription haute qualité avec détection automatique de langue',
+    default: false,
+  },
+  {
+    value: 'deepgram' as STTProvider,
+    label: 'Deepgram Nova-2',
+    description: 'Transcription ultra-rapide avec formatage intelligent',
+    default: false,
+  },
+] as const;
+
+// STT Provider Selector Component
+function STTProviderSelector({
+  value,
+  onValueChange,
+  disabled,
+  className,
+}: {
+  value: STTProvider;
+  onValueChange: (value: STTProvider) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const currentProvider = sttProviders.find((provider) => provider.value === value);
+
+  return (
+    <div className="w-full">
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger
+          className={cn(
+            'w-full h-auto min-h-18 sm:min-h-14 p-4',
+            'border border-input bg-background',
+            'transition-all duration-200',
+            'focus:outline-none focus:ring-0 focus:ring-offset-0',
+            disabled && 'opacity-50 cursor-not-allowed',
+            className,
+          )}
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {currentProvider && (
+              <>
+                <MagnifyingGlassIcon className="text-muted-foreground size-4 flex-shrink-0" />
+                <div className="text-left flex-1 min-w-0">
+                  <div className="font-medium text-sm flex items-center gap-2 mb-0.5">
+                    {currentProvider.label}
+                    {currentProvider.default && (
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0.5 bg-primary/10 text-primary border-0">
+                        Par défaut
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-tight line-clamp-2 text-wrap">
+                    {currentProvider.description}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </SelectTrigger>
+        <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-32px)]">
+          {sttProviders.map((provider) => (
+            <SelectItem key={provider.value} value={provider.value}>
+              <div className="flex items-center gap-2.5">
+                <MagnifyingGlassIcon className="text-muted-foreground size-4 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <div className="font-medium text-sm flex items-center gap-2">
+                    {provider.label}
+                    {provider.default && (
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0.5 bg-primary/10 text-primary border-0">
+                        Par défaut
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{provider.description}</div>
+                </div>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 // Search Provider Options
 const searchProviders = [
   {
@@ -356,6 +454,10 @@ export function PreferencesSection({
     'hyper-search-provider',
     'parallel',
   );
+  const [sttProvider, setSTTProvider] = useLocalStorage<STTProvider>(
+    'hyper-stt-provider',
+    'openai',
+  );
 
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -375,6 +477,16 @@ export function PreferencesSection({
             : 'Firecrawl'
       }`,
     );
+  };
+
+  const handleSTTProviderChange = (newProvider: STTProvider) => {
+    setSTTProvider(newProvider);
+    const providerNames: Record<STTProvider, string> = {
+      openai: 'OpenAI GPT-4o-mini-transcribe',
+      assemblyai: 'AssemblyAI',
+      deepgram: 'Deepgram Nova-2',
+    };
+    toast.success(`Speech-to-Text changé pour ${providerNames[newProvider]}`);
   };
 
   // Agents reordering (drag-and-drop)
@@ -577,6 +689,28 @@ export function PreferencesSection({
             <SearchProviderSelector value={searchProvider} onValueChange={handleSearchProviderChange} />
             <p className="text-xs text-muted-foreground leading-relaxed">
               Sélectionnez votre moteur de recherche préféré pour les recherches Web. Les changements prennent effet immédiatement et seront utilisés pour toutes les recherches futures.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Speech-to-Text Provider Section */}
+      <div className="space-y-3">
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <HugeiconsIcon icon={Brain02Icon} className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm">Speech-to-Text (Vocal)</h4>
+              <p className="text-xs text-muted-foreground">Choisissez votre modèle de transcription vocale</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            <STTProviderSelector value={sttProvider} onValueChange={handleSTTProviderChange} />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Sélectionnez le modèle utilisé pour transcrire vos enregistrements vocaux. Le changement prend effet immédiatement.
             </p>
           </div>
         </div>

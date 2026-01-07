@@ -52,6 +52,10 @@ export const serverEnv = createEnv({
     PUSHER_SECRET: z.string().optional(),
     PUSHER_CLUSTER: z.string().optional(),
     PUSHER_USE_TLS: z.string().optional().default('true'),
+
+    OPENAI_STT_API_KEY: z.string().optional(),
+    ASSEMBLYAI_API_KEY: z.string().optional(),
+    DEEPGRAM_API_KEY: z.string().optional(),
   },
   experimental__runtimeEnv: process.env,
 });

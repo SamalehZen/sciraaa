@@ -2692,6 +2692,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
                 return 'webm';
               })();
               formData.append('audio', audioBlob, `recording.${extension}`);
+              const storedSTTProvider = localStorage.getItem('hyper-stt-provider');
+              const sttProvider = storedSTTProvider ? JSON.parse(storedSTTProvider) : 'openai';
+              formData.append('provider', sttProvider);
               const response = await fetch('/api/transcribe', {
                 method: 'POST',
                 body: formData,
