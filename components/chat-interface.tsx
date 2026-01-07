@@ -66,6 +66,11 @@ const ChatInterface = memo(
 
     const [defaultModel] = useLocalStorage<'hyper-google-think' | 'hyper-gpt5-nano'>('hyper-default-model', 'hyper-google-think');
     const [selectedModel, setSelectedModel] = useLocalStorage('hyper-selected-model', defaultModel);
+    
+    // Sync selectedModel with defaultModel when defaultModel changes
+    useEffect(() => {
+      setSelectedModel(defaultModel);
+    }, [defaultModel, setSelectedModel]);
     const [selectedGroup, setSelectedGroup] = useLocalStorage<SearchGroupId>('hyper-selected-group', 'libeller');
     const [selectedConnectors, setSelectedConnectors] = useState<ConnectorProvider[]>([]);
     const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
