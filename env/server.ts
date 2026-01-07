@@ -13,7 +13,7 @@ export const serverEnv = createEnv({
 
     // Deprecated / unused at runtime (kept for compile-time compatibility)
     XAI_API_KEY: z.string().optional().default('deprecated'),
-    OPENAI_API_KEY: z.string().optional().default('deprecated'),
+    OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required for GPT-5 Nano'),
     ANTHROPIC_API_KEY: z.string().optional().default('deprecated'),
     GROQ_API_KEY: z.string().optional().default('deprecated'),
     DAYTONA_API_KEY: z.string().optional().default('deprecated'),

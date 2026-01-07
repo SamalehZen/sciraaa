@@ -498,9 +498,9 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = React.memo(
 
       // If current model requires pro but user is not pro, switch to default
       // Also prevent infinite loops by ensuring we're not already on the default model
-      if (currentModelExists && currentModelRequiresPro && !isProUser && selectedModel !== 'hyper-default') {
-        console.log(`Auto-switching from pro model '${selectedModel}' to 'hyper-default' - user lost pro access`);
-        setSelectedModel('hyper-default');
+      if (currentModelExists && currentModelRequiresPro && !isProUser && selectedModel !== 'hyper-google-think') {
+        console.log(`Auto-switching from pro model '${selectedModel}' to 'hyper-google-think' - user lost pro access`);
+        setSelectedModel('hyper-google-think');
 
         // Show a toast notification to inform the user
         toast.info('Switched to default model - Pro subscription required for premium models');

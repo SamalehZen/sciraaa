@@ -1,5 +1,6 @@
 import { customProvider } from 'ai';
 import { google } from '@ai-sdk/google';
+import { openai } from '@ai-sdk/openai';
 
 // Arka backend: single provider mapping to Google Gemini Flash.
 // Default model is gemini-2.5-flash with intended fallbacks to gemini-2.0-flash then gemini-2.0-flash-exp
@@ -9,6 +10,7 @@ const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
 const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
 
 const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 
 function getGoogleProvider() {
   const apiKey = DEFAULT_API_KEY;
@@ -16,6 +18,13 @@ function getGoogleProvider() {
     console.warn('GOOGLE_GENERATIVE_AI_API_KEY not set, falling back to environment variable');
   }
   return google(DEFAULT_GOOGLE_MODEL, { apiKey: apiKey || undefined });
+}
+
+function getOpenAIProvider(model: string = 'gpt-4.1-nano') {
+  if (!OPENAI_API_KEY) {
+    console.warn('OPENAI_API_KEY not set, GPT-5 Nano will not work');
+  }
+  return openai(model, { apiKey: OPENAI_API_KEY || undefined });
 }
 
 // Single Google provider for all hyper-* model ids expected by the UI.
@@ -35,7 +44,7 @@ export const hyper = customProvider({
     'hyper-qwen-4b-thinking': getGoogleProvider(),
     'hyper-gpt5': getGoogleProvider(),
     'hyper-gpt5-mini': getGoogleProvider(),
-    'hyper-gpt5-nano': getGoogleProvider(),
+    'hyper-gpt5-nano': getOpenAIProvider('gpt-4.1-nano'),
     'hyper-o3': getGoogleProvider(),
     'hyper-qwen-32b': getGoogleProvider(),
     'hyper-gpt-oss-20': getGoogleProvider(),

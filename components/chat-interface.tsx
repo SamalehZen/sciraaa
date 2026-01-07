@@ -64,7 +64,8 @@ const ChatInterface = memo(
     const [q] = useQueryState('q', parseAsString.withDefault(''));
     const [input, setInput] = useState<string>('');
 
-    const [selectedModel, setSelectedModel] = useLocalStorage('hyper-selected-model', 'hyper-default');
+    const [defaultModel] = useLocalStorage<'hyper-google-think' | 'hyper-gpt5-nano'>('hyper-default-model', 'hyper-google-think');
+    const [selectedModel, setSelectedModel] = useLocalStorage('hyper-selected-model', defaultModel);
     const [selectedGroup, setSelectedGroup] = useLocalStorage<SearchGroupId>('hyper-selected-group', 'libeller');
     const [selectedConnectors, setSelectedConnectors] = useState<ConnectorProvider[]>([]);
     const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
@@ -228,9 +229,9 @@ const ChatInterface = memo(
 
       // If current model requires pro but user is not pro, switch to default
       // Also prevent infinite loops by ensuring we're not already on the default model
-      if (currentModelRequiresPro && !isUserPro && selectedModel !== 'hyper-default') {
-        console.log(`Auto-switching from pro model '${selectedModel}' to 'hyper-default' - user lost pro access`);
-        setSelectedModel('hyper-default');
+      if (currentModelRequiresPro && !isUserPro && selectedModel !== 'hyper-google-think') {
+        console.log(`Auto-switching from pro model '${selectedModel}' to 'hyper-google-think' - user lost pro access`);
+        setSelectedModel('hyper-google-think');
 
         // Show a toast notification to inform the user
         toast.info('Switched to default model - Pro subscription required for premium models');

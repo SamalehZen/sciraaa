@@ -95,7 +95,7 @@ export async function POST(req: Request) {
   const streamId = 'stream-' + uuidv7();
 
   const rawModel = typeof model === 'string' ? model.trim() : '';
-  const resolvedModel = getModelConfig(rawModel) ? rawModel : 'hyper-default';
+  const resolvedModel = getModelConfig(rawModel) ? rawModel : 'hyper-google-think';
 
   console.log('🔍 Search API:', { model: resolvedModel, group, latitude, longitude });
 
