@@ -223,11 +223,26 @@ export async function POST(req: Request) {
   let processedMessages = messages;
   let pdfExtractionInfo = '';
 
+  console.log('🔍 Checking messages for PDFs:', JSON.stringify(messages.map((m: any) => ({
+    role: m.role,
+    partsCount: m.parts?.length,
+    partTypes: m.parts?.map((p: any) => p.type),
+    attachmentsCount: m.experimental_attachments?.length,
+    attachmentTypes: m.experimental_attachments?.map((a: any) => a.contentType),
+  })), null, 2));
+
   if (hasPDFAttachments(messages)) {
     console.log('📄 PDF attachments detected, preprocessing with OCR...');
     try {
       const preprocessResult = await preprocessPDFAttachments(messages);
       processedMessages = preprocessResult.processedMessages;
+      
+      console.log('🔍 After preprocessing:', JSON.stringify(processedMessages.map((m: any) => ({
+        role: m.role,
+        partsCount: m.parts?.length,
+        partTypes: m.parts?.map((p: any) => p.type),
+        attachmentsCount: m.experimental_attachments?.length,
+      })), null, 2));
       
       if (preprocessResult.pdfExtractions.length > 0) {
         pdfExtractionInfo = `\n\n[Système: ${preprocessResult.pdfExtractions.length} fichier(s) PDF ont été analysés via OCR et leur contenu a été extrait dans le message de l'utilisateur.]`;
@@ -236,6 +251,8 @@ export async function POST(req: Request) {
     } catch (error) {
       console.error('❌ PDF preprocessing failed:', error);
     }
+  } else {
+    console.log('📄 No PDF attachments detected');
   }
 
   const stream = createUIMessageStream<ChatMessage>({

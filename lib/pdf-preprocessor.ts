@@ -19,37 +19,73 @@ export interface PreprocessResult {
   }>;
 }
 
+function isPdfPart(part: any): boolean {
+  if (part.type === 'file') {
+    const mediaType = part.mediaType || part.mimeType || '';
+    return mediaType === 'application/pdf';
+  }
+  return false;
+}
+
+function isPdfAttachment(att: any): boolean {
+  const contentType = att.contentType || att.mediaType || '';
+  const url = att.url || '';
+  return contentType === 'application/pdf' || url.toLowerCase().endsWith('.pdf');
+}
+
 export async function preprocessPDFAttachments(messages: any[]): Promise<PreprocessResult> {
   const pdfExtractions: PreprocessResult['pdfExtractions'] = [];
   
   const processedMessages = await Promise.all(
     messages.map(async (message) => {
-      if (!message.experimental_attachments || message.experimental_attachments.length === 0) {
+      const attachments = message.experimental_attachments || [];
+      const parts = message.parts || [];
+      
+      const pdfAttachments = attachments.filter(isPdfAttachment);
+      const pdfParts = parts.filter(isPdfPart);
+      
+      if (pdfAttachments.length === 0 && pdfParts.length === 0) {
         return message;
       }
 
-      const attachments = message.experimental_attachments as Array<{
-        name: string;
-        url: string;
-        contentType?: string;
-      }>;
+      console.log(`📄 Found ${pdfAttachments.length} PDF attachments and ${pdfParts.length} PDF parts`);
 
-      const pdfAttachments = attachments.filter(
-        (att) => att.contentType === 'application/pdf' || att.url?.toLowerCase().endsWith('.pdf')
-      );
+      const nonPdfAttachments = attachments.filter((att: any) => !isPdfAttachment(att));
+      const nonPdfParts = parts.filter((part: any) => !isPdfPart(part));
 
-      if (pdfAttachments.length === 0) {
-        return message;
+      const pdfUrls: Array<{ name: string; url: string }> = [];
+
+      for (const att of pdfAttachments) {
+        pdfUrls.push({
+          name: att.name || 'document.pdf',
+          url: att.url,
+        });
       }
 
-      const nonPdfAttachments = attachments.filter(
-        (att) => att.contentType !== 'application/pdf' && !att.url?.toLowerCase().endsWith('.pdf')
-      );
+      for (const part of pdfParts) {
+        if (part.data && typeof part.data === 'string') {
+          if (part.data.startsWith('http')) {
+            pdfUrls.push({
+              name: part.name || 'document.pdf',
+              url: part.data,
+            });
+          }
+        }
+      }
+
+      if (pdfUrls.length === 0) {
+        console.log('⚠️ No PDF URLs found to process');
+        return {
+          ...message,
+          parts: nonPdfParts,
+          experimental_attachments: nonPdfAttachments.length > 0 ? nonPdfAttachments : undefined,
+        };
+      }
 
       const ocrResults = await Promise.all(
-        pdfAttachments.map(async (pdf) => {
+        pdfUrls.map(async (pdf) => {
           try {
-            console.log(`🔄 Processing PDF: ${pdf.name}`);
+            console.log(`🔄 Processing PDF via OCR: ${pdf.name} (${pdf.url})`);
             const result = await extractTextFromPDF(pdf.url, 'fr');
             
             if (result.success) {
@@ -89,8 +125,9 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
 
       const successfulExtractions = ocrResults.filter((r) => r.success);
       
+      let pdfContentBlock = '';
       if (successfulExtractions.length > 0) {
-        const pdfContentBlock = successfulExtractions
+        pdfContentBlock = successfulExtractions
           .map((extraction) => {
             if (extraction.success) {
               return `\n\n📄 **Contenu du fichier PDF "${extraction.fileName}"** (${extraction.pages} page(s), ${extraction.tablesCount} tableau(x)):\n\n${extraction.text}`;
@@ -98,34 +135,29 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
             return '';
           })
           .join('\n');
+      }
 
-        const updatedParts = message.parts.map((part: any) => {
-          if (part.type === 'text') {
-            return {
-              ...part,
-              text: part.text + pdfContentBlock,
-            };
-          }
-          return part;
-        });
-
-        const hasTextPart = message.parts.some((p: any) => p.type === 'text');
-        if (!hasTextPart && pdfContentBlock) {
+      let updatedParts = [...nonPdfParts];
+      
+      if (pdfContentBlock) {
+        const textPartIndex = updatedParts.findIndex((p: any) => p.type === 'text');
+        
+        if (textPartIndex >= 0) {
+          updatedParts[textPartIndex] = {
+            ...updatedParts[textPartIndex],
+            text: updatedParts[textPartIndex].text + pdfContentBlock,
+          };
+        } else {
           updatedParts.push({
             type: 'text',
             text: pdfContentBlock.trim(),
           });
         }
-
-        return {
-          ...message,
-          parts: updatedParts,
-          experimental_attachments: nonPdfAttachments.length > 0 ? nonPdfAttachments : undefined,
-        };
       }
 
       return {
         ...message,
+        parts: updatedParts,
         experimental_attachments: nonPdfAttachments.length > 0 ? nonPdfAttachments : undefined,
       };
     })
@@ -139,11 +171,12 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
 
 export function hasPDFAttachments(messages: any[]): boolean {
   return messages.some((message) => {
-    const attachments = message.experimental_attachments;
-    if (!attachments || attachments.length === 0) return false;
+    const attachments = message.experimental_attachments || [];
+    const parts = message.parts || [];
     
-    return attachments.some(
-      (att: any) => att.contentType === 'application/pdf' || att.url?.toLowerCase().endsWith('.pdf')
-    );
+    const hasPdfAttachment = attachments.some(isPdfAttachment);
+    const hasPdfPart = parts.some(isPdfPart);
+    
+    return hasPdfAttachment || hasPdfPart;
   });
 }
