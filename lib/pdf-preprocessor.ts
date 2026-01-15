@@ -83,11 +83,15 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       }
 
       for (const part of pdfParts) {
-        if (part.data && typeof part.data === 'string' && part.data.startsWith('http')) {
+        const pdfUrl = part.url || part.data;
+        if (pdfUrl && typeof pdfUrl === 'string') {
+          console.log(`📎 Found PDF URL in part: ${pdfUrl.substring(0, 60)}...`);
           pdfUrls.push({
             name: part.name || 'document.pdf',
-            url: part.data,
+            url: pdfUrl,
           });
+        } else {
+          console.log(`⚠️ PDF part found but no URL. Keys: ${Object.keys(part).join(', ')}`);
         }
       }
 
