@@ -324,7 +324,7 @@ const groupTools = {
   cyrus: [] as const,
   libeller: [] as const,
   nomenclature: [] as const,
-  pdfExcel: [] as const,
+  pdfExcel: ['pdf_ocr'] as const,
   extreme: ['extreme_search'] as const,
   x: ['x_search'] as const,
   memory: ['datetime', 'search_memories', 'add_memory'] as const,

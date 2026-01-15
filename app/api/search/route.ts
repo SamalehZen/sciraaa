@@ -44,6 +44,7 @@ import {
   datetimeTool,
   greetingTool,
   eanSearchTool,
+  pdfOcrTool,
 } from '@/lib/tools';
 import { GroqProviderOptions } from '@ai-sdk/groq';
 import { markdownJoinerTransform } from '@/lib/parser';
@@ -316,6 +317,7 @@ export async function POST(req: Request) {
             datetime: datetimeTool,
             ean_search: eanSearchTool(dataStream),
             greeting: greetingTool(timezone),
+            pdf_ocr: pdfOcrTool,
           };
 
           return baseTools;

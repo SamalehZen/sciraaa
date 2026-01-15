@@ -55,6 +55,8 @@ export const serverEnv = createEnv({
     PUSHER_SECRET: z.string().optional(),
     PUSHER_CLUSTER: z.string().optional(),
     PUSHER_USE_TLS: z.string().optional().default('true'),
+
+    OCR_SERVICE_URL: z.string().optional().default('https://hyper-ocr-service.onrender.com'),
   },
   experimental__runtimeEnv: process.env,
 });
