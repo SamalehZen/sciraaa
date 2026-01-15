@@ -229,9 +229,17 @@ export async function POST(req: Request) {
     role: m.role,
     partsCount: m.parts?.length || 0,
     partTypes: m.parts?.map((p: any) => p.type) || [],
+    fileParts: m.parts?.filter((p: any) => p.type === 'file').map((p: any) => ({
+      type: p.type,
+      mediaType: p.mediaType,
+      mimeType: p.mimeType,
+      data: typeof p.data === 'string' ? p.data.substring(0, 80) : typeof p.data,
+      url: p.url?.substring(0, 80),
+      name: p.name,
+      keys: Object.keys(p),
+    })) || [],
     attachmentsCount: m.experimental_attachments?.length || 0,
     attachmentTypes: m.experimental_attachments?.map((a: any) => a.contentType) || [],
-    attachmentUrls: m.experimental_attachments?.map((a: any) => a.url?.substring(0, 50)) || [],
   }));
   
   console.log('🔍 Messages reçus:', JSON.stringify(messageDebug, null, 2));
