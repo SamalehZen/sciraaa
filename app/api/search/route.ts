@@ -53,8 +53,8 @@ import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { getCachedCustomInstructionsByUserId } from '@/lib/user-data-server';
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-
 import { CohereChatModelOptions } from '@ai-sdk/cohere';
+import { preprocessPDFAttachments, hasPDFAttachments } from '@/lib/pdf-preprocessor';
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -220,6 +220,24 @@ export async function POST(req: Request) {
 
   let customInstructions: CustomInstructions | null = null;
 
+  let processedMessages = messages;
+  let pdfExtractionInfo = '';
+
+  if (hasPDFAttachments(messages)) {
+    console.log('📄 PDF attachments detected, preprocessing with OCR...');
+    try {
+      const preprocessResult = await preprocessPDFAttachments(messages);
+      processedMessages = preprocessResult.processedMessages;
+      
+      if (preprocessResult.pdfExtractions.length > 0) {
+        pdfExtractionInfo = `\n\n[Système: ${preprocessResult.pdfExtractions.length} fichier(s) PDF ont été analysés via OCR et leur contenu a été extrait dans le message de l'utilisateur.]`;
+        console.log(`✅ PDF preprocessing complete: ${preprocessResult.pdfExtractions.length} files processed`);
+      }
+    } catch (error) {
+      console.error('❌ PDF preprocessing failed:', error);
+    }
+  }
+
   const stream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer: dataStream }) => {
       const [criticalResult, { tools: activeTools, instructions }, customInstructionsResult, user] = await Promise.all([
@@ -260,7 +278,7 @@ export async function POST(req: Request) {
 
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(processedMessages),
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
