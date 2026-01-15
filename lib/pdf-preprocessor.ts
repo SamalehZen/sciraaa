@@ -139,9 +139,9 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
 
       let updatedParts = [...nonPdfParts];
       
+      const textPartIndex = updatedParts.findIndex((p: any) => p.type === 'text');
+      
       if (pdfContentBlock) {
-        const textPartIndex = updatedParts.findIndex((p: any) => p.type === 'text');
-        
         if (textPartIndex >= 0) {
           updatedParts[textPartIndex] = {
             ...updatedParts[textPartIndex],
@@ -153,6 +153,18 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
             text: pdfContentBlock.trim(),
           });
         }
+      } else if (updatedParts.length === 0 || textPartIndex < 0) {
+        updatedParts.push({
+          type: 'text',
+          text: 'Analyse le document PDF ci-joint.',
+        });
+      }
+
+      if (updatedParts.length === 0) {
+        updatedParts.push({
+          type: 'text',
+          text: 'Analyse le document.',
+        });
       }
 
       return {
