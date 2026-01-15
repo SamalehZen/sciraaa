@@ -222,34 +222,47 @@ export async function POST(req: Request) {
 
   let processedMessages = messages;
   let pdfExtractionInfo = '';
+  let pdfDebugInfo = '';
 
-  console.log('🔍 Checking messages for PDFs:', JSON.stringify(messages.map((m: any) => ({
+  const messageDebug = messages.map((m: any, i: number) => ({
+    idx: i,
     role: m.role,
-    partsCount: m.parts?.length,
-    partTypes: m.parts?.map((p: any) => p.type),
-    attachmentsCount: m.experimental_attachments?.length,
-    attachmentTypes: m.experimental_attachments?.map((a: any) => a.contentType),
-  })), null, 2));
+    partsCount: m.parts?.length || 0,
+    partTypes: m.parts?.map((p: any) => p.type) || [],
+    attachmentsCount: m.experimental_attachments?.length || 0,
+    attachmentTypes: m.experimental_attachments?.map((a: any) => a.contentType) || [],
+    attachmentUrls: m.experimental_attachments?.map((a: any) => a.url?.substring(0, 50)) || [],
+  }));
+  
+  console.log('🔍 Messages reçus:', JSON.stringify(messageDebug, null, 2));
+  pdfDebugInfo = `[DEBUG] Messages reçus: ${JSON.stringify(messageDebug)}`;
 
-  console.log('📄 Always preprocessing messages to ensure valid parts...');
+  console.log('📄 Preprocessing messages...');
   try {
     const preprocessResult = await preprocessPDFAttachments(messages);
     processedMessages = preprocessResult.processedMessages;
     
-    console.log('🔍 After preprocessing:', JSON.stringify(processedMessages.map((m: any) => ({
+    const afterDebug = processedMessages.map((m: any, i: number) => ({
+      idx: i,
       role: m.role,
-      partsCount: m.parts?.length,
-      partTypes: m.parts?.map((p: any) => p.type),
-      hasText: m.parts?.some((p: any) => p.type === 'text'),
-      attachmentsCount: m.experimental_attachments?.length,
-    })), null, 2));
+      partsCount: m.parts?.length || 0,
+      partTypes: m.parts?.map((p: any) => p.type) || [],
+      textPreview: m.parts?.find((p: any) => p.type === 'text')?.text?.substring(0, 100) || 'NO TEXT',
+    }));
+    
+    console.log('🔍 Après preprocessing:', JSON.stringify(afterDebug, null, 2));
+    pdfDebugInfo += ` | Après: ${JSON.stringify(afterDebug)}`;
     
     if (preprocessResult.pdfExtractions.length > 0) {
-      pdfExtractionInfo = `\n\n[Système: ${preprocessResult.pdfExtractions.length} fichier(s) PDF ont été analysés via OCR et leur contenu a été extrait dans le message de l'utilisateur.]`;
-      console.log(`✅ PDF preprocessing complete: ${preprocessResult.pdfExtractions.length} files processed`);
+      pdfExtractionInfo = `\n\n[PDF OCR: ${preprocessResult.pdfExtractions.length} fichier(s) traité(s) - ${preprocessResult.pdfExtractions.map(p => p.fileName).join(', ')}]`;
+      pdfDebugInfo += ` | PDFs extraits: ${preprocessResult.pdfExtractions.length}`;
+      console.log(`✅ PDF preprocessing complete: ${preprocessResult.pdfExtractions.length} files`);
+    } else {
+      pdfDebugInfo += ' | Aucun PDF extrait';
     }
   } catch (error) {
     console.error('❌ PDF preprocessing failed:', error);
+    pdfDebugInfo += ` | ERREUR: ${error instanceof Error ? error.message : 'Unknown'}`;
   }
 
   const stream = createUIMessageStream<ChatMessage>({
@@ -306,7 +319,9 @@ export async function POST(req: Request) {
           (customInstructions && (isCustomInstructionsEnabled ?? true)
             ? `\n\nThe user's custom instructions are as follows and YOU MUST FOLLOW THEM AT ALL COSTS: ${customInstructions?.content}`
             : '\n') +
-          (latitude && longitude ? `\n\nThe user's location is ${latitude}, ${longitude}.` : ''),
+          (latitude && longitude ? `\n\nThe user's location is ${latitude}, ${longitude}.` : '') +
+          pdfExtractionInfo +
+          `\n\n[TEMP DEBUG - COMMENCER TA RÉPONSE PAR CE DEBUG]: ${pdfDebugInfo}`,
         toolChoice: 'auto',
         providerOptions: {
           google: {
