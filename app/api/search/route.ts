@@ -268,6 +268,11 @@ export async function POST(req: Request) {
     } else {
       pdfDebugInfo += ' | Aucun PDF extrait';
     }
+    
+    if (preprocessResult.ocrErrors && preprocessResult.ocrErrors.length > 0) {
+      pdfDebugInfo += ` | OCR ERREURS: ${JSON.stringify(preprocessResult.ocrErrors)}`;
+      console.log(`❌ OCR Errors: ${JSON.stringify(preprocessResult.ocrErrors)}`);
+    }
   } catch (error) {
     console.error('❌ PDF preprocessing failed:', error);
     pdfDebugInfo += ` | ERREUR: ${error instanceof Error ? error.message : 'Unknown'}`;

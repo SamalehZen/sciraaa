@@ -17,6 +17,10 @@ export interface PreprocessResult {
     pages: number;
     tables: string[];
   }>;
+  ocrErrors: Array<{
+    fileName: string;
+    error: string;
+  }>;
 }
 
 function isPdfPart(part: any): boolean {
@@ -50,6 +54,7 @@ function ensureValidParts(parts: any[]): any[] {
 
 export async function preprocessPDFAttachments(messages: any[]): Promise<PreprocessResult> {
   const pdfExtractions: PreprocessResult['pdfExtractions'] = [];
+  const ocrErrors: PreprocessResult['ocrErrors'] = [];
   
   const processedMessages = await Promise.all(
     messages.map(async (message, index) => {
@@ -138,6 +143,11 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       );
 
       const successfulExtractions = ocrResults.filter((r) => r.success);
+      const failedExtractions = ocrResults.filter((r) => !r.success);
+      
+      for (const failed of failedExtractions) {
+        ocrErrors.push({ fileName: failed.fileName, error: failed.error || 'Unknown error' });
+      }
       
       let pdfContentBlock = '';
       if (successfulExtractions.length > 0) {
@@ -177,7 +187,7 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
     })
   );
 
-  return { processedMessages, pdfExtractions };
+  return { processedMessages, pdfExtractions, ocrErrors };
 }
 
 export function hasPDFAttachments(messages: any[]): boolean {

@@ -14,34 +14,67 @@ export interface OCRResult {
 
 export async function extractTextFromPDF(fileUrl: string, language: string = 'fr'): Promise<OCRResult> {
   try {
+    console.log(`🔄 OCR: Calling ${OCR_SERVICE_URL}/ocr/extract-from-url with URL: ${fileUrl}`);
+    
     const response = await fetch(`${OCR_SERVICE_URL}/ocr/extract-from-url`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ file_url: fileUrl, language }),
     });
 
+    const responseText = await response.text();
+    console.log(`🔄 OCR Response status: ${response.status}, body: ${responseText.substring(0, 500)}`);
+
     if (!response.ok) {
-      throw new Error(`OCR service error: ${response.status}`);
+      return {
+        success: false,
+        text: '',
+        markdown: '',
+        tables: [],
+        pages: 0,
+        error: `OCR service error ${response.status}: ${responseText}`,
+      };
     }
 
-    const result = await response.json();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      return {
+        success: false,
+        text: '',
+        markdown: '',
+        tables: [],
+        pages: 0,
+        error: `OCR response parse error: ${responseText.substring(0, 200)}`,
+      };
+    }
 
     if (!result.success) {
-      throw new Error(result.error || 'OCR extraction failed');
+      return {
+        success: false,
+        text: '',
+        markdown: '',
+        tables: [],
+        pages: 0,
+        error: result.error || 'OCR extraction failed',
+      };
     }
+
+    console.log(`✅ OCR Success: ${result.pages} pages, ${result.tables?.length || 0} tables`);
 
     return {
       success: true,
-      text: result.raw_text,
-      markdown: result.markdown_output,
-      tables: result.tables.map((t: any) => ({
-        markdown: t.markdown,
-        html: t.html,
+      text: result.raw_text || '',
+      markdown: result.markdown_output || result.raw_text || '',
+      tables: (result.tables || []).map((t: any) => ({
+        markdown: t.markdown || '',
+        html: t.html || '',
       })),
-      pages: result.pages,
+      pages: result.pages || 1,
     };
   } catch (error) {
-    console.error('OCR extraction error:', error);
+    console.error('❌ OCR extraction error:', error);
     return {
       success: false,
       text: '',
