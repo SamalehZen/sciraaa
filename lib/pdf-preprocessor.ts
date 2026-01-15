@@ -20,6 +20,7 @@ export interface PreprocessResult {
 }
 
 function isPdfPart(part: any): boolean {
+  if (!part) return false;
   if (part.type === 'file') {
     const mediaType = part.mediaType || part.mimeType || '';
     return mediaType === 'application/pdf';
@@ -28,16 +29,30 @@ function isPdfPart(part: any): boolean {
 }
 
 function isPdfAttachment(att: any): boolean {
+  if (!att) return false;
   const contentType = att.contentType || att.mediaType || '';
   const url = att.url || '';
   return contentType === 'application/pdf' || url.toLowerCase().endsWith('.pdf');
+}
+
+function ensureValidParts(parts: any[]): any[] {
+  if (!Array.isArray(parts) || parts.length === 0) {
+    return [{ type: 'text', text: '.' }];
+  }
+  
+  const hasTextPart = parts.some((p: any) => p && p.type === 'text' && p.text);
+  if (!hasTextPart) {
+    return [...parts, { type: 'text', text: '.' }];
+  }
+  
+  return parts;
 }
 
 export async function preprocessPDFAttachments(messages: any[]): Promise<PreprocessResult> {
   const pdfExtractions: PreprocessResult['pdfExtractions'] = [];
   
   const processedMessages = await Promise.all(
-    messages.map(async (message) => {
+    messages.map(async (message, index) => {
       const attachments = message.experimental_attachments || [];
       const parts = message.parts || [];
       
@@ -45,10 +60,13 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       const pdfParts = parts.filter(isPdfPart);
       
       if (pdfAttachments.length === 0 && pdfParts.length === 0) {
-        return message;
+        return {
+          ...message,
+          parts: ensureValidParts(parts),
+        };
       }
 
-      console.log(`📄 Found ${pdfAttachments.length} PDF attachments and ${pdfParts.length} PDF parts`);
+      console.log(`📄 Message[${index}]: Found ${pdfAttachments.length} PDF attachments and ${pdfParts.length} PDF parts`);
 
       const nonPdfAttachments = attachments.filter((att: any) => !isPdfAttachment(att));
       const nonPdfParts = parts.filter((part: any) => !isPdfPart(part));
@@ -56,28 +74,28 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       const pdfUrls: Array<{ name: string; url: string }> = [];
 
       for (const att of pdfAttachments) {
-        pdfUrls.push({
-          name: att.name || 'document.pdf',
-          url: att.url,
-        });
+        if (att.url) {
+          pdfUrls.push({
+            name: att.name || 'document.pdf',
+            url: att.url,
+          });
+        }
       }
 
       for (const part of pdfParts) {
-        if (part.data && typeof part.data === 'string') {
-          if (part.data.startsWith('http')) {
-            pdfUrls.push({
-              name: part.name || 'document.pdf',
-              url: part.data,
-            });
-          }
+        if (part.data && typeof part.data === 'string' && part.data.startsWith('http')) {
+          pdfUrls.push({
+            name: part.name || 'document.pdf',
+            url: part.data,
+          });
         }
       }
 
       if (pdfUrls.length === 0) {
-        console.log('⚠️ No PDF URLs found to process');
+        console.log(`⚠️ Message[${index}]: No PDF URLs found to process`);
         return {
           ...message,
-          parts: nonPdfParts,
+          parts: ensureValidParts(nonPdfParts),
           experimental_attachments: nonPdfAttachments.length > 0 ? nonPdfAttachments : undefined,
         };
       }
@@ -85,7 +103,7 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       const ocrResults = await Promise.all(
         pdfUrls.map(async (pdf) => {
           try {
-            console.log(`🔄 Processing PDF via OCR: ${pdf.name} (${pdf.url})`);
+            console.log(`🔄 Processing PDF via OCR: ${pdf.name}`);
             const result = await extractTextFromPDF(pdf.url, 'fr');
             
             if (result.success) {
@@ -106,19 +124,11 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
               };
             } else {
               console.error(`❌ PDF OCR failed: ${pdf.name} - ${result.error}`);
-              return {
-                success: false,
-                fileName: pdf.name,
-                error: result.error,
-              };
+              return { success: false, fileName: pdf.name, error: result.error };
             }
           } catch (error) {
             console.error(`❌ PDF OCR error: ${pdf.name}`, error);
-            return {
-              success: false,
-              fileName: pdf.name,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            };
+            return { success: false, fileName: pdf.name, error: error instanceof Error ? error.message : 'Unknown error' };
           }
         })
       );
@@ -138,34 +148,22 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
       }
 
       let updatedParts = [...nonPdfParts];
-      
-      const textPartIndex = updatedParts.findIndex((p: any) => p.type === 'text');
+      const textPartIndex = updatedParts.findIndex((p: any) => p && p.type === 'text');
       
       if (pdfContentBlock) {
-        if (textPartIndex >= 0) {
+        if (textPartIndex >= 0 && updatedParts[textPartIndex].text) {
           updatedParts[textPartIndex] = {
             ...updatedParts[textPartIndex],
             text: updatedParts[textPartIndex].text + pdfContentBlock,
           };
         } else {
-          updatedParts.push({
-            type: 'text',
-            text: pdfContentBlock.trim(),
-          });
+          updatedParts.push({ type: 'text', text: pdfContentBlock.trim() });
         }
-      } else if (updatedParts.length === 0 || textPartIndex < 0) {
-        updatedParts.push({
-          type: 'text',
-          text: 'Analyse le document PDF ci-joint.',
-        });
       }
 
-      if (updatedParts.length === 0) {
-        updatedParts.push({
-          type: 'text',
-          text: 'Analyse le document.',
-        });
-      }
+      updatedParts = ensureValidParts(updatedParts);
+
+      console.log(`✅ Message[${index}]: Processed, parts count: ${updatedParts.length}`);
 
       return {
         ...message,
@@ -175,20 +173,13 @@ export async function preprocessPDFAttachments(messages: any[]): Promise<Preproc
     })
   );
 
-  return {
-    processedMessages,
-    pdfExtractions,
-  };
+  return { processedMessages, pdfExtractions };
 }
 
 export function hasPDFAttachments(messages: any[]): boolean {
   return messages.some((message) => {
     const attachments = message.experimental_attachments || [];
     const parts = message.parts || [];
-    
-    const hasPdfAttachment = attachments.some(isPdfAttachment);
-    const hasPdfPart = parts.some(isPdfPart);
-    
-    return hasPdfAttachment || hasPdfPart;
+    return attachments.some(isPdfAttachment) || parts.some(isPdfPart);
   });
 }

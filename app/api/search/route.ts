@@ -231,28 +231,25 @@ export async function POST(req: Request) {
     attachmentTypes: m.experimental_attachments?.map((a: any) => a.contentType),
   })), null, 2));
 
-  if (hasPDFAttachments(messages)) {
-    console.log('📄 PDF attachments detected, preprocessing with OCR...');
-    try {
-      const preprocessResult = await preprocessPDFAttachments(messages);
-      processedMessages = preprocessResult.processedMessages;
-      
-      console.log('🔍 After preprocessing:', JSON.stringify(processedMessages.map((m: any) => ({
-        role: m.role,
-        partsCount: m.parts?.length,
-        partTypes: m.parts?.map((p: any) => p.type),
-        attachmentsCount: m.experimental_attachments?.length,
-      })), null, 2));
-      
-      if (preprocessResult.pdfExtractions.length > 0) {
-        pdfExtractionInfo = `\n\n[Système: ${preprocessResult.pdfExtractions.length} fichier(s) PDF ont été analysés via OCR et leur contenu a été extrait dans le message de l'utilisateur.]`;
-        console.log(`✅ PDF preprocessing complete: ${preprocessResult.pdfExtractions.length} files processed`);
-      }
-    } catch (error) {
-      console.error('❌ PDF preprocessing failed:', error);
+  console.log('📄 Always preprocessing messages to ensure valid parts...');
+  try {
+    const preprocessResult = await preprocessPDFAttachments(messages);
+    processedMessages = preprocessResult.processedMessages;
+    
+    console.log('🔍 After preprocessing:', JSON.stringify(processedMessages.map((m: any) => ({
+      role: m.role,
+      partsCount: m.parts?.length,
+      partTypes: m.parts?.map((p: any) => p.type),
+      hasText: m.parts?.some((p: any) => p.type === 'text'),
+      attachmentsCount: m.experimental_attachments?.length,
+    })), null, 2));
+    
+    if (preprocessResult.pdfExtractions.length > 0) {
+      pdfExtractionInfo = `\n\n[Système: ${preprocessResult.pdfExtractions.length} fichier(s) PDF ont été analysés via OCR et leur contenu a été extrait dans le message de l'utilisateur.]`;
+      console.log(`✅ PDF preprocessing complete: ${preprocessResult.pdfExtractions.length} files processed`);
     }
-  } else {
-    console.log('📄 No PDF attachments detected');
+  } catch (error) {
+    console.error('❌ PDF preprocessing failed:', error);
   }
 
   const stream = createUIMessageStream<ChatMessage>({
