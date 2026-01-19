@@ -1,72 +1,76 @@
 import { customProvider } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-const DEFAULT_MIMO_MODEL = 'mimo-v2-flash';
-const MIMO_BASE_URL = process.env.XIAOMI_MIMO_BASE_URL || 'https://api.xiaomimimo.com/v1';
-const DEFAULT_API_KEY = process.env.XIAOMI_MIMO_API_KEY || '';
+const DEFAULT_MIMO_MODEL = 'xiaomi/mimo-v2-flash:free';
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
-const mimo = createOpenAICompatible({
-  name: 'xiaomi-mimo',
-  baseURL: MIMO_BASE_URL,
-  apiKey: DEFAULT_API_KEY || undefined,
+const openrouter = createOpenAICompatible({
+  name: 'openrouter',
+  baseURL: OPENROUTER_BASE_URL,
+  apiKey: OPENROUTER_API_KEY || undefined,
+  headers: {
+    'HTTP-Referer': process.env.APP_URL || 'https://your-app.com',
+    'X-Title': 'Hyper AI',
+  },
 });
 
-function getMiMoProvider() {
-  const apiKey = DEFAULT_API_KEY;
+function getOpenRouterProvider() {
+  const apiKey = OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.warn('XIAOMI_MIMO_API_KEY not set');
+    console.warn('OPENROUTER_API_KEY not set');
   }
-  return mimo(DEFAULT_MIMO_MODEL);
+  return openrouter(DEFAULT_MIMO_MODEL);
 }
 
 // Single provider for all hyper-* model ids expected by the UI.
 // We keep all original model ids/labels for UI parity, but route everything to MiMo.
 export const hyper = customProvider({
   languageModels: {
-    'hyper-default': getMiMoProvider(),
-    'hyper-nano': getMiMoProvider(),
-    'hyper-name': getMiMoProvider(),
-    'hyper-grok-3': getMiMoProvider(),
-    'hyper-grok-4': getMiMoProvider(),
-    'hyper-grok-4-fast': getMiMoProvider(),
-    'hyper-grok-4-fast-think': getMiMoProvider(),
-    'hyper-code': getMiMoProvider(),
-    'hyper-enhance': getMiMoProvider(),
-    'hyper-qwen-4b': getMiMoProvider(),
-    'hyper-qwen-4b-thinking': getMiMoProvider(),
-    'hyper-gpt5': getMiMoProvider(),
-    'hyper-gpt5-mini': getMiMoProvider(),
-    'hyper-gpt5-nano': getMiMoProvider(),
-    'hyper-o3': getMiMoProvider(),
-    'hyper-qwen-32b': getMiMoProvider(),
-    'hyper-gpt-oss-20': getMiMoProvider(),
-    'hyper-gpt-oss-120': getMiMoProvider(),
-    'hyper-deepseek-chat': getMiMoProvider(),
-    'hyper-deepseek-chat-think': getMiMoProvider(),
-    'hyper-deepseek-r1': getMiMoProvider(),
-    'hyper-qwen-coder': getMiMoProvider(),
-    'hyper-qwen-30': getMiMoProvider(),
-    'hyper-qwen-30-think': getMiMoProvider(),
-    'hyper-qwen-3-next': getMiMoProvider(),
-    'hyper-qwen-3-next-think': getMiMoProvider(),
-    'hyper-qwen-3-max': getMiMoProvider(),
-    'hyper-qwen-3-max-preview': getMiMoProvider(),
-    'hyper-qwen-235': getMiMoProvider(),
-    'hyper-qwen-235-think': getMiMoProvider(),
-    'hyper-glm-air': getMiMoProvider(),
-    'hyper-glm': getMiMoProvider(),
-    'hyper-glm-4.6': getMiMoProvider(),
-    'hyper-kimi-k2-v2': getMiMoProvider(),
-    'hyper-haiku': getMiMoProvider(),
-    'hyper-mistral-medium': getMiMoProvider(),
-    'hyper-magistral-small': getMiMoProvider(),
-    'hyper-magistral-medium': getMiMoProvider(),
-    'hyper-google-lite': getMiMoProvider(),
-    'hyper-google': getMiMoProvider(),
-    'hyper-google-think': getMiMoProvider(),
-    'hyper-google-think-v2': getMiMoProvider(),
-    'hyper-google-think-v3': getMiMoProvider(),
-    'hyper-anthropic': getMiMoProvider(),
+    'hyper-default': getOpenRouterProvider(),
+    'hyper-nano': getOpenRouterProvider(),
+    'hyper-name': getOpenRouterProvider(),
+    'hyper-grok-3': getOpenRouterProvider(),
+    'hyper-grok-4': getOpenRouterProvider(),
+    'hyper-grok-4-fast': getOpenRouterProvider(),
+    'hyper-grok-4-fast-think': getOpenRouterProvider(),
+    'hyper-code': getOpenRouterProvider(),
+    'hyper-enhance': getOpenRouterProvider(),
+    'hyper-qwen-4b': getOpenRouterProvider(),
+    'hyper-qwen-4b-thinking': getOpenRouterProvider(),
+    'hyper-gpt5': getOpenRouterProvider(),
+    'hyper-gpt5-mini': getOpenRouterProvider(),
+    'hyper-gpt5-nano': getOpenRouterProvider(),
+    'hyper-o3': getOpenRouterProvider(),
+    'hyper-qwen-32b': getOpenRouterProvider(),
+    'hyper-gpt-oss-20': getOpenRouterProvider(),
+    'hyper-gpt-oss-120': getOpenRouterProvider(),
+    'hyper-deepseek-chat': getOpenRouterProvider(),
+    'hyper-deepseek-chat-think': getOpenRouterProvider(),
+    'hyper-deepseek-r1': getOpenRouterProvider(),
+    'hyper-qwen-coder': getOpenRouterProvider(),
+    'hyper-qwen-30': getOpenRouterProvider(),
+    'hyper-qwen-30-think': getOpenRouterProvider(),
+    'hyper-qwen-3-next': getOpenRouterProvider(),
+    'hyper-qwen-3-next-think': getOpenRouterProvider(),
+    'hyper-qwen-3-max': getOpenRouterProvider(),
+    'hyper-qwen-3-max-preview': getOpenRouterProvider(),
+    'hyper-qwen-235': getOpenRouterProvider(),
+    'hyper-qwen-235-think': getOpenRouterProvider(),
+    'hyper-glm-air': getOpenRouterProvider(),
+    'hyper-glm': getOpenRouterProvider(),
+    'hyper-glm-4.6': getOpenRouterProvider(),
+    'hyper-kimi-k2-v2': getOpenRouterProvider(),
+    'hyper-haiku': getOpenRouterProvider(),
+    'hyper-mistral-medium': getOpenRouterProvider(),
+    'hyper-magistral-small': getOpenRouterProvider(),
+    'hyper-magistral-medium': getOpenRouterProvider(),
+    'hyper-google-lite': getOpenRouterProvider(),
+    'hyper-google': getOpenRouterProvider(),
+    'hyper-google-think': getOpenRouterProvider(),
+    'hyper-google-think-v2': getOpenRouterProvider(),
+    'hyper-google-think-v3': getOpenRouterProvider(),
+    'hyper-anthropic': getOpenRouterProvider(),
   },
 });
 

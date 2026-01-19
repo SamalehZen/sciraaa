@@ -4,8 +4,9 @@ import { z } from 'zod';
 
 export const serverEnv = createEnv({
   server: {
-    XIAOMI_MIMO_API_KEY: z.string().min(1),
-    XIAOMI_MIMO_BASE_URL: z.string().optional().default('https://api.xiaomimimo.com/v1'),
+    OPENROUTER_API_KEY: z.string().min(1),
+    OPENROUTER_BASE_URL: z.string().optional().default('https://openrouter.ai/api/v1'),
+    APP_URL: z.string().optional().default('https://your-app.com'),
 
     DATABASE_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
