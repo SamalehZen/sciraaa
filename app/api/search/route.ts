@@ -316,7 +316,9 @@ export async function POST(req: Request) {
         
         const decoder = new TextDecoder();
         let buffer = '';
-        let fullText = '';
+        const textId = `text-${Date.now()}`;
+        
+        dataStream.write({ type: 'text-start', id: textId });
         
         try {
           while (true) {
@@ -336,8 +338,7 @@ export async function POST(req: Request) {
                   const parsed = JSON.parse(data);
                   const content = parsed.choices?.[0]?.delta?.content;
                   if (content) {
-                    fullText += content;
-                    dataStream.write({ type: 'text', text: content });
+                    dataStream.write({ type: 'text-delta', id: textId, delta: content });
                   }
                 } catch {}
               }
@@ -347,14 +348,12 @@ export async function POST(req: Request) {
           reader.releaseLock();
         }
         
+        dataStream.write({ type: 'text-end', id: textId });
+        
         const processingTime = (Date.now() - streamStartTime) / 1000;
         console.log(`✅ PDF Request completed: ${processingTime.toFixed(2)}s`);
         
-        dataStream.write({
-          type: 'finish',
-          finishReason: 'stop',
-          totalUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-        } as any);
+        dataStream.write({ type: 'finish' });
         
         if (user?.id) {
           after(async () => {
