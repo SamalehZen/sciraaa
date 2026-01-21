@@ -1,71 +1,74 @@
 import { customProvider } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-// Arka backend: single provider mapping to Google Gemini Flash.
-// Default model is gemini-2.5-flash with intended fallbacks to gemini-2.0-flash then gemini-2.0-flash-exp
-// If 2.5 is unavailable in your project, adjust DEFAULT_GOOGLE_MODEL below.
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
-// Fallbacks (documented only; selection is handled at call sites when needed):
-const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+const DEFAULT_MODEL = 'deepseek/deepseek-r1-0528:free';
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
-const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+const openrouter = createOpenAICompatible({
+  name: 'openrouter',
+  baseURL: OPENROUTER_BASE_URL,
+  apiKey: OPENROUTER_API_KEY || undefined,
+  headers: {
+    'HTTP-Referer': process.env.APP_URL || 'https://your-app.com',
+    'X-Title': 'Hyper AI',
+  },
+});
 
-function getGoogleProvider() {
-  const apiKey = DEFAULT_API_KEY;
+function getOpenRouterProvider() {
+  const apiKey = OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.warn('GOOGLE_GENERATIVE_AI_API_KEY not set, falling back to environment variable');
+    console.warn('OPENROUTER_API_KEY not set');
   }
-  return google(DEFAULT_GOOGLE_MODEL, { apiKey: apiKey || undefined });
+  return openrouter(DEFAULT_MODEL);
 }
 
-// Single Google provider for all hyper-* model ids expected by the UI.
-// We keep all original model ids/labels for UI parity, but route everything to Gemini Flash.
 export const hyper = customProvider({
   languageModels: {
-    'hyper-default': getGoogleProvider(),
-    'hyper-nano': getGoogleProvider(),
-    'hyper-name': getGoogleProvider(),
-    'hyper-grok-3': getGoogleProvider(),
-    'hyper-grok-4': getGoogleProvider(),
-    'hyper-grok-4-fast': getGoogleProvider(),
-    'hyper-grok-4-fast-think': getGoogleProvider(),
-    'hyper-code': getGoogleProvider(),
-    'hyper-enhance': getGoogleProvider(),
-    'hyper-qwen-4b': getGoogleProvider(),
-    'hyper-qwen-4b-thinking': getGoogleProvider(),
-    'hyper-gpt5': getGoogleProvider(),
-    'hyper-gpt5-mini': getGoogleProvider(),
-    'hyper-gpt5-nano': getGoogleProvider(),
-    'hyper-o3': getGoogleProvider(),
-    'hyper-qwen-32b': getGoogleProvider(),
-    'hyper-gpt-oss-20': getGoogleProvider(),
-    'hyper-gpt-oss-120': getGoogleProvider(),
-    'hyper-deepseek-chat': getGoogleProvider(),
-    'hyper-deepseek-chat-think': getGoogleProvider(),
-    'hyper-deepseek-r1': getGoogleProvider(),
-    'hyper-qwen-coder': getGoogleProvider(),
-    'hyper-qwen-30': getGoogleProvider(),
-    'hyper-qwen-30-think': getGoogleProvider(),
-    'hyper-qwen-3-next': getGoogleProvider(),
-    'hyper-qwen-3-next-think': getGoogleProvider(),
-    'hyper-qwen-3-max': getGoogleProvider(),
-    'hyper-qwen-3-max-preview': getGoogleProvider(),
-    'hyper-qwen-235': getGoogleProvider(),
-    'hyper-qwen-235-think': getGoogleProvider(),
-    'hyper-glm-air': getGoogleProvider(),
-    'hyper-glm': getGoogleProvider(),
-    'hyper-glm-4.6': getGoogleProvider(),
-    'hyper-kimi-k2-v2': getGoogleProvider(),
-    'hyper-haiku': getGoogleProvider(),
-    'hyper-mistral-medium': getGoogleProvider(),
-    'hyper-magistral-small': getGoogleProvider(),
-    'hyper-magistral-medium': getGoogleProvider(),
-    'hyper-google-lite': getGoogleProvider(),
-    'hyper-google': getGoogleProvider(),
-    'hyper-google-think': getGoogleProvider(),
-    'hyper-google-think-v2': getGoogleProvider(),
-    'hyper-google-think-v3': getGoogleProvider(),
-    'hyper-anthropic': getGoogleProvider(),
+    'hyper-default': getOpenRouterProvider(),
+    'hyper-nano': getOpenRouterProvider(),
+    'hyper-name': getOpenRouterProvider(),
+    'hyper-grok-3': getOpenRouterProvider(),
+    'hyper-grok-4': getOpenRouterProvider(),
+    'hyper-grok-4-fast': getOpenRouterProvider(),
+    'hyper-grok-4-fast-think': getOpenRouterProvider(),
+    'hyper-code': getOpenRouterProvider(),
+    'hyper-enhance': getOpenRouterProvider(),
+    'hyper-qwen-4b': getOpenRouterProvider(),
+    'hyper-qwen-4b-thinking': getOpenRouterProvider(),
+    'hyper-gpt5': getOpenRouterProvider(),
+    'hyper-gpt5-mini': getOpenRouterProvider(),
+    'hyper-gpt5-nano': getOpenRouterProvider(),
+    'hyper-o3': getOpenRouterProvider(),
+    'hyper-qwen-32b': getOpenRouterProvider(),
+    'hyper-gpt-oss-20': getOpenRouterProvider(),
+    'hyper-gpt-oss-120': getOpenRouterProvider(),
+    'hyper-deepseek-chat': getOpenRouterProvider(),
+    'hyper-deepseek-chat-think': getOpenRouterProvider(),
+    'hyper-deepseek-r1': getOpenRouterProvider(),
+    'hyper-qwen-coder': getOpenRouterProvider(),
+    'hyper-qwen-30': getOpenRouterProvider(),
+    'hyper-qwen-30-think': getOpenRouterProvider(),
+    'hyper-qwen-3-next': getOpenRouterProvider(),
+    'hyper-qwen-3-next-think': getOpenRouterProvider(),
+    'hyper-qwen-3-max': getOpenRouterProvider(),
+    'hyper-qwen-3-max-preview': getOpenRouterProvider(),
+    'hyper-qwen-235': getOpenRouterProvider(),
+    'hyper-qwen-235-think': getOpenRouterProvider(),
+    'hyper-glm-air': getOpenRouterProvider(),
+    'hyper-glm': getOpenRouterProvider(),
+    'hyper-glm-4.6': getOpenRouterProvider(),
+    'hyper-kimi-k2-v2': getOpenRouterProvider(),
+    'hyper-haiku': getOpenRouterProvider(),
+    'hyper-mistral-medium': getOpenRouterProvider(),
+    'hyper-magistral-small': getOpenRouterProvider(),
+    'hyper-magistral-medium': getOpenRouterProvider(),
+    'hyper-google-lite': getOpenRouterProvider(),
+    'hyper-google': getOpenRouterProvider(),
+    'hyper-google-think': getOpenRouterProvider(),
+    'hyper-google-think-v2': getOpenRouterProvider(),
+    'hyper-google-think-v3': getOpenRouterProvider(),
+    'hyper-anthropic': getOpenRouterProvider(),
   },
 });
 

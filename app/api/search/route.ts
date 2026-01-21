@@ -81,8 +81,52 @@ import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { getCachedCustomInstructionsByUserId } from '@/lib/user-data-server';
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import { extractTextFromPdfUrl, isPdfContentType } from '@/lib/pdf-utils';
 
 import { CohereChatModelOptions } from '@ai-sdk/cohere';
+
+async function preprocessMessagesWithPdf(messages: any[]): Promise<any[]> {
+  const processedMessages = await Promise.all(
+    messages.map(async (message) => {
+      if (!message.experimental_attachments?.length) {
+        return message;
+      }
+
+      const processedAttachments: any[] = [];
+      const pdfTextParts: string[] = [];
+
+      for (const attachment of message.experimental_attachments) {
+        if (isPdfContentType(attachment.contentType)) {
+          try {
+            const pdfText = await extractTextFromPdfUrl(attachment.url);
+            pdfTextParts.push(`[PDF: ${attachment.name || 'document.pdf'}]\n${pdfText}\n[/PDF]`);
+          } catch (error) {
+            console.error('Failed to extract PDF text:', error);
+            pdfTextParts.push(`[PDF: ${attachment.name || 'document.pdf'}] (Failed to extract text)`);
+          }
+        } else {
+          processedAttachments.push(attachment);
+        }
+      }
+
+      if (pdfTextParts.length === 0) {
+        return message;
+      }
+
+      const existingContent = message.parts?.map((p: any) => p.text || '').join('') || message.content || '';
+      const newContent = pdfTextParts.join('\n\n') + (existingContent ? '\n\n' + existingContent : '');
+
+      return {
+        ...message,
+        content: newContent,
+        parts: [{ type: 'text', text: newContent }],
+        experimental_attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
+      };
+    })
+  );
+
+  return processedMessages;
+}
 
 let globalStreamContext: ResumableStreamContext | null = null;
 
@@ -318,9 +362,11 @@ export async function POST(req: Request) {
 
       const streamStartTime = Date.now();
 
+      const processedMessages = await preprocessMessagesWithPdf(messages);
+
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: convertToModelMessages(processedMessages),
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
