@@ -1,12 +1,34 @@
 import type { UIMessage, CoreMessage, TextPart, ImagePart } from 'ai';
 
-export function hasPdfAttachments(messages: UIMessage[]): boolean {
-  return messages.some(
-    (message) =>
-      message.experimental_attachments?.some(
-        (attachment) => attachment.contentType === 'application/pdf'
-      )
+interface FilePart {
+  type: 'file';
+  mediaType?: string;
+  data?: string;
+  url?: string;
+  filename?: string;
+}
+
+function isFilePart(part: unknown): part is FilePart {
+  return (
+    typeof part === 'object' &&
+    part !== null &&
+    'type' in part &&
+    (part as { type: unknown }).type === 'file'
   );
+}
+
+export function hasPdfAttachments(messages: UIMessage[]): boolean {
+  return messages.some((message) => {
+    const hasInAttachments = message.experimental_attachments?.some(
+      (attachment) => attachment.contentType === 'application/pdf'
+    );
+    
+    const hasInParts = (message.parts || []).some(
+      (part) => isFilePart(part) && part.mediaType === 'application/pdf'
+    );
+    
+    return hasInAttachments || hasInParts;
+  });
 }
 
 export function convertMessagesWithPdfAsText(messages: UIMessage[]): CoreMessage[] {
@@ -86,7 +108,24 @@ export function convertMessagesForOpenRouterPdf(messages: UIMessage[]): OpenRout
       if (message.parts) {
         for (const part of message.parts) {
           if (part.type === 'text' && 'text' in part) {
-            content.push({ type: 'text', text: part.text });
+            content.push({ type: 'text', text: (part as { text: string }).text });
+          } else if (isFilePart(part)) {
+            if (part.mediaType === 'application/pdf') {
+              const fileData = part.url || part.data || '';
+              content.push({
+                type: 'file',
+                file: {
+                  filename: part.filename || 'document.pdf',
+                  fileData: fileData,
+                },
+              });
+            } else if (part.mediaType?.startsWith('image/')) {
+              const imageUrl = part.url || part.data || '';
+              content.push({
+                type: 'image_url',
+                image_url: { url: imageUrl },
+              });
+            }
           }
         }
       }
@@ -120,7 +159,7 @@ export function convertMessagesForOpenRouterPdf(messages: UIMessage[]): OpenRout
     
     if (role === 'assistant') {
       const textParts = message.parts?.filter((p) => p.type === 'text') || [];
-      const text = textParts.map((p) => ('text' in p ? p.text : '')).join('');
+      const text = textParts.map((p) => ('text' in p ? (p as { text: string }).text : '')).join('');
       return { role: 'assistant', content: text || '' };
     }
     

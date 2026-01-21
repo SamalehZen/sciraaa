@@ -258,7 +258,12 @@ export async function POST(req: Request) {
 
       const streamStartTime = Date.now();
 
+      const lastMessage = messages[messages.length - 1];
+      console.log('📋 Last message parts:', JSON.stringify(lastMessage?.parts?.map((p: any) => ({ type: p.type, mediaType: p.mediaType })) || []));
+      console.log('📋 Last message attachments:', JSON.stringify(lastMessage?.experimental_attachments?.map((a: any) => ({ contentType: a.contentType, name: a.name })) || []));
+
       const containsPdf = hasPdfAttachments(messages);
+      console.log('📋 Contains PDF:', containsPdf);
       
       if (containsPdf) {
         console.log('📄 PDF detected, using direct OpenRouter API with file-parser plugin');
