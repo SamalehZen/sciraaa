@@ -1,7 +1,7 @@
 import { customProvider } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-const DEFAULT_MIMO_MODEL = 'z-ai/glm-4.5-air:free';
+const DEFAULT_MIMO_MODEL = 'deepseek/deepseek-r1-0528:free';
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 

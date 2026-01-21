@@ -276,6 +276,16 @@ export async function POST(req: Request) {
           (latitude && longitude ? `\n\nThe user's location is ${latitude}, ${longitude}.` : ''),
         toolChoice: 'auto',
         providerOptions: {
+          openrouter: {
+            plugins: [
+              {
+                id: "file-parser",
+                pdf: {
+                  engine: "pdf-text"
+                }
+              }
+            ]
+          },
           google: {
             ...(resolvedModel === 'hyper-google-think' || resolvedModel === 'hyper-google-pro-think'
               ? {
