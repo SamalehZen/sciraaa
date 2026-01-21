@@ -15,6 +15,7 @@ import {
   stepCountIs,
   JsonToSseTransformStream,
 } from 'ai';
+import { hasPdfAttachments, convertMessagesForOpenRouterPdf } from '@/lib/openrouter-pdf-transform';
 import {
   hyper,
   requiresAuthentication,
@@ -257,9 +258,119 @@ export async function POST(req: Request) {
 
       const streamStartTime = Date.now();
 
+      const containsPdf = hasPdfAttachments(messages);
+      
+      if (containsPdf) {
+        console.log('📄 PDF detected, using direct OpenRouter API with file-parser plugin');
+        
+        const openRouterMessages = convertMessagesForOpenRouterPdf(messages);
+        const systemPrompt = instructions +
+          (customInstructions && (isCustomInstructionsEnabled ?? true)
+            ? `\n\nThe user's custom instructions are as follows and YOU MUST FOLLOW THEM AT ALL COSTS: ${customInstructions?.content}`
+            : '') +
+          (latitude && longitude ? `\n\nThe user's location is ${latitude}, ${longitude}.` : '');
+        
+        openRouterMessages.unshift({ role: 'system', content: systemPrompt });
+        
+        const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+        const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+        
+        const openRouterResponse = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'HTTP-Referer': process.env.APP_URL || 'https://your-app.com',
+            'X-Title': 'Hyper AI',
+          },
+          body: JSON.stringify({
+            model: 'deepseek/deepseek-r1-0528:free',
+            messages: openRouterMessages,
+            stream: true,
+            plugins: [
+              {
+                id: 'file-parser',
+                pdf: {
+                  engine: 'pdf-text',
+                },
+              },
+            ],
+          }),
+        });
+        
+        if (!openRouterResponse.ok) {
+          const errorText = await openRouterResponse.text();
+          console.error('📄 OpenRouter API error:', openRouterResponse.status, errorText);
+          throw new Error(`OpenRouter API error: ${openRouterResponse.status}`);
+        }
+        
+        const reader = openRouterResponse.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body from OpenRouter');
+        }
+        
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullText = '';
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  if (content) {
+                    fullText += content;
+                    dataStream.write({ type: 'text', text: content });
+                  }
+                } catch {}
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        
+        const processingTime = (Date.now() - streamStartTime) / 1000;
+        console.log(`✅ PDF Request completed: ${processingTime.toFixed(2)}s`);
+        
+        dataStream.write({
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        } as any);
+        
+        if (user?.id) {
+          after(async () => {
+            try {
+              if (!shouldBypassRateLimits(resolvedModel, user)) {
+                await incrementMessageUsage({ userId: user.id });
+              }
+            } catch (error) {
+              console.error('Failed to track usage:', error);
+            }
+          });
+        }
+        
+        return;
+      }
+
+      const processedMessages = convertToModelMessages(messages);
+
       const result = streamText({
         model: hyper.languageModel(resolvedModel),
-        messages: convertToModelMessages(messages),
+        messages: processedMessages,
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
