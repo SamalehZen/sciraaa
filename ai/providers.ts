@@ -4,9 +4,9 @@ import { google } from '@ai-sdk/google';
 // Arka backend: single provider mapping to Google Gemini Flash.
 // Default model is gemini-2.5-flash with intended fallbacks to gemini-2.0-flash then gemini-2.0-flash-exp
 // If 2.5 is unavailable in your project, adjust DEFAULT_GOOGLE_MODEL below.
-const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GOOGLE_MODEL = 'gemini-3.0-flash';
 // Fallbacks (documented only; selection is handled at call sites when needed):
-const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+const FALLBACK_GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
 const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
 
