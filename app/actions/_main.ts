@@ -211,8 +211,6 @@ function getSystemPromptByGroup(groupId: LegacyGroupId): string {
 export async function suggestQuestions(history: any[], groupId: LegacyGroupId = 'web') {
   'use server';
 
-  console.log(history, groupId);
-
   const systemPrompt = getSystemPromptByGroup(groupId);
 
   const { object } = await generateObject({
@@ -283,7 +281,6 @@ Guidelines (MANDATORY):
 
     return { success: true, enhanced: text.trim() };
   } catch (error) {
-    console.error('Error enhancing prompt:', error);
     return { success: false, error: 'Failed to enhance prompt' };
   }
 }
@@ -1561,11 +1558,8 @@ export async function getUserChats(
   if (!userId) return { chats: [], hasMore: false };
 
   if (isAnonymousUser(userId)) {
-    console.log('[actions.getUserChats] anonymous user - skipping DB', { userId, startingAfter, endingBefore });
     return { chats: [], hasMore: false };
   }
-
-  console.log('[actions.getUserChats] fetching', { userId, limit, startingAfter, endingBefore });
 
   try {
     return await getChatsByUserId({
@@ -1575,7 +1569,6 @@ export async function getUserChats(
       endingBefore: endingBefore || null,
     });
   } catch (error) {
-    console.error('[actions.getUserChats] Error fetching user chats', { userId, limit, startingAfter, endingBefore, error: error instanceof Error ? error.message : String(error) });
     return { chats: [], hasMore: false };
   }
 }
@@ -1591,11 +1584,8 @@ export async function loadMoreChats(
   if (!userId || !lastChatId) return { chats: [], hasMore: false };
 
   if (isAnonymousUser(userId)) {
-    console.log('[actions.loadMoreChats] anonymous user - skipping DB', { userId, lastChatId });
     return { chats: [], hasMore: false };
   }
-
-  console.log('[actions.loadMoreChats] fetching', { userId, lastChatId, limit });
 
   try {
     return await getChatsByUserId({
@@ -1605,7 +1595,6 @@ export async function loadMoreChats(
       endingBefore: lastChatId,
     });
   } catch (error) {
-    console.error('[actions.loadMoreChats] Error loading more chats', { userId, lastChatId, limit, error: error instanceof Error ? error.message : String(error) });
     return { chats: [], hasMore: false };
   }
 }
@@ -1619,7 +1608,6 @@ export async function deleteChat(chatId: string) {
   try {
     return await deleteChatById({ id: chatId });
   } catch (error) {
-    console.error('Error deleting chat:', error);
     return null;
   }
 }
@@ -1628,19 +1616,12 @@ export async function deleteChat(chatId: string) {
 export async function updateChatVisibility(chatId: string, visibility: 'private' | 'public') {
   'use server';
 
-  console.log('🔄 updateChatVisibility called with:', { chatId, visibility });
-
   if (!chatId) {
-    console.error('❌ updateChatVisibility: No chatId provided');
     throw new Error('Chat ID is required');
   }
 
   try {
-    console.log('📡 Calling updateChatVisibilityById with:', { chatId, visibility });
     const result = await updateChatVisibilityById({ chatId, visibility });
-    console.log('✅ updateChatVisibilityById successful, result:', result);
-
-    // Return a serializable plain object instead of raw database result
     return {
       success: true,
       chatId,
@@ -1648,12 +1629,6 @@ export async function updateChatVisibility(chatId: string, visibility: 'private'
       rowCount: result?.rowCount || 0,
     };
   } catch (error) {
-    console.error('❌ Error in updateChatVisibility:', {
-      chatId,
-      visibility,
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
     throw error;
   }
 }
@@ -1667,7 +1642,6 @@ export async function getChatInfo(chatId: string) {
   try {
     return await getChatById({ id: chatId });
   } catch (error) {
-    console.error('Error getting chat info:', error);
     return null;
   }
 }
@@ -1676,10 +1650,8 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
   'use server';
   try {
     const [message] = await getMessageById({ id });
-    console.log('Message: ', message);
 
     if (!message) {
-      console.error(`No message found with id: ${id}`);
       return;
     }
 
@@ -1687,11 +1659,8 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
       chatId: message.chatId,
       timestamp: message.createdAt,
     });
-
-    console.log(`Successfully deleted trailing messages after message ID: ${id}`);
   } catch (error) {
-    console.error(`Error deleting trailing messages: ${error}`);
-    throw error; // Re-throw to allow caller to handle
+    throw error;
   }
 }
 
@@ -1704,7 +1673,6 @@ export async function updateChatTitle(chatId: string, title: string) {
   try {
     return await updateChatTitleById({ chatId, title: title.trim() });
   } catch (error) {
-    console.error('Error updating chat title:', error);
     return null;
   }
 }
@@ -1751,7 +1719,6 @@ export async function getUserMessageCount(providedUser?: any) {
 
     return { count, error: null };
   } catch (error) {
-    console.error('Error getting user message count:', error);
     return { count: 0, error: 'Failed to get message count' };
   }
 }
@@ -1775,7 +1742,6 @@ export async function incrementUserMessageCount() {
 
     return { success: true, error: null };
   } catch (error) {
-    console.error('Error incrementing user message count:', error);
     return { success: false, error: 'Failed to increment message count' };
   }
 }
@@ -1805,7 +1771,6 @@ export async function getExtremeSearchUsageCount(providedUser?: any) {
 
     return { count, error: null };
   } catch (error) {
-    console.error('Error getting extreme search usage count:', error);
     return { count: 0, error: 'Failed to get extreme search count' };
   }
 }
@@ -1871,7 +1836,6 @@ export async function getHistoricalUsage(providedUser?: any, months: number = 9)
 
     return completeData;
   } catch (error) {
-    console.error('Error getting historical usage:', error);
     return [];
   }
 }
@@ -1889,7 +1853,6 @@ export async function getCustomInstructions(providedUser?: any) {
     const instructions = await getCustomInstructionsByUserId({ userId: user.id });
     return instructions;
   } catch (error) {
-    console.error('Error getting custom instructions:', error);
     return null;
   }
 }
@@ -1919,7 +1882,6 @@ export async function saveCustomInstructions(content: string) {
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error saving custom instructions:', error);
     return { success: false, error: 'Failed to save custom instructions' };
   }
 }
@@ -1936,7 +1898,6 @@ export async function deleteCustomInstructionsAction() {
     const result = await deleteCustomInstructions({ userId: user.id });
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error deleting custom instructions:', error);
     return { success: false, error: 'Failed to delete custom instructions' };
   }
 }
@@ -1996,7 +1957,6 @@ export async function getPaymentHistory() {
     const payments = await getPaymentsByUserId({ userId: user.id });
     return payments;
   } catch (error) {
-    console.error('Error getting payment history:', error);
     return null;
   }
 }
@@ -2084,8 +2044,6 @@ function calculateNextRun(cronSchedule: string, timezone: string): Date {
 
     return new Date(Date.now() + 24 * 60 * 60 * 1000);
   } catch (error) {
-    console.error('Error parsing cron expression:', cronSchedule, error);
-    // Fallback to simple calculation
     const now = new Date();
     const nextRun = new Date(now);
     nextRun.setDate(nextRun.getDate() + 1);
@@ -2194,19 +2152,10 @@ export async function createScheduledLookout({
       qstashScheduleId: undefined, // Will be updated if needed
     });
 
-    console.log('📝 Created lookout in database:', lookout.id, 'Now scheduling with QStash...');
-
-    // Small delay to ensure database transaction is committed
     await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Create QStash schedule for all frequencies (recurring and once)
-    if (lookout.id) {
-      console.log('QStash scheduling disabled for lookout:', lookout.id);
-    }
 
     return { success: true, lookout };
   } catch (error) {
-    console.error('Error creating scheduled lookout:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -2227,7 +2176,6 @@ export async function getUserLookouts() {
           const nextRunAt = calculateNextRun(lookout.cronSchedule, lookout.timezone);
           return { ...lookout, nextRunAt };
         } catch (error) {
-          console.error('Error calculating next run for lookout:', lookout.id, error);
           return lookout;
         }
       }
@@ -2236,7 +2184,6 @@ export async function getUserLookouts() {
 
     return { success: true, lookouts: updatedLookouts };
   } catch (error) {
-    console.error('Error getting user lookouts:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -2266,7 +2213,6 @@ export async function updateLookoutStatusAction({
         const nextRunAt = calculateNextRun(lookout.cronSchedule, lookout.timezone);
         await updateLookout({ id, nextRunAt });
       } catch (error) {
-        console.error('Error updating next run time:', error);
       }
     }
 
@@ -2274,7 +2220,6 @@ export async function updateLookoutStatusAction({
     const updatedLookout = await updateLookoutStatus({ id, status });
     return { success: true, lookout: updatedLookout };
   } catch (error) {
-    console.error('Error updating lookout status:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -2357,7 +2302,6 @@ export async function updateLookoutAction({
 
     return { success: true, lookout: updatedLookout };
   } catch (error) {
-    console.error('Error updating lookout:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -2379,7 +2323,6 @@ export async function deleteLookoutAction({ id }: { id: string }) {
     const deletedLookout = await deleteLookout({ id });
     return { success: true, lookout: deletedLookout };
   } catch (error) {
-    console.error('Error deleting lookout:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

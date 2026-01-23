@@ -51,16 +51,10 @@ export async function saveChat({
   visibility: VisibilityType;
 }) {
   try {
-    // Ensure user exists to satisfy FK (handles anonymous arka:* users too)
-    console.log('[db.saveChat] ensure user exists', { userId, isArka: userId.startsWith('arka:') });
     let existingUser: User | null = null;
     try {
       existingUser = await db.query.user.findFirst({ where: eq(user.id, userId) });
     } catch (error) {
-      console.error('[db.saveChat] user existence check failed on replica, falling back to primary', {
-        userId,
-        error: error instanceof Error ? error.message : String(error),
-      });
       existingUser = await maindb.query.user.findFirst({ where: eq(user.id, userId) });
     }
 
@@ -87,7 +81,6 @@ export async function saveChat({
       visibility,
     });
   } catch (error) {
-    console.error('[db.saveChat] failed', { userId, error: error instanceof Error ? error.message : String(error) });
     throw new ChatSDKError('bad_request:database', 'Failed to save chat');
   }
 }
@@ -116,7 +109,6 @@ export async function getChatsByUserId({
   endingBefore: string | null;
 }) {
   try {
-    console.log('[db.getChatsByUserId] query', { userId: id, limit, startingAfter, endingBefore });
 
     const extendedLimit = limit + 1;
 
@@ -135,13 +127,6 @@ export async function getChatsByUserId({
       const [selectedChat] = await db.select().from(chat).where(eq(chat.id, startingAfter)).limit(1);
 
       if (!selectedChat || selectedChat.userId !== id) {
-        console.log('[db.getChatsByUserId] cursor not found or not owned', {
-          op: 'getChatsByUserId',
-          userId: id,
-          startingAfter,
-          endingBefore,
-          note: 'cursor not found or not owned',
-        });
         return { chats: [], hasMore: false };
       }
 
@@ -150,13 +135,6 @@ export async function getChatsByUserId({
       const [selectedChat] = await db.select().from(chat).where(eq(chat.id, endingBefore)).limit(1);
 
       if (!selectedChat || selectedChat.userId !== id) {
-        console.log('[db.getChatsByUserId] cursor not found or not owned', {
-          op: 'getChatsByUserId',
-          userId: id,
-          startingAfter,
-          endingBefore,
-          note: 'cursor not found or not owned',
-        });
         return { chats: [], hasMore: false };
       }
 
@@ -178,11 +156,7 @@ export async function getChatsByUserId({
 
 export async function getChatById({ id }: { id: string }) {
   try {
-    console.log('🔍 [DB-DETAIL] getChatById: Starting cached query...');
-    const cacheQueryStart = Date.now();
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id)).$withCache();
-    const cacheQueryTime = (Date.now() - cacheQueryStart) / 1000;
-    console.log(`⏱️  [DB-DETAIL] getChatById: Cached query took ${cacheQueryTime.toFixed(2)}s`);
     return selectedChat;
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to get chat by id');
@@ -209,7 +183,6 @@ export async function getChatWithUserById({ id }: { id: string }) {
       .$withCache();
     return result;
   } catch (error) {
-    console.log('Error getting chat with user by id', error);
     return null;
   }
 }
@@ -286,14 +259,8 @@ export async function updateChatVisibilityById({
   chatId: string;
   visibility: 'private' | 'public';
 }) {
-  console.log('🔄 updateChatVisibilityById called with:', { chatId, visibility });
-
   try {
-    console.log('📡 Executing database update for chat visibility');
     const result = await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
-    console.log('✅ Database update successful, result:', result);
-
-    // Return a consistent, serializable structure
     return {
       success: true,
       rowCount: result.rowCount || 0,
@@ -301,12 +268,6 @@ export async function updateChatVisibilityById({
       visibility,
     };
   } catch (error) {
-    console.error('❌ Database error in updateChatVisibilityById:', {
-      chatId,
-      visibility,
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
     throw new ChatSDKError('bad_request:database', 'Failed to update chat visibility by id');
   }
 }
@@ -427,7 +388,6 @@ export async function getExtremeSearchCount({ userId }: { userId: string }): Pro
     const usage = await getExtremeSearchUsageByUserId({ userId });
     return usage?.searchCount || 0;
   } catch (error) {
-    console.error('Error getting extreme search count:', error);
     return 0;
   }
 }
@@ -503,7 +463,6 @@ export async function getMessageCount({ userId }: { userId: string }): Promise<n
     const usage = await getMessageUsageByUserId({ userId });
     return usage?.messageCount || 0;
   } catch (error) {
-    console.error('Error getting message count:', error);
     return 0;
   }
 }
@@ -551,7 +510,6 @@ export async function getHistoricalUsageData({ userId, months = 6 }: { userId: s
 
     return result;
   } catch (error) {
-    console.error('Error getting historical usage data:', error);
     return [];
   }
 }
@@ -568,7 +526,6 @@ export async function getCustomInstructionsByUserId({ userId }: { userId: string
 
     return instructions;
   } catch (error) {
-    console.error('Error getting custom instructions:', error);
     return null;
   }
 }
@@ -792,10 +749,8 @@ export async function createLookout({
       })
       .returning();
 
-    console.log('✅ Created lookout with ID:', newLookout.id, 'for user:', userId);
     return newLookout;
   } catch (error) {
-    console.error('❌ Failed to create lookout:', error);
     throw new ChatSDKError('bad_request:database', 'Failed to create lookout');
   }
 }
@@ -810,18 +765,9 @@ export async function getLookoutsByUserId({ userId }: { userId: string }) {
 
 export async function getLookoutById({ id }: { id: string }) {
   try {
-    console.log('🔍 Looking up lookout with ID:', id);
     const [selectedLookout] = await db.select().from(lookout).where(eq(lookout.id, id));
-
-    if (selectedLookout) {
-      console.log('✅ Found lookout:', selectedLookout.id, selectedLookout.title);
-    } else {
-      console.log('❌ No lookout found with ID:', id);
-    }
-
     return selectedLookout;
   } catch (error) {
-    console.error('❌ Error fetching lookout by ID:', id, error);
     throw new ChatSDKError('bad_request:database', 'Failed to get lookout by id');
   }
 }
@@ -960,7 +906,6 @@ export async function getLookoutRunStats({ id }: { id: string }) {
         .length,
     };
   } catch (error) {
-    console.error('Error getting lookout run stats:', error);
     return null;
   }
 }
