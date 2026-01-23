@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,34 +14,25 @@ export async function POST(request: NextRequest) {
 
     const arrayBuffer = await audioFile.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
-
     const mimeType = audioFile.type || 'audio/webm';
 
-    const model = google('gemini-2.5-flash');
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const { text } = await generateText({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'file',
-              data: base64Audio,
-              mimeType: mimeType,
-            },
-            {
-              type: 'text',
-              text: 'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Si l\'audio est en français, transcris en français. Si l\'audio est en anglais, transcris en anglais. Garde la langue originale.',
-            },
-          ],
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Audio,
         },
-      ],
-    });
+      },
+      'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Garde la langue originale de l\'audio.',
+    ]);
 
-    return NextResponse.json({ text: text.trim() });
+    const response = result.response;
+    const text = response.text().trim();
+
+    return NextResponse.json({ text });
   } catch (error: any) {
-    console.error('Transcription error:', error);
     return NextResponse.json(
       { error: error.message || 'Transcription failed' },
       { status: 500 }
