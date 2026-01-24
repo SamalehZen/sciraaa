@@ -55,7 +55,7 @@ interface EnhancedErrorDisplayProps {
   selectedVisibilityType?: 'public' | 'private';
 }
 
-const EnhancedErrorDisplay: React.FC<EnhancedErrorDisplayProps> = ({
+const EnhancedErrorDisplay: React.FC<EnhancedErrorDisplayProps> = React.memo(({
   error,
   handleRetry,
   user,
@@ -271,7 +271,9 @@ const EnhancedErrorDisplay: React.FC<EnhancedErrorDisplayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+EnhancedErrorDisplay.displayName = 'EnhancedErrorDisplay';
 
 export { EnhancedErrorDisplay };
 

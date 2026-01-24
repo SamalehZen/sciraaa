@@ -67,11 +67,7 @@ export function getStreamContext() {
         keyPrefix: 'hyper-ai',
       });
     } catch (error: any) {
-      if (error.message.includes('REDIS_URL')) {
-        console.log(' > Resumable streams are disabled due to missing REDIS_URL');
-      } else {
-        console.error(error);
-      }
+      // Silently handle resumable stream initialization errors
     }
   }
 
@@ -97,7 +93,7 @@ export async function POST(req: Request) {
   const rawModel = typeof model === 'string' ? model.trim() : '';
   const resolvedModel = getModelConfig(rawModel) ? rawModel : 'hyper-default';
 
-  console.log('🔍 Search API:', { model: resolvedModel, group, latitude, longitude });
+
 
   const lightweightUser = await getLightweightUser();
 
@@ -253,7 +249,6 @@ export async function POST(req: Request) {
       }
 
       const setupTime = (Date.now() - requestStartTime) / 1000;
-      console.log(`🚀 Time to streamText: ${setupTime.toFixed(2)}s`);
 
       const streamStartTime = Date.now();
 
@@ -263,7 +258,6 @@ export async function POST(req: Request) {
         ...getModelParameters(resolvedModel),
         stopWhen: stepCountIs(5),
         onAbort: ({ steps }) => {
-          console.log('Stream aborted after', steps.length, 'steps');
         },
         maxRetries: 10,
         activeTools: [...activeTools],
@@ -325,12 +319,6 @@ export async function POST(req: Request) {
             return null;
           }
 
-          console.log('Fixing tool call================================');
-          console.log('toolCall', toolCall);
-          console.log('tools', tools);
-          console.log('parameterSchema', inputSchema);
-          console.log('error', error);
-
           const tool = tools[toolCall.toolName as keyof typeof tools];
 
           if (!tool) {
@@ -354,24 +342,13 @@ export async function POST(req: Request) {
             ].join('\n'),
           });
 
-          console.log('repairedArgs', repairedArgs);
-
           return { ...toolCall, args: JSON.stringify(repairedArgs) };
         },
         onChunk(event) {
-          if (event.chunk.type === 'tool-call') {
-            console.log('Called Tool: ', event.chunk.toolName);
-          }
         },
         onStepFinish(event) {
-          console.log('Step Request:', event.request);
-          if (event.warnings) {
-            console.log('Warnings: ', event.warnings);
-          }
         },
         onFinish: async (event) => {
-          const processingTime = (Date.now() - requestStartTime) / 1000;
-          console.log(`✅ Request completed: ${processingTime.toFixed(2)}s (${event.finishReason})`);
 
           if (user?.id && event.finishReason === 'stop') {
             after(async () => {
@@ -380,14 +357,11 @@ export async function POST(req: Request) {
                   await incrementMessageUsage({ userId: user.id });
                 }
               } catch (error) {
-                console.error('Failed to track usage:', error);
               }
             });
           }
         },
         onError(event) {
-          const processingTime = (Date.now() - requestStartTime) / 1000;
-          console.error(`❌ Request failed: ${processingTime.toFixed(2)}s`, event.error);
         },
       });
 
@@ -398,7 +372,6 @@ export async function POST(req: Request) {
           sendReasoning: true,
           messageMetadata: ({ part }) => {
             if (part.type === 'finish') {
-              console.log('Finish part: ', part);
               const processingTime = (Date.now() - streamStartTime) / 1000;
               return {
                 model: resolvedModel as string,
@@ -414,7 +387,6 @@ export async function POST(req: Request) {
       );
     },
     onError(error) {
-      console.log('Error: ', error);
       if (error instanceof Error && error.message.includes('Rate Limit')) {
         return 'Oops, you have reached the rate limit! Please try again later.';
       }

@@ -28,6 +28,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@eslint/plugin-kit": "0.3.4",
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.1",
     "@hugeicons/core-free-icons": "^1.0.17",
     "@hugeicons/react": "^1.1.1",

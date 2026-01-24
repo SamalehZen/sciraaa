@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 // React and React-related imports
-import React, { memo, useCallback, useEffect, useMemo, useRef, useReducer, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useReducer, useState, lazy, Suspense } from 'react';
 
 // Third-party library imports
 import { useChat } from '@ai-sdk/react';
@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { suggestQuestions, updateChatVisibility } from '@/app/actions';
 
 // Component imports
-import { ChatDialogs } from '@/components/chat-dialogs';
+const ChatDialogs = lazy(() => import('@/components/chat-dialogs').then(m => ({ default: m.ChatDialogs })));
 import Messages from '@/components/messages';
 import { Navbar } from '@/components/navbar';
 import { Button } from '@/components/ui/button';
@@ -699,7 +699,8 @@ const ChatInterface = memo(
           settingsInitialTab={settingsInitialTab}
         />
 
-        {/* Chat Dialogs Component */}
+        {/* Chat Dialogs Component - Lazy Loaded */}
+        <Suspense fallback={null}>
         <ChatDialogs
           commandDialogOpen={chatState.commandDialogOpen}
           setCommandDialogOpen={(open) => dispatch({ type: 'SET_COMMAND_DIALOG_OPEN', payload: open })}
@@ -727,6 +728,7 @@ const ChatInterface = memo(
           user={user}
           setAnyDialogOpen={(open) => dispatch({ type: 'SET_ANY_DIALOG_OPEN', payload: open })}
         />
+        </Suspense>
 
 
         <div

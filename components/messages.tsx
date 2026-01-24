@@ -44,7 +44,7 @@ interface MessagesProps {
   selectedGroup?: SearchGroupId;
 }
 
-const Messages: React.FC<MessagesProps> = ({
+const Messages: React.FC<MessagesProps> = React.memo(({
   messages,
   lastUserMessageIndex,
   setMessages,
@@ -81,55 +81,25 @@ const Messages: React.FC<MessagesProps> = ({
 
   // Filter messages to only show the ones we want to display
   const memoizedMessages = useMemo(() => {
-    console.log('=== FILTERING MESSAGES START ===');
-    console.log('Raw messages array:', messages);
-    console.log('Raw messages length:', messages.length);
-
     const filtered = messages.filter((message) => {
-      console.log('Processing message:', {
-        role: message.role,
-        id: message.id,
-        parts: message.parts?.map((p) => ({
-          type: p.type,
-          hasContent: !!(p as any).text || !!(p as any).input || !!(p as any).output,
-        })),
-        partsLength: message.parts?.length,
-      });
-
-      // Keep all user messages
       if (message.role === 'user') {
-        console.log('✅ Keeping user message:', message.id);
         return true;
       }
-
-      // For assistant messages, keep all of them for now (debugging)
       if (message.role === 'assistant') {
-        console.log('✅ Keeping assistant message:', message.id);
         return true;
       }
-
-      console.log('❌ Filtering out message:', message.role, message.id);
       return false;
     });
-
-    console.log('Filtered messages length:', filtered.length);
-    console.log('Filtered messages:', filtered);
-    console.log('=== FILTERING MESSAGES END ===');
     return filtered;
   }, [messages]);
 
   // Check if there are any active tool invocations in the current messages
   const hasActiveToolInvocations = useMemo(() => {
     const lastMessage = memoizedMessages[memoizedMessages.length - 1];
-    console.log('hasActiveToolInvocations - lastMessage:', lastMessage);
-
-    // Only consider tools as "active" if we're currently streaming AND the last message is assistant with tools
     if (status === 'streaming' && lastMessage?.role === 'assistant') {
       const hasTools = lastMessage.parts?.some((part: ChatMessage['parts'][number]) => isToolUIPart(part));
-      console.log('hasActiveToolInvocations - hasTools:', hasTools);
       return hasTools;
     }
-    console.log('hasActiveToolInvocations - not streaming or no assistant message, returning false');
     return false;
   }, [memoizedMessages, status]);
 
@@ -191,7 +161,7 @@ const Messages: React.FC<MessagesProps> = ({
       // Step 4: Reload
       await regenerate();
     } catch (error) {
-      console.error('Error in retry:', error);
+      // Error handled silently
     }
   }, [messages, user, setMessages, setSuggestedQuestions, regenerate]);
 
@@ -359,29 +329,14 @@ const Messages: React.FC<MessagesProps> = ({
     }
   }, [messages]);
 
-  console.log('=== RENDER CHECK ===');
-  console.log('memoizedMessages.length:', memoizedMessages.length);
-  console.log(
-    'memoizedMessages roles:',
-    memoizedMessages.map((m) => m.role),
-  );
-
   if (memoizedMessages.length === 0) {
-    console.log('❌ No messages to render, returning null');
     return null;
   }
-
-  console.log('✅ Proceeding to render', memoizedMessages.length, 'messages');
 
   return (
     <div className="space-y-0 mb-30 sm:mb-36 flex flex-col">
       <div className="flex-grow">
         {memoizedMessages.map((message, index) => {
-          console.log(`=== RENDERING MESSAGE ${index} ===`);
-          console.log('Message role:', message.role);
-          console.log('Message id:', message.id);
-          console.log('Message parts count:', message.parts?.length);
-
           const isNextMessageAssistant =
             index < memoizedMessages.length - 1 && memoizedMessages[index + 1].role === 'assistant';
           const isCurrentMessageUser = message.role === 'user';
@@ -404,7 +359,6 @@ const Messages: React.FC<MessagesProps> = ({
             messageClasses = 'mb-0';
           }
 
-          console.log(`📤 About to render Message component for ${message.role} message ${index}`);
           return (
             <div key={message.id || index} className={messageClasses}>
               <Message
@@ -540,9 +494,8 @@ const Messages: React.FC<MessagesProps> = ({
       <div ref={messagesEndRef} />
     </div>
   );
-};
+});
 
-// Add a display name for better debugging
 Messages.displayName = 'Messages';
 
 export default Messages;

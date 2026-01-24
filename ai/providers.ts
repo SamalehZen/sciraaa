@@ -6,7 +6,7 @@ import { google } from '@ai-sdk/google';
 // If 2.5 is unavailable in your project, adjust DEFAULT_GOOGLE_MODEL below.
 const DEFAULT_GOOGLE_MODEL = 'gemini-2.5-flash';
 // Fallbacks (documented only; selection is handled at call sites when needed):
-const FALLBACK_GOOGLE_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-exp'];
+const FALLBACK_GOOGLE_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
 const DEFAULT_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
 
