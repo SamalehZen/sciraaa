@@ -297,9 +297,10 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                               modelLabel || undefined,
                             );
                             toast.success('PDF téléchargé avec succès', { id: 'pdf-export' });
-                          } catch (error) {
+                          } catch (error: any) {
                             console.error('PDF export error:', error);
-                            toast.error('Échec du téléchargement PDF', { id: 'pdf-export' });
+                            const errorMsg = error?.message || String(error) || 'Erreur inconnue';
+                            toast.error(`Échec PDF: ${errorMsg.slice(0, 100)}`, { id: 'pdf-export', duration: 8000 });
                           }
                         }}
                         className="size-8 p-0 rounded-full"
