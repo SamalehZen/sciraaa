@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 // Internal app imports
-import { suggestQuestions, updateChatVisibility } from '@/app/actions';
+import { updateChatVisibility } from '@/app/actions';
 
 // Component imports
 const ChatDialogs = lazy(() => import('@/components/chat-dialogs').then(m => ({ default: m.ChatDialogs })));
@@ -354,25 +354,7 @@ const ChatInterface = memo(
             }, 1000);
           }
 
-          if (message.parts && message.role === 'assistant' && (user || chatState.selectedVisibilityType === 'private')) {
-            const lastPart = message.parts[message.parts.length - 1];
-            const lastPartText = lastPart.type === 'text' ? lastPart.text : '';
-            const newHistory = [
-              { role: 'user', content: lastSubmittedQueryRef.current },
-              { role: 'assistant', content: lastPartText },
-            ];
-            console.log('newHistory', newHistory);
-            Promise.resolve()
-              .then(async () => {
-                try {
-                  const { questions } = await suggestQuestions(newHistory, selectedGroup);
-                  dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
-                } catch (err) {
-                  console.error('Error generating suggested questions:', err);
-                }
-              })
-              .catch(() => {});
-          }
+
         } finally {
           try {
             setDataStream(() => []);
@@ -490,63 +472,7 @@ const ChatInterface = memo(
       }
     }, [initialState.query, sendMessage, setInput, messages.length, initialChatId]);
 
-    // Generate suggested questions when opening a chat directly
-    useEffect(() => {
-      const generateSuggestionsForInitialMessages = async () => {
-        // Only generate if we have initial messages, no suggested questions yet,
-        // user is authenticated or chat is private, and status is not streaming
-        if (
-          initialMessages &&
-          initialMessages.length >= 2 &&
-          !chatState.suggestedQuestions.length &&
-          (user || chatState.selectedVisibilityType === 'private') &&
-          status === 'ready'
-        ) {
-          const lastUserMessage = initialMessages.filter((m) => m.role === 'user').pop();
-          const lastAssistantMessage = initialMessages.filter((m) => m.role === 'assistant').pop();
 
-          if (lastUserMessage && lastAssistantMessage) {
-            // Extract content from parts similar to onFinish callback
-            const getUserContent = (message: typeof lastUserMessage) => {
-              if (message.parts && message.parts.length > 0) {
-                const lastPart = message.parts[message.parts.length - 1];
-                return lastPart.type === 'text' ? lastPart.text : '';
-              }
-              return message.content || '';
-            };
-
-            const getAssistantContent = (message: typeof lastAssistantMessage) => {
-              if (message.parts && message.parts.length > 0) {
-                const lastPart = message.parts[message.parts.length - 1];
-                return lastPart.type === 'text' ? lastPart.text : '';
-              }
-              return message.content || '';
-            };
-
-            const newHistory = [
-              { role: 'user', content: getUserContent(lastUserMessage) },
-              { role: 'assistant', content: getAssistantContent(lastAssistantMessage) },
-            ];
-            try {
-              const { questions } = await suggestQuestions(newHistory, selectedGroup);
-              dispatch({ type: 'SET_SUGGESTED_QUESTIONS', payload: questions });
-            } catch (error) {
-              console.error('Error generating suggested questions:', error);
-            }
-          }
-        }
-      };
-
-      generateSuggestionsForInitialMessages();
-    }, [initialMessages, chatState.suggestedQuestions.length, status, user, chatState.selectedVisibilityType]);
-
-    // Reset suggested questions when status changes to streaming
-    useEffect(() => {
-      if (status === 'streaming') {
-        // Clear suggested questions when a new message is being streamed
-        dispatch({ type: 'RESET_SUGGESTED_QUESTIONS' });
-      }
-    }, [status]);
 
     const lastUserMessageIndex = useMemo(() => {
       for (let i = messages.length - 1; i >= 0; i--) {

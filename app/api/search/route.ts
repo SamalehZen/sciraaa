@@ -40,11 +40,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { geolocation } from '@vercel/functions';
 import { createStreamResponse } from '@/lib/streaming-heartbeat';
 
-import {
-  datetimeTool,
-  greetingTool,
-  eanSearchTool,
-} from '@/lib/tools';
+
 import { GroqProviderOptions } from '@ai-sdk/groq';
 import { markdownJoinerTransform } from '@/lib/parser';
 import { ChatMessage } from '@/lib/types';
@@ -305,15 +301,7 @@ export async function POST(req: Request) {
 
           return undefined;
         },
-        tools: (() => {
-          const baseTools = {
-            datetime: datetimeTool,
-            ean_search: eanSearchTool(dataStream),
-            greeting: greetingTool(timezone),
-          };
-
-          return baseTools;
-        })(),
+        tools: {},
         experimental_repairToolCall: async ({ toolCall, tools, inputSchema, error }) => {
           if (NoSuchToolError.isInstance(error)) {
             return null;
