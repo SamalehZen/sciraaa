@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
           data: base64Audio,
         },
       },
-      'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Garde la langue originale de l\'audio. Seulement corriger les fautes de grammaire, conjugaison et syntaxe.',
+      'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Garde la langue originale de l\'audio.',
     ]);
 
     const response = result.response;
