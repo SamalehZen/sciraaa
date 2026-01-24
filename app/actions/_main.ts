@@ -60,96 +60,10 @@ export async function getLightweightUser() {
   return await getLightweightUserAuth();
 }
 
-function getSystemPromptByGroup(groupId: LegacyGroupId): string {
-  const baseGuidelines = `Tu es un assistant qui génère des questions pertinentes basées sur l'historique de la conversation. Tu DOIS créer EXACTEMENT 3 questions.
-
-### Directives générales:
-- Crée exactement 3 questions ouvertes et engageantes
-- Les questions doivent être concises (5-10 mots) mais spécifiques et contextuellement pertinentes
-- Chaque question doit contenir des noms spécifiques, des entités ou des marqueurs de contexte clairs
-- N'utilise JAMAIS de pronoms (il, elle, son, etc.) - utilise toujours les noms propres du contexte
-- Les questions doivent s'enchaîner naturellement de la conversation précédente
-
-### Formatage:
-- Pas de puces, numérotation, ou préfixes
-- Pas de guillemets autour des questions
-- Chaque question doit être grammaticalement complète
-- Chaque question doit se terminer par un point d'interrogation
-- Les questions doivent être diversifiées et non redondantes`;
-
-  const agentPrompts: Record<string, string> = {
-    chat: `Tu es un assistant général pour les conversations. ${baseGuidelines}
-
-### Types de questions spécifiques:
-- Propose de clarifications ou d'approfondissements
-- Suggère des perspectives alternatives ou connexes
-- Engage une discussion plus approfondie`,
-
-    cyrus: `Tu es un assistant pour la génération et l'analyse d'articles. ${baseGuidelines}
-
-### Types de questions spécifiques (pour l'agent Cyrus - Génération de contenu):
-- Demande des clarifications sur la structure de l'article
-- Suggère des angles éditoriaux ou des perspectives alternatives
-- Propose d'approfondir certains points de l'article
-- Demande le type de public cible ou le ton souhaité
-- Suggestions pour enrichir le contenu`,
-
-    libeller: `Tu es un assistant pour la correction et l'amélioration de texte. ${baseGuidelines}
-
-### Types de questions spécifiques (pour l'agent Libeller - Correction):
-- Demande des améliorations structurelles
-- Suggère des clarifications de contenu
-- Propose des vérifications grammaticales ou de style
-- Demande des ajustements tonalité ou registre
-- Propose des reformulations plus percutantes`,
-
-    nomenclature: `Tu es un assistant pour la classification douanière. ${baseGuidelines}
-
-### Types de questions spécifiques (pour l'agent Nomenclature):
-- Demande des précisions sur le produit à classifier
-- Suggère des codes tarifaires alternatifs
-- Propose des vérifications de conformité
-- Demande des détails supplémentaires sur la composition
-- Suggère des stratégies de classification optimales`,
-
-    pdfExcel: `Tu es un assistant pour l'extraction et la conversion de données PDF en Excel. ${baseGuidelines}
-
-### Types de questions spécifiques (pour l'agent PDF to Excel):
-- Demande des précisions sur le formatage souhaité
-- Suggère d'exporter d'autres colonnes ou données
-- Propose des améliorations de structure du tableau
-- Demande des validations ou filtres à appliquer
-- Suggère des calculs ou agrégations supplémentaires`,
-
-    eanexpert: `Tu es un assistant pour la recherche de produits via codes-barres. ${baseGuidelines}
-
-### Types de questions spécifiques (pour l'agent EAN Expert):
-- Demande des précisions sur le produit recherché
-- Suggère des informations complémentaires sur le produit
-- Propose de vérifier d'autres codes-barres similaires
-- Demande des détails sur la marque ou le fournisseur`,
-  };
-
-  return agentPrompts[groupId] || agentPrompts.chat;
-}
-
-export async function suggestQuestions(history: any[], groupId: LegacyGroupId = 'chat') {
+// Question suggestions disabled - returns empty array to save tokens
+export async function suggestQuestions(_history: any[], _groupId: LegacyGroupId = 'chat') {
   'use server';
-
-  const systemPrompt = getSystemPromptByGroup(groupId);
-
-  const { object } = await generateObject({
-    model: hyper.languageModel('hyper-grok-3'),
-    system: systemPrompt,
-    messages: history,
-    schema: z.object({
-      questions: z.array(z.string().max(150)).describe('Les questions générées basées sur l\'historique du message.').max(3),
-    }),
-  });
-
-  return {
-    questions: object.questions,
-  };
+  return { questions: [] };
 }
 
 export async function checkImageModeration(images: string[]) {
