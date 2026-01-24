@@ -38,9 +38,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const id = (await params).id;
   const chat = await fetchChatWithBackoff(id);
   const user = await getUser();
-  // if not chat, return Hyper Chat
+  // if not chat, return HyperFIX Chat
   if (!chat) {
-    return { title: 'Hyper Chat' };
+    return { title: 'HyperFIX Chat' };
   }
   let title;
   // if chat is public, return title
@@ -50,10 +50,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // if chat is private, return title
   if (chat.visibility === 'private') {
     if (!user) {
-      title = 'Hyper Chat';
+      title = 'HyperFIX Chat';
     }
     if (user!.id !== chat.userId) {
-      title = 'Hyper Chat';
+      title = 'HyperFIX Chat';
     }
     title = chat.title;
   }

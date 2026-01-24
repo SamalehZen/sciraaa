@@ -16,14 +16,14 @@ import { SuspensionDetector } from '@/components/suspension-detector';
 export const metadata: Metadata = {
   metadataBase: new URL('https://hyper.vercel.app'),
   title: {
-    default: 'Hyper - AI-Powered Search & Management Engine for Businesses',
-    template: "%s | Hyper",
+    default: 'HyperFIX - AI-Powered Search & Management Engine for Businesses',
+    template: "%s | HyperFIX",
   },
   description:
-    'Hyper - Moteur de recherche et de gestion propulsé par l\'intelligence artificielle, conçu pour les entreprises.',
+    'HyperFIX - Moteur de recherche et de gestion propulsé par l\'intelligence artificielle, conçu pour les entreprises.',
   openGraph: {
     url: 'https://hyper.vercel.app',
-    siteName: 'Hyper AI',
+    siteName: 'HyperFIX AI',
   },
   keywords: [
     'hyper.vercel.app',
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     'ai search engine',
     'search engine',
     'hyper ai',
-    'Hyper AI',
-    'hyper AI',
+    'HyperFIX',
+    'hyperfix',
     'HYPER.AI',
     'hyper github',
     'ai search engine',
