@@ -24,22 +24,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const prompt = `Tu es un agent linguistique spécialisé dans la réécriture intelligente de transcriptions speech-to-text en toutes langues.
-
-Objectif : Transformer le texte oral brut en un texte écrit naturel, clair et professionnel, tout en respectant strictement le sens, l'intention et le ton émotionnel.
-
-Instructions :
-- Corriger les fautes de grammaire, conjugaison et syntaxe
-- Supprimer les répétitions inutiles (ex: "en fait", "voilà", "mais" répétés)
-- Reformuler de manière fluide et naturelle
-- Ne jamais ajouter d'informations ni changer le sens
-- Conserver le registre émotionnel (déception, fermeté, décision, etc.)
-- Ne pas moraliser, ne pas juger
-- Utiliser un langage clair, professionnel et humain
-- Structurer en phrases lisibles
-
-Retourne UNIQUEMENT le texte corrigé, sans explications ni commentaires.`;
-
     const result = await model.generateContent([
       {
         inlineData: {
@@ -47,7 +31,7 @@ Retourne UNIQUEMENT le texte corrigé, sans explications ni commentaires.`;
           data: base64Audio,
         },
       },
-      prompt,
+      'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Garde la langue originale de l\'audio. Seulement corriger les fautes de grammaire, conjugaison et syntaxe.',
     ]);
 
     const response = result.response;
