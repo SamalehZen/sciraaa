@@ -26,6 +26,7 @@ import {
   Clock,
   Info,
   Download,
+  FileDown,
 } from 'lucide-react';
 import {
   ClockIcon as PhosphorClockIcon,
@@ -37,6 +38,7 @@ import { getModelConfig } from '@/ai/providers';
 import { ComprehensiveUserData } from '@/lib/user-data-server';
 import { Spinner } from '../ui/spinner';
 import { markdownTablesToXlsx } from '@/lib/export-xlsx';
+import { downloadResponseAsPdf } from '@/lib/export-pdf';
 import { EANSearchResults } from '@/components/ean-search-results';
 import { EANLoadingState } from '@/components/ean-loading-state';
 import { NutritionScores } from '@/components/nutrition-scores';
@@ -279,6 +281,34 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Copier</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={async () => {
+                          try {
+                            toast.loading('Génération du PDF...', { id: 'pdf-export' });
+                            await downloadResponseAsPdf(
+                              part.text,
+                              modelLabel || undefined,
+                            );
+                            toast.success('PDF téléchargé avec succès', { id: 'pdf-export' });
+                          } catch (error) {
+                            console.error('PDF export error:', error);
+                            toast.error('Échec du téléchargement PDF', { id: 'pdf-export' });
+                          }
+                        }}
+                        className="size-8 p-0 rounded-full"
+                        aria-label="Télécharger en PDF"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Télécharger en PDF</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
