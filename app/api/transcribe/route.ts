@@ -16,7 +16,13 @@ export async function POST(request: NextRequest) {
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = audioFile.type || 'audio/webm';
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash-lite',
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 2048,
+      },
+    });
 
     const result = await model.generateContent([
       {
@@ -25,7 +31,7 @@ export async function POST(request: NextRequest) {
           data: base64Audio,
         },
       },
-      'Transcris cet audio en texte. Retourne UNIQUEMENT le texte transcrit, sans commentaires ni explications. Garde la langue originale de l\'audio.',
+      'Transcribe this audio to text. Return ONLY the transcribed text, nothing else.',
     ]);
 
     const response = result.response;
