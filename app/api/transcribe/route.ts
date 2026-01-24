@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const mimeType = audioFile.type || 'audio/webm';
 
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0,
         maxOutputTokens: 2048,
