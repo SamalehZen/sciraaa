@@ -198,7 +198,8 @@ export const generatePdfFromMarkdown = async (options: PdfExportOptions): Promis
       </div>
     </div>
   `;
-  container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 800px; background: white;';
+  container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 800px; background: #ffffff; color: #000000; font-family: -apple-system, BlinkMacSystemFont, sans-serif;';
+  container.setAttribute('data-pdf-export', 'true');
   document.body.appendChild(container);
 
   const filename = `scira-ai-${generateSlug(title)}.pdf`;
@@ -214,6 +215,17 @@ export const generatePdfFromMarkdown = async (options: PdfExportOptions): Promis
           useCORS: true, 
           logging: false,
           windowWidth: 800,
+          onclone: (clonedDoc: Document) => {
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              * { 
+                color: inherit !important;
+                background-color: inherit !important;
+                border-color: #e5e7eb !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          },
         },
         jsPDF: { 
           unit: 'mm', 
