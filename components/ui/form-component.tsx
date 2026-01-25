@@ -1343,8 +1343,12 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
   const handleRecord = useCallback(async () => {
     if (isRecording && speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      cleanupSpeechRecognition();
+      try {
+        speechRecognitionRef.current.stop();
+      } catch (e) {
+        console.error('Error stopping recognition:', e);
+        cleanupSpeechRecognition();
+      }
     } else {
       try {
         if (typeof window === 'undefined') {
@@ -1405,9 +1409,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
         recognition.onend = () => {
           console.log('Speech recognition ended');
-          if (isRecording) {
-            cleanupSpeechRecognition();
-          }
+          cleanupSpeechRecognition();
         };
 
         speechRecognitionRef.current = recognition;
@@ -2575,8 +2577,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
                         <span className="font-medium text-[11px]">Stop Generation</span>
                       </TooltipContent>
                     </Tooltip>
-                  ) : input.length === 0 && attachments.length === 0 && !isEnhancing && !isTypewriting ? (
-                    /* Show Voice Recording Button when no input */
+                  ) : (input.length === 0 && attachments.length === 0 && !isEnhancing && !isTypewriting) || isRecording ? (
+                    /* Show Voice Recording Button when no input OR when recording */
                     <Tooltip delayDuration={300}>
                       <TooltipTrigger asChild>
                         <Button
