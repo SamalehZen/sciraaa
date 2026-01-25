@@ -1021,7 +1021,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
   const [isDragging, setIsDragging] = useState(false);
 
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isTypewriting, setIsTypewriting] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -1044,11 +1044,15 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
   const hasInteracted = useMemo(() => messages.length > 0, [messages.length]);
 
-  const cleanupMediaRecorder = useCallback(() => {
-    if (mediaRecorderRef.current?.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+  const cleanupSpeechRecognition = useCallback(() => {
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+      } catch (e) {
+        console.error('Error stopping speech recognition:', e);
+      }
+      speechRecognitionRef.current = null;
     }
-    mediaRecorderRef.current = null;
     setIsRecording(false);
   }, []);
 
@@ -1056,9 +1060,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
     isMounted.current = true;
     return () => {
       isMounted.current = false;
-      cleanupMediaRecorder();
+      cleanupSpeechRecognition();
     };
-  }, [cleanupMediaRecorder]);
+  }, [cleanupSpeechRecognition]);
 
   useEffect(() => {
     const finishHandler = () => {
@@ -1338,120 +1342,85 @@ const FormComponent: React.FC<FormComponentProps> = ({
   ]);
 
   const handleRecord = useCallback(async () => {
-    if (isRecording && mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      cleanupMediaRecorder();
+    if (isRecording && speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+      } catch (e) {
+        console.error('Error stopping recognition:', e);
+        cleanupSpeechRecognition();
+      }
     } else {
       try {
-        // Environment and feature checks
         if (typeof window === 'undefined') {
-          toast.error('Voice recording is only available in the browser.');
+          toast.error('Voice recognition is only available in the browser.');
           return;
         }
 
-        if (!navigator.mediaDevices?.getUserMedia) {
-          toast.error('Voice recording is not supported in this browser.');
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+          toast.error('Speech recognition is not supported in this browser. Try Chrome, Edge, or Safari.');
           return;
         }
 
-        // Best-effort permissions hint (not supported in all browsers)
-        try {
-          const permApi: any = (navigator as any).permissions;
-          if (permApi?.query) {
-            const status = await permApi.query({ name: 'microphone' as any });
-            if (status?.state === 'denied') {
-              toast.error('Microphone access is denied. Enable it in your browser settings.');
-              return;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'fr-FR';
+        recognition.maxAlternatives = 1;
+
+        let finalTranscript = '';
+
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+          setIsRecording(true);
+        };
+
+        recognition.onresult = (event: any) => {
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
             }
           }
-        } catch {
-          // Ignore permissions API errors; proceed to request directly
-        }
+          
+          setInput(finalTranscript + interimTranscript);
+        };
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-        // Pick a supported MIME type to maximize cross-browser compatibility (e.g., Safari)
-        const candidateMimeTypes = [
-          'audio/webm;codecs=opus',
-          'audio/webm',
-          'audio/mp4;codecs=mp4a.40.2',
-          'audio/mp4',
-          'audio/ogg;codecs=opus',
-          'audio/mpeg',
-        ];
-        const isTypeSupported = (type: string) =>
-          typeof MediaRecorder !== 'undefined' && (MediaRecorder as any).isTypeSupported?.(type);
-        const selectedMimeType = candidateMimeTypes.find((t) => isTypeSupported(t));
-
-        let recorder: MediaRecorder;
-        try {
-          recorder = selectedMimeType
-            ? new MediaRecorder(stream, { mimeType: selectedMimeType })
-            : new MediaRecorder(stream);
-        } catch (e) {
-          // Fallback: try without options
-          recorder = new MediaRecorder(stream);
-        }
-        mediaRecorderRef.current = recorder;
-
-        recorder.addEventListener('dataavailable', async (event) => {
-          if (event.data.size > 0) {
-            const audioBlob = event.data;
-
-            try {
-              const formData = new FormData();
-              const extension = (() => {
-                const type = (audioBlob?.type || '').toLowerCase();
-                if (type.includes('mp4')) return 'mp4';
-                if (type.includes('ogg')) return 'ogg';
-                if (type.includes('mpeg')) return 'mp3';
-                return 'webm';
-              })();
-              formData.append('audio', audioBlob, `recording.${extension}`);
-              const response = await fetch('/api/transcribe', {
-                method: 'POST',
-                body: formData,
-              });
-
-              if (!response.ok) {
-                throw new Error(`Transcription failed: ${response.statusText}`);
-              }
-
-              const data = await response.json();
-
-              if (data.text) {
-                setInput(data.text);
-              } else {
-                console.error('Transcription response did not contain text:', data);
-              }
-            } catch (error) {
-              console.error('Error during transcription request:', error);
-              toast.error('Failed to transcribe audio. Please try again.');
-            } finally {
-              cleanupMediaRecorder();
-            }
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          
+          if (event.error === 'no-speech') {
+            toast.error('No speech detected. Please try again.');
+          } else if (event.error === 'not-allowed') {
+            toast.error('Microphone access denied. Enable it in your browser settings.');
+          } else if (event.error === 'network') {
+            toast.error('Network error. Please check your connection.');
+          } else {
+            toast.error(`Speech recognition error: ${event.error}`);
           }
-        });
+          
+          cleanupSpeechRecognition();
+        };
 
-        recorder.addEventListener('error', (e) => {
-          console.error('MediaRecorder error:', e);
-          toast.error('Recording failed. Please try again or switch browser.');
-          cleanupMediaRecorder();
-        });
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+          cleanupSpeechRecognition();
+        };
 
-        recorder.addEventListener('stop', () => {
-          stream.getTracks().forEach((track) => track.stop());
-        });
-
-        recorder.start();
-        setIsRecording(true);
+        speechRecognitionRef.current = recognition;
+        recognition.start();
       } catch (error) {
-        console.error('Error accessing microphone:', error);
-        toast.error('Could not access microphone. Please allow mic permission.');
+        console.error('Error starting speech recognition:', error);
+        toast.error('Could not start speech recognition. Please try again.');
         setIsRecording(false);
       }
     }
-  }, [isRecording, cleanupMediaRecorder, setInput]);
+  }, [isRecording, cleanupSpeechRecognition, setInput]);
 
   const handleInput = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -2608,8 +2577,8 @@ const FormComponent: React.FC<FormComponentProps> = ({
                         <span className="font-medium text-[11px]">Stop Generation</span>
                       </TooltipContent>
                     </Tooltip>
-                  ) : input.length === 0 && attachments.length === 0 && !isEnhancing && !isTypewriting ? (
-                    /* Show Voice Recording Button when no input */
+                  ) : (input.length === 0 && attachments.length === 0 && !isEnhancing && !isTypewriting) || isRecording ? (
+                    /* Show Voice Recording Button when no input OR when recording */
                     <Tooltip delayDuration={300}>
                       <TooltipTrigger asChild>
                         <Button
