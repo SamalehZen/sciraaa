@@ -795,8 +795,8 @@ export function UsageSection({ user }: any) {
     isLoading: historicalLoading,
     refetch: refetchHistoricalData,
   } = useQuery({
-    queryKey: ['historicalUsage', user?.id, 9],
-    queryFn: () => getHistoricalUsage(user, 9),
+    queryKey: ['historicalUsage', user?.id, 12],
+    queryFn: () => getHistoricalUsage(user, 12),
     enabled: !!user,
     staleTime: 1000 * 60 * 10,
   });
@@ -808,7 +808,7 @@ export function UsageSection({ user }: any) {
   const loadingStars = useMemo(() => {
     if (!historicalLoading) return [];
 
-    const months = 9;
+    const months = 12;
     const totalDays = months * 30;
     const futureDays = Math.min(15, Math.floor(totalDays * 0.08));
     const pastDays = totalDays - futureDays - 1;
@@ -959,7 +959,7 @@ export function UsageSection({ user }: any) {
       {!usageLoading && (
         <div className={cn('space-y-2', isMobile && !isProUser ? 'pb-4' : '')}>
           <h4 className={cn('font-semibold text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>
-            Activité (9 derniers mois)
+            Activité (12 derniers mois)
           </h4>
           <div className={cn('bg-muted/50 dark:bg-card rounded-lg p-3')}>
             {historicalLoading ? (

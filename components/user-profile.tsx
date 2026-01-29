@@ -275,7 +275,7 @@ const UserProfile = memo(
               <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/settings')}>
                 <div className="w-full flex items-center gap-2">
                   <GearIcon size={16} />
-                  <span>Settings</span>
+                  <span>Paramètres</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -305,7 +305,7 @@ const UserProfile = memo(
                   })
                 }
               >
-                <span>Sign Out</span>
+                <span>Déconnexion</span>
                 <SignOutIcon className="size-4" />
               </DropdownMenuItem>
             </DropdownMenuContent>
