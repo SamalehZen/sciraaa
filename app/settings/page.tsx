@@ -167,7 +167,7 @@ function SettingsPageInner() {
               <ArrowLeftIcon className="h-4 w-4" />
               <span className="text-sm">Back to Search</span>
             </Button>
-            <h1 className="text-lg font-semibold">Settings</h1>
+            <h1 className="text-lg font-semibold">Paramètres</h1>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:block">
@@ -198,7 +198,7 @@ function SettingsPageInner() {
               }}
               className="h-7 px-3 text-xs !shadow-none"
             >
-              Sign out
+              Déconnexion
             </Button>
           </div>
         </div>

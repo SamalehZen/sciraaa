@@ -653,7 +653,7 @@ export const Message: React.FC<MessageProps> = ({
                 <div className="relative">
                   {/* Render user message parts */}
                   {message.parts?.map((part: ChatMessage['parts'][number], partIndex: number) => {
-                    if (part.type === 'text') {
+                    if (part.type === 'text' && part.text && part.text.trim()) {
                       return (
                         <div
                           key={`user-${index}-${partIndex}`}
