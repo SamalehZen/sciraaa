@@ -77,20 +77,13 @@ export default function AuthCard({ title, description }: AuthCardProps) {
           </div>
           {error && <p className="text-xs text-destructive/90">{error}</p>}
           <Button type="submit" className="w-full h-10" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Connexion…' : 'Se connecter'}
           </Button>
         </form>
 
         <div className="pt-4">
           <p className="text-[11px] text-center text-muted-foreground/60 leading-relaxed">
-            By continuing, you agree to our{' '}
-            <a href="/terms" className="hover:text-muted-foreground underline-offset-2 underline">
-              Terms
-            </a>{' '}
-            and{' '}
-            <a href="/privacy-policy" className="hover:text-muted-foreground underline-offset-2 underline">
-              Privacy Policy
-            </a>
+            En continuant, vous accédez à l'application
           </p>
         </div>
       </div>
