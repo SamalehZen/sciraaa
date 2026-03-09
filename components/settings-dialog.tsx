@@ -458,6 +458,29 @@ export function UsageSection({ user }: any) {
     return raw.reduce((sum: number, item: { count: number }) => sum + item.count, 0);
   }, [historicalUsageData]);
 
+  const { monthMeta, totalCols, allCells } = useMemo(() => {
+    if (!processedHistoricalData?.length) return { monthMeta: [], totalCols: 0, allCells: [] as Array<{ level: number; date: string; empty?: boolean }> };
+
+    let col = 0;
+    const monthMeta = processedHistoricalData.map(month => {
+      const weeks = Math.ceil(month.days.length / 7);
+      const startCol = col;
+      col += weeks;
+      return { label: month.month, startCol, weeks };
+    });
+
+    const allCells: Array<{ level: number; date: string; empty?: boolean }> = [];
+    processedHistoricalData.forEach(month => {
+      const weeks = Math.ceil(month.days.length / 7);
+      const totalSlots = weeks * 7;
+      month.days.forEach(d => allCells.push({ level: d.level, date: d.date }));
+      for (let i = month.days.length; i < totalSlots; i++) {
+        allCells.push({ level: 0, date: '', empty: true });
+      }
+    });
+
+    return { monthMeta, totalCols: col, allCells };
+  }, [processedHistoricalData]);
 
   const AGENTS = [
     { id: 'libeller', name: 'Correction Libellé', icon: MagicWandIcon, premium: false },
@@ -540,65 +563,74 @@ export function UsageSection({ user }: any) {
       {/* Activity Graph Section */}
       {(historicalUsageData || historicalLoading) && (
         <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3 pt-4' : 'p-5 pt-5')}>
-          <div className="space-y-3">
-            {processedHistoricalData && processedHistoricalData.length > 0 ? (
+          <div>
+            {processedHistoricalData && processedHistoricalData.length > 0 && totalCols > 0 ? (
               <TooltipProvider delayDuration={0}>
-                <div className="w-full overflow-x-auto pb-1">
-                  <div className="flex" style={{ gap: isMobile ? '2px' : '3px' }}>
-                    {processedHistoricalData.map((month) => {
-                      const weekCount = Math.ceil(month.days.length / 7);
-                      return (
-                        <div key={month.month} className="flex flex-col" style={{ gap: isMobile ? '2px' : '3px' }}>
-                          <div className={cn(
-                            'text-muted-foreground font-medium mb-0.5',
-                            isMobile ? 'text-[9px]' : 'text-[11px]',
-                          )} style={{ paddingLeft: 1 }}>
-                            {month.month}
-                          </div>
-                          <div
-                            className="grid grid-rows-7 grid-flow-col"
-                            style={{ gap: isMobile ? '2px' : '3px' }}
-                          >
-                            {month.days.map((day, dayIndex) => (
-                              <Tooltip key={`${month.month}-${dayIndex}`}>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    className={cn(
-                                      'rounded-[3px] cursor-default',
-                                      isMobile ? 'size-[10px]' : 'size-[13px]',
-                                      day.level === 0 && 'bg-muted',
-                                      day.level === 1 && 'bg-primary/30',
-                                      day.level === 2 && 'bg-primary/50',
-                                      day.level === 3 && 'bg-primary/70',
-                                      day.level === 4 && 'bg-primary',
-                                    )}
-                                  />
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="text-xs">
-                                  <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                  <p className="text-muted-foreground">
-                                    {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === day.date)?.count : 0) ?? 0} recherches
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="w-full">
+                  <div
+                    className="grid mb-1.5"
+                    style={{ gridTemplateColumns: `repeat(${totalCols}, 1fr)`, gap: '2px' }}
+                  >
+                    {monthMeta.map(m => (
+                      <div
+                        key={m.label}
+                        className={cn('text-muted-foreground font-medium truncate', isMobile ? 'text-[8px]' : 'text-[11px]')}
+                        style={{ gridColumn: `${m.startCol + 1} / span ${m.weeks}` }}
+                      >
+                        {m.label}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    className="grid w-full"
+                    style={{
+                      gridTemplateColumns: `repeat(${totalCols}, 1fr)`,
+                      gridTemplateRows: 'repeat(7, auto)',
+                      gridAutoFlow: 'column',
+                      gap: '2px',
+                    }}
+                  >
+                    {allCells.map((cell, i) =>
+                      cell.empty ? (
+                        <div key={i} />
+                      ) : (
+                        <Tooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                'aspect-square rounded-[3px] cursor-default',
+                                cell.level === 0 && 'bg-muted',
+                                cell.level === 1 && 'bg-primary/30',
+                                cell.level === 2 && 'bg-primary/50',
+                                cell.level === 3 && 'bg-primary/70',
+                                cell.level === 4 && 'bg-primary',
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            <p className="font-medium">
+                              {new Date(cell.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === cell.date)?.count : 0) ?? 0} recherches
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-3 pt-2">
+                <div className="flex items-center justify-between mt-4 pt-2">
                   <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
                     {historicalTotalCount.toLocaleString('fr-FR')} messages au total en {new Date().getFullYear()}
                   </p>
-                  <div className="flex items-center" style={{ gap: '3px' }}>
+                  <div className="flex items-center gap-[3px]">
                     <span className={cn('text-muted-foreground mr-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Moins</span>
-                    <div className={cn('rounded-[3px] bg-muted', isMobile ? 'size-[10px]' : 'size-[13px]')} />
-                    <div className={cn('rounded-[3px] bg-primary/30', isMobile ? 'size-[10px]' : 'size-[13px]')} />
-                    <div className={cn('rounded-[3px] bg-primary/50', isMobile ? 'size-[10px]' : 'size-[13px]')} />
-                    <div className={cn('rounded-[3px] bg-primary/70', isMobile ? 'size-[10px]' : 'size-[13px]')} />
-                    <div className={cn('rounded-[3px] bg-primary', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <div className={cn('rounded-[3px] bg-muted', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/30', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/50', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/70', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary', isMobile ? 'size-[8px]' : 'size-3')} />
                     <span className={cn('text-muted-foreground ml-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Plus</span>
                   </div>
                 </div>
