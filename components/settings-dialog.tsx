@@ -35,6 +35,12 @@ import {
   UserAccountIcon,
   Analytics01Icon,
   Settings02Icon,
+  HierarchyIcon,
+  MagicWandIcon,
+  File02Icon,
+  ChattingIcon,
+  AppleStocksIcon,
+  GlobalSearchIcon,
 } from '@hugeicons/core-free-icons';
 import {
   ContributionGraph,
@@ -470,6 +476,15 @@ export function UsageSection({ user }: any) {
     return months;
   }, [historicalUsageData, historicalLoading, loadingStars]);
 
+
+  const AGENTS = [
+    { id: 'libeller', name: 'Correction Libellé', icon: MagicWandIcon, premium: false },
+    { id: 'nomenclature', name: 'Nomenclature', icon: AppleStocksIcon, premium: false },
+    { id: 'chat', name: 'Chat', icon: ChattingIcon, premium: false },
+    { id: 'eanexpert', name: 'EAN Expert', icon: GlobalSearchIcon, premium: false },
+    { id: 'cyrus', name: 'Cyrus Structure', icon: HierarchyIcon, premium: true },
+    { id: 'pdfExcel', name: 'PDF → Excel', icon: File02Icon, premium: true },
+  ];
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([refetchUsageData(), refetchHistoricalData()]);
@@ -478,111 +493,67 @@ export function UsageSection({ user }: any) {
 
   return (
     <div className={cn('space-y-4', isMobile ? 'space-y-3' : 'space-y-4')}>
-      {/* Quick Stats */}
-      <div className={cn('grid grid-cols-2 gap-3', isMobile ? 'gap-2' : 'gap-3')}>
-        {/* Search count card */}
-        <div
-          className={cn(
-            'bg-card rounded-xl border shadow-sm overflow-hidden',
-            isMobile ? 'p-2.5' : 'p-4',
-          )}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <MagnifyingGlassIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches</span>
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            {usageLoading ? (
-              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
-            ) : (
-              <span
-                className={cn(
-                  'font-semibold text-foreground tabular-nums tracking-tight',
-                  isMobile ? 'text-lg' : 'text-xl',
-                )}
-              >
-                {searchCount?.toLocaleString('fr-FR') ?? '—'}
-              </span>
-            )}
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>aujourd'hui</span>
-          </div>
+      {/* Vos Agents */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className={cn('font-semibold', isMobile ? 'text-sm' : 'text-base')}>Vos Agents</h3>
         </div>
 
-        {/* Extreme Search count card */}
-        <div
-          className={cn(
-            'bg-card rounded-xl border shadow-sm overflow-hidden',
-            isMobile ? 'p-2.5' : 'p-4',
-          )}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <LightningIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches Profondes</span>
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            {usageLoading ? (
-              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
-            ) : (
-              <span
-                className={cn(
-                  'font-semibold text-foreground tabular-nums tracking-tight',
-                  isMobile ? 'text-lg' : 'text-xl',
-                )}
-              >
-                {extremeSearchCount?.toLocaleString('fr-FR') ?? '—'}
-              </span>
-            )}
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>ce mois</span>
-          </div>
+        {/* Résumé compact */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span>
+            <span className="font-semibold text-foreground text-sm tabular-nums">{searchCount?.count || 0}</span>{' '}
+            recherches aujourd’hui
+          </span>
+          <span>
+            <span className="font-semibold text-foreground text-sm tabular-nums">{extremeSearchCount?.count || 0}</span>{' '}
+            extrêmes ce mois
+          </span>
         </div>
-      </div>
 
-      {/* Subscription info if available */}
-      {usageData?.subscriptionDetails && (
-        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Abonnement</span>
-            </div>
-            {usageData.subscriptionDetails.plan && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  isMobile ? 'text-[9px] px-1.5 py-0.5' : 'text-xs',
-                  usageData.subscriptionDetails.plan === 'Pro'
-                    ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                    : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {usageData.subscriptionDetails.plan}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-end justify-between">
-            <div className="flex flex-col">
-              <span className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-base')}>
-                {usageData.subscriptionDetails.status === 'active' ? 'Actif' : usageData.subscriptionDetails.status}
-              </span>
-              {usageData.subscriptionDetails.renewsAt && (
-                <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                  Renouvellement le {new Date(usageData.subscriptionDetails.renewsAt).toLocaleDateString('fr-FR')}
-                </span>
+        {/* Agent Grid */}
+        <div className={cn('grid', isMobile ? 'grid-cols-2 gap-2' : 'grid-cols-3 gap-3')}>
+          {AGENTS.map((agent) => (
+            <div
+              key={agent.id}
+              className={cn(
+                'relative bg-muted/50 dark:bg-card rounded-xl flex flex-col items-center gap-1.5 text-center',
+                'border border-border/50 hover:border-border transition-colors',
+                isMobile ? 'p-3' : 'p-4',
               )}
+            >
+              {agent.premium && (
+                <span className="absolute -top-2 -right-2 text-base drop-shadow-sm">👑</span>
+              )}
+              <div
+                className={cn(
+                  'rounded-full flex items-center justify-center',
+                  agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
+                  isMobile ? 'size-9' : 'size-10',
+                )}
+              >
+                <HugeiconsIcon
+                  icon={agent.icon}
+                  size={isMobile ? 18 : 20}
+                  strokeWidth={1.5}
+                  className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
+                />
+              </div>
+              <span className={cn('font-medium leading-tight', isMobile ? 'text-[11px]' : 'text-xs')}>
+                {agent.name}
+              </span>
+              <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-base' : 'text-lg')}>
+                —
+              </span>
+              <span className="text-[9px] text-muted-foreground">utilisations</span>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+
+        <p className="text-[10px] text-muted-foreground text-center italic">
+          Suivi détaillé par agent bientôt disponible
+        </p>
+      </div>
 
       {/* Activity Graph Section */}
       {historicalUsageData && (
