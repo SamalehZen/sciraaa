@@ -144,8 +144,8 @@ function SettingsPageInner() {
   };
 
   const tabs = [
-    { value: 'usage', label: 'Usage', icon: Analytics01Icon },
-    { value: 'preferences', label: 'Preferences', icon: Settings02Icon },
+    { value: 'usage', label: 'Utilisation', icon: Analytics01Icon },
+    { value: 'preferences', label: 'Préférences', icon: Settings02Icon },
   ];
 
   return (
@@ -347,20 +347,14 @@ function SettingsPageInner() {
           <div className="flex-1 min-w-0">
             <Card className="p-0 shadow-none bg-transparent border-none">
               <TabsContent value="usage" className="m-0">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold">Usage Statistics</h2>
-                    <p className="text-sm text-muted-foreground">Track your daily and monthly usage</p>
-                  </div>
-                  <UsageSection user={user} />
-                </div>
+                <UsageSection user={user} />
               </TabsContent>
 
               <TabsContent value="preferences" className="m-0">
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-lg font-semibold">Preferences</h2>
-                    <p className="text-sm text-muted-foreground">Customize your search and AI experience</p>
+                    <h2 className="text-lg font-semibold">Préférences</h2>
+                    <p className="text-sm text-muted-foreground">Personnalisez votre expérience de recherche et d'IA</p>
                   </div>
                   <PreferencesSection user={user} />
                 </div>

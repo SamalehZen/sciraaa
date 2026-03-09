@@ -497,67 +497,43 @@ export function UsageSection({ user }: any) {
   };
 
   return (
-    <div className={cn('space-y-4', isMobile ? 'space-y-3' : 'space-y-4')}>
-      {/* Vos Agents */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className={cn('font-semibold', isMobile ? 'text-sm' : 'text-base')}>Vos Agents</h3>
-        </div>
-
-        {/* Résumé compact */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>
-            <span className="font-semibold text-foreground text-sm tabular-nums">{searchCount?.count || 0}</span>{' '}
-            recherches aujourd’hui
-          </span>
-          <span>
-            <span className="font-semibold text-foreground text-sm tabular-nums">{extremeSearchCount?.count || 0}</span>{' '}
-            extrêmes ce mois
-          </span>
-        </div>
-
-        {/* Agent Grid */}
-        <div className={cn('grid', isMobile ? 'grid-cols-2 gap-2' : 'grid-cols-3 gap-3')}>
-          {AGENTS.map((agent) => (
+    <div className={cn('space-y-3', isMobile ? 'space-y-2.5' : 'space-y-3')}>
+      {/* Agent Grid */}
+      <div className={cn('grid', isMobile ? 'grid-cols-3 gap-2' : 'grid-cols-6 gap-2')}>
+        {AGENTS.map((agent) => (
+          <div
+            key={agent.id}
+            className={cn(
+              'relative bg-muted/50 dark:bg-card rounded-lg flex flex-col items-center gap-1 text-center',
+              'border border-border/50 hover:border-border transition-colors',
+              isMobile ? 'p-2.5' : 'p-3',
+            )}
+          >
+            {agent.premium && (
+              <span className="absolute -top-1.5 -right-1.5 text-xs drop-shadow-sm">👑</span>
+            )}
             <div
-              key={agent.id}
               className={cn(
-                'relative bg-muted/50 dark:bg-card rounded-xl flex flex-col items-center gap-1.5 text-center',
-                'border border-border/50 hover:border-border transition-colors',
-                isMobile ? 'p-3' : 'p-4',
+                'rounded-full flex items-center justify-center',
+                agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
+                isMobile ? 'size-7' : 'size-8',
               )}
             >
-              {agent.premium && (
-                <span className="absolute -top-2 -right-2 text-base drop-shadow-sm">👑</span>
-              )}
-              <div
-                className={cn(
-                  'rounded-full flex items-center justify-center',
-                  agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
-                  isMobile ? 'size-9' : 'size-10',
-                )}
-              >
-                <HugeiconsIcon
-                  icon={agent.icon}
-                  size={isMobile ? 18 : 20}
-                  strokeWidth={1.5}
-                  className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
-                />
-              </div>
-              <span className={cn('font-medium leading-tight', isMobile ? 'text-[11px]' : 'text-xs')}>
-                {agent.name}
-              </span>
-              <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-base' : 'text-lg')}>
-                —
-              </span>
-              <span className="text-[9px] text-muted-foreground">utilisations</span>
+              <HugeiconsIcon
+                icon={agent.icon}
+                size={isMobile ? 14 : 16}
+                strokeWidth={1.5}
+                className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
+              />
             </div>
-          ))}
-        </div>
-
-        <p className="text-[10px] text-muted-foreground text-center italic">
-          Suivi détaillé par agent bientôt disponible
-        </p>
+            <span className={cn('font-medium leading-tight', isMobile ? 'text-[9px]' : 'text-[10px]')}>
+              {agent.name}
+            </span>
+            <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-sm' : 'text-base')}>
+              —
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* Activity Graph Section */}
