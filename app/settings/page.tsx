@@ -246,7 +246,7 @@ function SettingsPageInner() {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row lg:items-end gap-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row gap-6">
           {/* Mobile Dropdown */}
           <div className="lg:hidden">
             <Select value={activeTab} onValueChange={setActiveTab}>
