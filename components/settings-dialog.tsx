@@ -4,14 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import {
@@ -19,50 +16,25 @@ import {
   getSubDetails,
   getExtremeSearchUsageCount,
   getHistoricalUsage,
-  getCustomInstructions,
-  saveCustomInstructions,
-  deleteCustomInstructionsAction,
-  createConnectorAction,
-  listUserConnectorsAction,
-  deleteConnectorAction,
-  manualSyncConnectorAction,
-  getConnectorSyncStatusAction,
 } from '@/app/actions';
-import { SEARCH_LIMITS } from '@/lib/constants';
 import {
   MagnifyingGlassIcon,
   LightningIcon,
   CalendarIcon,
-  TrashIcon,
-  FloppyDiskIcon,
-  ArrowClockwiseIcon,
-  RobotIcon,
 } from '@phosphor-icons/react';
-
-import { ExternalLink } from 'lucide-react';
-import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import { getAllMemories, searchMemories, deleteMemory, MemoryItem } from '@/lib/memory-actions';
-import { Loader2, Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { cn, getSearchGroups, SearchGroupId } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useSelectedProfileIcon } from '@/hooks/use-selected-profile-icon';
 import { useIsProUser } from '@/contexts/user-context';
 import { HyperLogo } from './logos/hyper-logo';
-import Image from 'next/image';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Crown02Icon,
   UserAccountIcon,
   Analytics01Icon,
   Settings02Icon,
-  Brain02Icon,
-  GlobalSearchIcon,
-  ConnectIcon,
-  InformationCircleIcon,
 } from '@hugeicons/core-free-icons';
 import {
   ContributionGraph,
@@ -80,58 +52,6 @@ import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, us
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type ConnectorProvider = 'google_drive' | 'notion' | 'slack' | 'github';
-type ConnectorConfig = {
-  id: ConnectorProvider;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  enabled: boolean;
-};
-
-const CONNECTOR_CONFIGS: Record<ConnectorProvider, ConnectorConfig> = {
-  google_drive: {
-    id: 'google_drive',
-    name: 'Google Drive',
-    description: 'Connectez votre Drive pour indexer des documents',
-    icon: 'google-drive',
-    color: '#4285F4',
-    enabled: false,
-  },
-  notion: {
-    id: 'notion',
-    name: 'Notion',
-    description: 'Connectez Notion pour rechercher pages et bases',
-    icon: 'notion',
-    color: '#000000',
-    enabled: false,
-  },
-  slack: {
-    id: 'slack',
-    name: 'Slack',
-    description: 'Connectez Slack pour retrouver messages et fichiers',
-    icon: 'slack',
-    color: '#4A154B',
-    enabled: false,
-  },
-  github: {
-    id: 'github',
-    name: 'GitHub',
-    description: 'Connectez GitHub pour rechercher du code',
-    icon: 'github',
-    color: '#181717',
-    enabled: false,
-  },
-};
-
-const CONNECTOR_ICONS: Record<ConnectorProvider, string> = {
-  google_drive: '📁',
-  notion: '📝',
-  slack: '💬',
-  github: '🐙',
-};
-
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -139,8 +59,6 @@ interface SettingsDialogProps {
   subscriptionData?: any;
   isProUser?: boolean;
   isProStatusLoading?: boolean;
-  isCustomInstructionsEnabled?: boolean;
-  setIsCustomInstructionsEnabled?: (value: boolean | ((val: boolean) => boolean)) => void;
   initialTab?: string;
 }
 
@@ -204,7 +122,7 @@ function ProfileSection({ user, subscriptionData, isProUser, isProStatusLoading 
 
         <div className={cn('bg-muted/30 rounded-lg border border-border', isMobile ? 'p-2.5' : 'p-3')}>
           <p className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>
-            Les informations de profil sont gérées par votre fournisseur d’authentification. Contactez le support pour mettre à jour vos informations.
+            Les informations de profil sont gérées par votre fournisseur d'authentification. Contactez le support pour mettre à jour vos informations.
           </p>
         </div>
       </div>
@@ -212,170 +130,13 @@ function ProfileSection({ user, subscriptionData, isProUser, isProStatusLoading 
   );
 }
 
-// Icon components for search providers
-const ParallelIcon = ({ className }: { className?: string }) => (
-  <Image
-    src="/parallel-icon.svg"
-    alt="Parallel AI"
-    width={16}
-    height={16}
-    className={cn('bg-white rounded-full p-0.5', className)}
-  />
-);
-
-const ExaIcon = ({ className }: { className?: string }) => (
-  <Image src="/exa-color.svg" alt="Exa" width={16} height={16} className={className} />
-);
-
-const TavilyIcon = ({ className }: { className?: string }) => (
-  <Image src="/tavily-color.svg" alt="Tavily" width={16} height={16} className={className} />
-);
-
-const FirecrawlIcon = ({ className }: { className?: string }) => (
-  <span className={cn('text-base sm:text-lg !mb-3 !pr-1', className)}>🔥</span>
-);
-
-// Search Provider Options
-const searchProviders = [
-  {
-    value: 'firecrawl',
-    label: 'Firecrawl',
-    description: 'Recherche Web, actualités et images avec capacités d’extraction de contenu',
-    icon: FirecrawlIcon,
-    default: false,
-  },
-  {
-    value: 'exa',
-    label: 'Exa',
-    description: 'Recherche Web améliorée et plus rapide avec images et filtres avancés',
-    icon: ExaIcon,
-    default: false,
-  },
-  {
-    value: 'parallel',
-    label: 'Parallel AI',
-    description: 'Recherche Web de base et premium ainsi que prise en charge de la recherche d’images Firecrawl',
-    icon: ParallelIcon,
-    default: true,
-  },
-  {
-    value: 'tavily',
-    label: 'Tavily',
-    description: 'Recherche Web étendue avec résultats complets et analyse',
-    icon: TavilyIcon,
-    default: false,
-  },
-] as const;
-
-// Search Provider Selector Component
-function SearchProviderSelector({
-  value,
-  onValueChange,
-  disabled,
-  className,
-}: {
-  value: string;
-  onValueChange: (value: 'exa' | 'parallel' | 'tavily' | 'firecrawl') => void;
-  disabled?: boolean;
-  className?: string;
-}) {
+// Component for Agent Preferences
+export function PreferencesSection({ user }: { user: any }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const currentProvider = searchProviders.find((provider) => provider.value === value);
-
-  return (
-    <div className="w-full">
-      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger
-          className={cn(
-            'w-full h-auto min-h-18 sm:min-h-14 p-4',
-            'border border-input bg-background',
-            'transition-all duration-200',
-            'focus:outline-none focus:ring-0 focus:ring-offset-0',
-            disabled && 'opacity-50 cursor-not-allowed',
-            className,
-          )}
-        >
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {currentProvider && (
-              <>
-                <currentProvider.icon className="text-muted-foreground size-4 flex-shrink-0" />
-                <div className="text-left flex-1 min-w-0">
-                  <div className="font-medium text-sm flex items-center gap-2 mb-0.5">
-                    {currentProvider.label}
-                    {currentProvider.default && (
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0.5 bg-primary/10 text-primary border-0">
-                        Par défaut
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground leading-tight line-clamp-2 text-wrap">
-                    {currentProvider.description}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </SelectTrigger>
-        <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-32px)]">
-          {searchProviders.map((provider) => (
-            <SelectItem key={provider.value} value={provider.value}>
-              <div className="flex items-center gap-2.5">
-                <provider.icon className="text-muted-foreground size-4 flex-shrink-0" />
-                <div className="flex flex-col">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    {provider.label}
-                    {provider.default && (
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0.5 bg-primary/10 text-primary border-0">
-                        Par défaut
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{provider.description}</div>
-                </div>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-// Component for Combined Preferences (Search + Custom Instructions)
-export function PreferencesSection({
-  user,
-  isCustomInstructionsEnabled,
-  setIsCustomInstructionsEnabled,
-}: {
-  user: any;
-  isCustomInstructionsEnabled?: boolean;
-  setIsCustomInstructionsEnabled?: (value: boolean | ((val: boolean) => boolean)) => void;
-}) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [searchProvider, setSearchProvider] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
+  const [searchProvider] = useLocalStorage<'exa' | 'parallel' | 'tavily' | 'firecrawl'>(
     'hyper-search-provider',
     'parallel',
   );
-
-  const [content, setContent] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const enabled = isCustomInstructionsEnabled ?? true;
-  const setEnabled = setIsCustomInstructionsEnabled ?? (() => { });
-
-  const handleSearchProviderChange = (newProvider: 'exa' | 'parallel' | 'tavily' | 'firecrawl') => {
-    setSearchProvider(newProvider);
-    toast.success(
-      `Moteur de recherche changé pour ${newProvider === 'exa'
-        ? 'Exa'
-        : newProvider === 'parallel'
-          ? 'Parallel AI'
-          : newProvider === 'tavily'
-            ? 'Tavily'
-            : 'Firecrawl'
-      }`,
-    );
-  };
 
   // Agents reordering (drag-and-drop)
   const { data: session } = useLocalSession();
@@ -442,7 +203,7 @@ export function PreferencesSection({
       toast.success('Ordre des agents mis à jour');
     } catch (e) {
       setItems(previous);
-      toast.error('Impossible d’enregistrer l’ordre');
+      toast.error("Impossible d'enregistrer l'ordre");
     }
   };
 
@@ -494,92 +255,13 @@ export function PreferencesSection({
     );
   }
 
-  // Custom Instructions queries and handlers
-  const {
-    data: customInstructions,
-    isLoading: customInstructionsLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ['customInstructions', user?.id],
-    queryFn: () => getCustomInstructions(user),
-    enabled: !!user,
-  });
-
-  useEffect(() => {
-    if (customInstructions?.content) {
-      setContent(customInstructions.content);
-    }
-  }, [customInstructions]);
-
-  const handleSave = async () => {
-    if (!content.trim()) {
-      toast.error('Veuillez saisir des instructions');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const result = await saveCustomInstructions(content);
-      if (result.success) {
-        toast.success('Instructions personnalisées enregistrées');
-        refetch();
-      } else {
-        toast.error(result.error || 'Échec de l’enregistrement des instructions');
-      }
-    } catch (error) {
-      toast.error('Échec de l’enregistrement des instructions');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsSaving(true);
-    try {
-      const result = await deleteCustomInstructionsAction();
-      if (result.success) {
-        toast.success('Instructions personnalisées supprimées');
-        setContent('');
-        refetch();
-      } else {
-        toast.error(result.error || 'Échec de la suppression des instructions');
-      }
-    } catch (error) {
-      toast.error('Échec de la suppression des instructions');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   return (
     <div className={cn('space-y-6', isMobile ? 'space-y-4' : 'space-y-6')}>
       <div>
         <h3 className={cn('font-semibold mb-1.5', isMobile ? 'text-sm' : 'text-base')}>Préférences</h3>
         <p className={cn('text-muted-foreground', isMobile ? 'text-xs leading-relaxed' : 'text-xs')}>
-          Configurez votre moteur de recherche et personnalisez la façon dont l’IA répond à vos questions.
+          Réorganisez et gérez la visibilité de vos agents.
         </p>
-      </div>
-
-      {/* Search Provider Section */}
-      <div className="space-y-3">
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <HugeiconsIcon icon={GlobalSearchIcon} className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Moteur de recherche</h4>
-              <p className="text-xs text-muted-foreground">Choisissez votre moteur de recherche préféré</p>
-            </div>
-          </div>
-
-          <div className="space-y-2.5">
-            <SearchProviderSelector value={searchProvider} onValueChange={handleSearchProviderChange} />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Sélectionnez votre moteur de recherche préféré pour les recherches Web. Les changements prennent effet immédiatement et seront utilisés pour toutes les recherches futures.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Agents Reorder Section */}
@@ -605,7 +287,7 @@ export function PreferencesSection({
             </SortableContext>
           </DndContext>
 
-          <p className="text-xs text-muted-foreground">L’ordre sera sauvegardé automatiquement.</p>
+          <p className="text-xs text-muted-foreground">L'ordre sera sauvegardé automatiquement.</p>
         </div>
       </div>
 
@@ -654,105 +336,6 @@ export function PreferencesSection({
             ))}
           </div>
           <p className="text-xs text-muted-foreground">Les modifications sont sauvegardées automatiquement.</p>
-        </div>
-      </div>
-
-      {/* Custom Instructions Section */}
-      <div className="space-y-3">
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10">
-              <RobotIcon className="h-3.5 w-3.5 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Instructions personnalisées</h4>
-              <p className="text-xs text-muted-foreground">Personnalisez la façon dont l’IA vous répond</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-start justify-between p-3 rounded-lg border bg-card">
-              <div className="flex-1 mr-3">
-                <Label htmlFor="enable-instructions" className="text-sm font-medium">
-                  Activer les instructions personnalisées
-                </Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Activez ou désactivez les instructions personnalisées</p>
-              </div>
-              <Switch id="enable-instructions" checked={enabled} onCheckedChange={setEnabled} />
-            </div>
-
-            <div className={cn('space-y-3', !enabled && 'opacity-50')}>
-              <div>
-                <Label htmlFor="instructions" className="text-sm font-medium">
-                  Instructions
-                </Label>
-                <p className="text-xs text-muted-foreground mt-0.5 mb-2">Définissez la façon dont l’IA répond à vos questions</p>
-                {customInstructionsLoading ? (
-                  <Skeleton className="h-28 w-full" />
-                ) : (
-                  <Textarea
-                    id="instructions"
-                    placeholder="Saisissez vos instructions personnalisées ici… Par exemple : ‘Fournir toujours des exemples de code lors des explications’ ou ‘Rester concis et axé sur les applications pratiques’."
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[100px] resize-y text-sm"
-                    style={{ maxHeight: '25dvh' }}
-                    onFocus={(e) => {
-                      // Keep the focused textarea within the drawer's scroll container without jumping the whole viewport
-                      try {
-                        e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-                      } catch { }
-                    }}
-                    disabled={isSaving || !enabled}
-                  />
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving || !content.trim() || customInstructionsLoading || !enabled}
-                  size="sm"
-                  className="flex-1 h-8"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                      Enregistrement…
-                    </>
-                  ) : (
-                    <>
-                      <FloppyDiskIcon className="w-3 h-3 mr-1.5" />
-                      Enregistrer les instructions
-                    </>
-                  )}
-                </Button>
-                {customInstructions && (
-                  <Button
-                    variant="outline"
-                    onClick={handleDelete}
-                    disabled={isSaving || customInstructionsLoading || !enabled}
-                    size="sm"
-                    className="h-8 px-2.5"
-                  >
-                    <TrashIcon className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-
-              {customInstructionsLoading ? (
-                <div className="p-2.5 bg-muted/30 rounded-lg">
-                  <Skeleton className="h-3 w-28" />
-                </div>
-              ) : customInstructions ? (
-                <div className="p-2.5 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">
-                    Dernière mise à jour : {new Date(customInstructions.updatedAt).toLocaleDateString('fr-FR')}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -813,337 +396,272 @@ export function UsageSection({ user }: any) {
     const futureDays = Math.min(15, Math.floor(totalDays * 0.08));
     const pastDays = totalDays - futureDays - 1;
 
+    return Array.from({ length: months }, (_, monthIndex) => {
+      const daysInMonth = 30;
+      const monthOffset = (months - 1 - monthIndex) * 30;
+      const isCurrentMonth = monthIndex === 0;
+      const actualFutureDays = isCurrentMonth ? futureDays : 0;
+      const actualPastDays = daysInMonth - actualFutureDays;
+
+      return {
+        month: new Date(2024, monthIndex, 1).toLocaleString('default', { month: 'short' }),
+        days: Array.from({ length: daysInMonth }, (_, dayIndex) => ({
+          level: 0,
+          date: new Date(Date.now() - (monthOffset + actualPastDays - 1 - dayIndex) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        })),
+      };
+    }).reverse();
+  }, [historicalLoading]);
+
+  const processedHistoricalData = useMemo(() => {
+    if (historicalLoading || !historicalUsageData?.history) {
+      return loadingStars;
+    }
+
     const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + futureDays);
+    const months: { month: string; days: { level: number; date: string }[] }[] = [];
 
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - pastDays);
-
-    // Generate complete dataset like real getHistoricalUsage
-    const completeData: Activity[] = [];
-    for (let i = 0; i < totalDays; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-      const dateKey = currentDate.toISOString().split('T')[0];
-
-      // Randomly light up some dots for star effect
-      const shouldLight = Math.random() > 0.85; // 15% chance
-      const count = shouldLight ? Math.floor(Math.random() * 10) + 1 : 0;
-
-      let level: 0 | 1 | 2 | 3 | 4;
-      if (count === 0) level = 0;
-      else if (count <= 3) level = 1;
-      else if (count <= 7) level = 2;
-      else if (count <= 12) level = 3;
-      else level = 4;
-
-      completeData.push({
-        date: dateKey,
-        count,
-        level,
+    // Generate last 12 months
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      months.unshift({
+        month: date.toLocaleString('default', { month: 'short' }),
+        days: [],
       });
     }
 
-    return completeData;
-  }, [historicalLoading]);
-
-  const handleRefreshUsage = async () => {
-    try {
-      setIsRefreshing(true);
-      await Promise.all([refetchUsageData(), refetchHistoricalData()]);
-      toast.success('Données d’utilisation actualisées');
-    } catch (error) {
-      toast.error('Échec de l’actualisation des données d’utilisation');
-    } finally {
-      setIsRefreshing(false);
+    // Create a map of date -> count from historical data
+    const historyMap = new Map<string, number>();
+    if (historicalUsageData?.history) {
+      historicalUsageData.history.forEach((item: { date: string; count: number }) => {
+        historyMap.set(item.date, item.count);
+      });
     }
+
+    // Fill in days for each month with data from history or zeros
+    months.forEach((month, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth() - (11 - index), 1);
+      const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(date.getFullYear(), date.getMonth(), day);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const count = historyMap.get(dateStr) || 0;
+
+        let level = 0;
+        if (count > 0) {
+          if (count >= 20) level = 4;
+          else if (count >= 12) level = 3;
+          else if (count >= 6) level = 2;
+          else level = 1;
+        }
+
+        // Don't show future dates
+        const isFuture = currentDate > today;
+        if (!isFuture) {
+          month.days.push({
+            level,
+            date: dateStr,
+          });
+        }
+      }
+    });
+
+    return months;
+  }, [historicalUsageData, historicalLoading, loadingStars]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([refetchUsageData(), refetchHistoricalData()]);
+    setIsRefreshing(false);
   };
 
-  const usagePercentage = isProUser
-    ? 0
-    : Math.min(((searchCount?.count || 0) / SEARCH_LIMITS.DAILY_SEARCH_LIMIT) * 100, 100);
-
   return (
-    <div className={cn(isMobile ? 'space-y-3' : 'space-y-4', isMobile && !isProUser ? 'pb-4' : '')}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Utilisation quotidienne des recherches</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleRefreshUsage}
-          disabled={isRefreshing}
-          className={isMobile ? 'h-7 px-1.5' : 'h-8 px-2'}
+    <div className={cn('space-y-4', isMobile ? 'space-y-3' : 'space-y-4')}>
+      {/* Quick Stats */}
+      <div className={cn('grid grid-cols-2 gap-3', isMobile ? 'gap-2' : 'gap-3')}>
+        {/* Search count card */}
+        <div
+          className={cn(
+            'bg-card rounded-xl border shadow-sm overflow-hidden',
+            isMobile ? 'p-2.5' : 'p-4',
+          )}
         >
-          {isRefreshing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <ArrowClockwiseIcon className="h-3.5 w-3.5" />
-          )}
-        </Button>
-      </div>
-
-      <div className={cn('grid grid-cols-2', isMobile ? 'gap-2' : 'gap-3')}>
-        <div className={cn('bg-muted/50 rounded-lg space-y-1', isMobile ? 'p-2.5' : 'p-3')}>
-          <div className="flex items-center justify-between">
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Aujourd’hui</span>
-            <MagnifyingGlassIcon className={isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-          </div>
-          {usageLoading ? (
-            <Skeleton className={cn('font-semibold', isMobile ? 'text-base h-4' : 'text-lg h-5')} />
-          ) : (
-            <div className={cn('font-semibold', isMobile ? 'text-base' : 'text-lg')}>{searchCount?.count || 0}</div>
-          )}
-          <p className="text-[10px] text-muted-foreground">Recherches normales</p>
-        </div>
-
-        <div className={cn('bg-muted/50 rounded-lg space-y-1', isMobile ? 'p-2.5' : 'p-3')}>
-          <div className="flex items-center justify-between">
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Extrême</span>
-            <LightningIcon className={isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-          </div>
-          {usageLoading ? (
-            <Skeleton className={cn('font-semibold', isMobile ? 'text-base h-4' : 'text-lg h-5')} />
-          ) : (
-            <div className={cn('font-semibold', isMobile ? 'text-base' : 'text-lg')}>
-              {extremeSearchCount?.count || 0}
+          <div className="flex items-center justify-between mb-2">
+            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
+              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
+                <MagnifyingGlassIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
+              </div>
+              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches</span>
             </div>
+          </div>
+          <div className="flex items-end justify-between">
+            {usageLoading ? (
+              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
+            ) : (
+              <span
+                className={cn(
+                  'font-semibold text-foreground tabular-nums tracking-tight',
+                  isMobile ? 'text-lg' : 'text-xl',
+                )}
+              >
+                {searchCount?.toLocaleString('fr-FR') ?? '—'}
+              </span>
+            )}
+            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>aujourd'hui</span>
+          </div>
+        </div>
+
+        {/* Extreme Search count card */}
+        <div
+          className={cn(
+            'bg-card rounded-xl border shadow-sm overflow-hidden',
+            isMobile ? 'p-2.5' : 'p-4',
           )}
-          <p className="text-[10px] text-muted-foreground">Ce mois-ci</p>
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
+              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
+                <LightningIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
+              </div>
+              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches Profondes</span>
+            </div>
+          </div>
+          <div className="flex items-end justify-between">
+            {usageLoading ? (
+              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
+            ) : (
+              <span
+                className={cn(
+                  'font-semibold text-foreground tabular-nums tracking-tight',
+                  isMobile ? 'text-lg' : 'text-xl',
+                )}
+              >
+                {extremeSearchCount?.toLocaleString('fr-FR') ?? '—'}
+              </span>
+            )}
+            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>ce mois</span>
+          </div>
         </div>
       </div>
 
-      {!isProUser && (
-        <div className={isMobile ? 'space-y-2' : 'space-y-3'}>
-          <div className={cn('bg-muted/30 rounded-lg space-y-2', isMobile ? 'p-2.5' : 'p-3')}>
-            {usageLoading ? (
-              <>
-                <div className="flex justify-between text-xs">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-3 w-12" />
-                </div>
-                <Skeleton className="h-1.5 w-full" />
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between text-xs">
-                  <span className="font-medium">Limite quotidienne</span>
-                  <span className="text-muted-foreground">{usagePercentage.toFixed(0)}%</span>
-                </div>
-                <Progress value={usagePercentage} className="h-1.5 [&>div]:transition-none" />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>
-                    {searchCount?.count || 0} / {SEARCH_LIMITS.DAILY_SEARCH_LIMIT}
-                  </span>
-                  <span>{Math.max(0, SEARCH_LIMITS.DAILY_SEARCH_LIMIT - (searchCount?.count || 0))} restantes</span>
-                </div>
-              </>
+      {/* Subscription info if available */}
+      {usageData?.subscriptionDetails && (
+        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
+          <div className="flex items-center justify-between mb-2">
+            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
+              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
+                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
+              </div>
+              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Abonnement</span>
+            </div>
+            {usageData.subscriptionDetails.plan && (
+              <Badge
+                variant="secondary"
+                className={cn(
+                  isMobile ? 'text-[9px] px-1.5 py-0.5' : 'text-xs',
+                  usageData.subscriptionDetails.plan === 'Pro'
+                    ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {usageData.subscriptionDetails.plan}
+              </Badge>
             )}
           </div>
-
-          <div className={cn('bg-card rounded-lg border border-border', isMobile ? 'p-3' : 'p-4')}>
-            <div className={cn('flex items-center gap-2', isMobile ? 'mb-1.5' : 'mb-2')}>
-              <HugeiconsIcon icon={Crown02Icon} size={isMobile ? 14 : 16} color="currentColor" strokeWidth={1.5} />
-              <span className={cn('font-semibold', isMobile ? 'text-xs' : 'text-sm')}>Passer en Pro</span>
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col">
+              <span className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-base')}>
+                {usageData.subscriptionDetails.status === 'active' ? 'Actif' : usageData.subscriptionDetails.status}
+              </span>
+              {usageData.subscriptionDetails.renewsAt && (
+                <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
+                  Renouvellement le {new Date(usageData.subscriptionDetails.renewsAt).toLocaleDateString('fr-FR')}
+                </span>
+              )}
             </div>
-            <p className={cn('text-muted-foreground mb-3', isMobile ? 'text-[11px]' : 'text-xs')}>
-              Get unlimited searches and premium features
-            </p>
-            <Button asChild size="sm" className={cn('w-full', isMobile ? 'h-7 text-xs' : 'h-8')}>
-              <Link href="/pricing">Mettre à niveau maintenant</Link>
-            </Button>
           </div>
         </div>
       )}
 
-      {!usageLoading && (
-        <div className={cn('space-y-2', isMobile && !isProUser ? 'pb-4' : '')}>
-          <h4 className={cn('font-semibold text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>
-            Activité (12 derniers mois)
-          </h4>
-          <div className={cn('bg-muted/50 dark:bg-card rounded-lg p-3')}>
-            {historicalLoading ? (
-              <TooltipProvider>
+      {/* Activity Graph Section */}
+      {historicalUsageData && (
+        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
+          <div className="flex items-center justify-between mb-3">
+            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
+              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
+                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
+              </div>
+              <div>
+                <h3 className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-sm')}>Activité</h3>
+                <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
+                  {historicalUsageData?.totalCount?.toLocaleString('fr-FR') ?? '—'} recherches (12 derniers mois)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {processedHistoricalData && processedHistoricalData.length > 0 ? (
+              <TooltipProvider delayDuration={0}>
                 <ContributionGraph
-                  data={loadingStars}
-                  blockSize={isMobile ? 8 : 12}
-                  blockMargin={isMobile ? 3 : 4}
-                  fontSize={isMobile ? 9 : 12}
-                  labels={{
-                    totalCount: 'Chargement des données d’activité…',
-                    legend: {
-                      less: 'Moins',
-                      more: 'Plus',
-                    },
-                  }}
-                  className="w-full opacity-60"
-                >
-                  <ContributionGraphCalendar
-                    hideMonthLabels={false}
-                    className={cn('text-muted-foreground', isMobile ? 'text-[9px]' : 'text-xs')}
-                  >
-                    {({ activity, dayIndex, weekIndex }) => (
-                      <ContributionGraphBlock
-                        key={`${weekIndex}-${dayIndex}-loading`}
-                        activity={activity}
-                        dayIndex={dayIndex}
-                        weekIndex={weekIndex}
-                        className={cn(
-                          'data-[level="0"]:fill-muted/40',
-                          'data-[level="1"]:fill-primary/30',
-                          'data-[level="2"]:fill-primary/50',
-                          'data-[level="3"]:fill-primary/70',
-                          'data-[level="4"]:fill-primary/90',
-                          activity.level > 0 && 'animate-pulse',
-                        )}
-                      />
-                    )}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter
-                    className={cn('pt-2 flex-col sm:flex-row', isMobile ? 'gap-1.5 items-start' : 'gap-2 items-center')}
-                  >
-                    <ContributionGraphTotalCount
-                      className={cn('text-muted-foreground', isMobile ? 'text-[9px] mb-1' : 'text-xs')}
-                    />
-                    <ContributionGraphLegend className={cn('text-muted-foreground', isMobile ? 'flex-shrink-0' : '')}>
-                      {({ level }) => (
-                        <svg height={isMobile ? 8 : 12} width={isMobile ? 8 : 12}>
-                          <rect
-                            className={cn(
-                              'stroke-[1px] stroke-border/50',
-                              'data-[level="0"]:fill-muted/40',
-                              'data-[level="1"]:fill-primary/30',
-                              'data-[level="2"]:fill-primary/50',
-                              'data-[level="3"]:fill-primary/70',
-                              'data-[level="4"]:fill-primary/90',
-                            )}
-                            data-level={level}
-                            height={isMobile ? 8 : 12}
-                            rx={2}
-                            ry={2}
-                            width={isMobile ? 8 : 12}
-                          />
-                        </svg>
-                      )}
-                    </ContributionGraphLegend>
-                  </ContributionGraphFooter>
-                </ContributionGraph>
-              </TooltipProvider>
-            ) : historicalUsageData && historicalUsageData.length > 0 ? (
-              <TooltipProvider>
-                <ContributionGraph
-                  data={historicalUsageData}
-                  blockSize={isMobile ? 8 : 12}
-                  blockMargin={isMobile ? 3 : 4}
-                  fontSize={isMobile ? 9 : 12}
-                  labels={{
-                    totalCount: '{{count}} messages au total en {{year}}',
-                    legend: {
-                      less: 'Moins',
-                      more: 'Plus',
-                    },
-                  }}
+                  data={processedHistoricalData}
                   className="w-full"
                 >
-                  <ContributionGraphCalendar
-                    hideMonthLabels={false}
-                    className={cn('text-muted-foreground', isMobile ? 'text-[9px]' : 'text-xs')}
-                  >
-                    {({ activity, dayIndex, weekIndex }) => (
-                      <Tooltip key={`${weekIndex}-${dayIndex}`}>
-                        <TooltipTrigger asChild>
-                          <g className="cursor-help">
-                            <ContributionGraphBlock
-                              activity={activity}
-                              dayIndex={dayIndex}
-                              weekIndex={weekIndex}
-                              className={cn(
-                                'data-[level="0"]:fill-muted',
-                                'data-[level="1"]:fill-primary/20',
-                                'data-[level="2"]:fill-primary/40',
-                                'data-[level="3"]:fill-primary/60',
-                                'data-[level="4"]:fill-primary',
-                              )}
-                            />
-                          </g>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="text-center">
-                            <p className="font-medium">
-                              {activity.count} {activity.count === 1 ? 'message' : 'messages'}
-                            </p>
-                            <p className="text-xs text-muted">
-                              {new Date(activity.date).toLocaleDateString('fr-FR', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })}
-                            </p>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter
-                    className={cn('pt-2 flex-col sm:flex-row', isMobile ? 'gap-1.5 items-start' : 'gap-2 items-center')}
-                  >
-                    <ContributionGraphTotalCount
-                      className={cn('text-muted-foreground', isMobile ? 'text-[9px] mb-1' : 'text-xs')}
-                    />
-                    <ContributionGraphLegend className={cn('text-muted-foreground', isMobile ? 'flex-shrink-0' : '')}>
-                      {({ level }) => {
-                        const getTooltipText = (level: number) => {
-                          switch (level) {
-                            case 0:
-                              return 'Aucun message';
-                            case 1:
-                              return '1–3 messages';
-                            case 2:
-                              return '4–7 messages';
-                            case 3:
-                              return '8–12 messages';
-                            case 4:
-                              return '13+ messages';
-                            default:
-                              return `${level} messages`;
-                          }
-                        };
-
-                        return (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <svg height={isMobile ? 8 : 12} width={isMobile ? 8 : 12} className="cursor-help">
-                                <rect
+                  <ContributionGraphCalendar className="w-full">
+                    {processedHistoricalData.map((month, monthIndex) => (
+                      <div key={month.month} className="flex flex-col gap-1">
+                        <div className="text-[10px] text-muted-foreground text-center mb-1">
+                          {month.month}
+                        </div>
+                        <div className="grid grid-rows-7 grid-flow-col gap-1">
+                          {month.days.map((day, dayIndex) => (
+                            <Tooltip key={`${month.month}-${dayIndex}`}>
+                              <TooltipTrigger asChild>
+                                <ContributionGraphBlock
+                                  activity={{
+                                    level: day.level,
+                                    date: day.date,
+                                  } as Activity}
                                   className={cn(
-                                    'stroke-[1px] stroke-border/50',
-                                    'data-[level="0"]:fill-muted',
-                                    'data-[level="1"]:fill-primary/20',
-                                    'data-[level="2"]:fill-primary/40',
-                                    'data-[level="3"]:fill-primary/60',
-                                    'data-[level="4"]:fill-primary',
+                                    'w-3 h-3 rounded-sm',
+                                    day.level === 0 && 'bg-muted',
+                                    day.level === 1 && 'bg-primary/30',
+                                    day.level === 2 && 'bg-primary/50',
+                                    day.level === 3 && 'bg-primary/70',
+                                    day.level === 4 && 'bg-primary',
                                   )}
-                                  data-level={level}
-                                  height={isMobile ? 8 : 12}
-                                  rx={2}
-                                  ry={2}
-                                  width={isMobile ? 8 : 12}
                                 />
-                              </svg>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">{getTooltipText(level)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      }}
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                <p className="text-muted-foreground">
+                                  {historicalUsageData?.history?.find((h: any) => h.date === day.date)?.count ?? 0} recherches
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </ContributionGraphCalendar>
+                  <ContributionGraphFooter className="flex items-center justify-between text-xs text-muted-foreground mt-3">
+                    <ContributionGraphLegend className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">Moins</span>
+                      <ContributionGraphBlock activity={{ level: 0 } as Activity} className="w-3 h-3 rounded-sm bg-muted" />
+                      <ContributionGraphBlock activity={{ level: 1 } as Activity} className="w-3 h-3 rounded-sm bg-primary/30" />
+                      <ContributionGraphBlock activity={{ level: 2 } as Activity} className="w-3 h-3 rounded-sm bg-primary/50" />
+                      <ContributionGraphBlock activity={{ level: 3 } as Activity} className="w-3 h-3 rounded-sm bg-primary/70" />
+                      <ContributionGraphBlock activity={{ level: 4 } as Activity} className="w-3 h-3 rounded-sm bg-primary" />
+                      <span className="text-[10px] text-muted-foreground">Plus</span>
                     </ContributionGraphLegend>
+                    <ContributionGraphTotalCount className="text-[10px]" />
                   </ContributionGraphFooter>
                 </ContributionGraph>
               </TooltipProvider>
             ) : (
               <div className="h-24 flex items-center justify-center">
-                <p className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Aucune donnée d’activité</p>
+                <p className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Aucune donnée d'activité</p>
               </div>
             )}
           </div>
@@ -1162,8 +680,6 @@ export function SettingsDialog({
   subscriptionData,
   isProUser,
   isProStatusLoading,
-  isCustomInstructionsEnabled,
-  setIsCustomInstructionsEnabled,
   initialTab = 'profile',
 }: SettingsDialogProps) {
   const [currentTab, setCurrentTab] = useState(initialTab);
@@ -1243,11 +759,7 @@ export function SettingsDialog({
         value="preferences"
         className="mt-0 !scrollbar-thin !scrollbar-track-transparent !scrollbar-thumb-muted-foreground/20 hover:!scrollbar-thumb-muted-foreground/30"
       >
-        <PreferencesSection
-          user={user}
-          isCustomInstructionsEnabled={isCustomInstructionsEnabled}
-          setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-        />
+        <PreferencesSection user={user} />
       </TabsContent>
     </>
   );
