@@ -63,6 +63,11 @@ import {
   GlobalSearchIcon,
   ConnectIcon,
   InformationCircleIcon,
+  HierarchyIcon,
+  MagicWandIcon,
+  File02Icon,
+  ChattingIcon,
+  AppleStocksIcon,
 } from '@hugeicons/core-free-icons';
 import {
   ContributionGraph,
@@ -864,10 +869,20 @@ export function UsageSection({ user }: any) {
     ? 0
     : Math.min(((searchCount?.count || 0) / SEARCH_LIMITS.DAILY_SEARCH_LIMIT) * 100, 100);
 
+
+  const AGENTS = [
+    { id: 'libeller', name: 'Correction Libellé', icon: MagicWandIcon, premium: false },
+    { id: 'nomenclature', name: 'Nomenclature', icon: AppleStocksIcon, premium: false },
+    { id: 'chat', name: 'Chat', icon: ChattingIcon, premium: false },
+    { id: 'eanexpert', name: 'EAN Expert', icon: GlobalSearchIcon, premium: false },
+    { id: 'cyrus', name: 'Cyrus Structure', icon: HierarchyIcon, premium: true },
+    { id: 'pdfExcel', name: 'PDF → Excel', icon: File02Icon, premium: true },
+  ];
+
   return (
     <div className={cn(isMobile ? 'space-y-3' : 'space-y-4', isMobile && !isProUser ? 'pb-4' : '')}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Utilisation quotidienne des recherches</h3>
+        <h3 className="text-sm font-semibold">Vos Agents</h3>
         <Button
           variant="ghost"
           size="sm"
@@ -883,34 +898,62 @@ export function UsageSection({ user }: any) {
         </Button>
       </div>
 
-      <div className={cn('grid grid-cols-2', isMobile ? 'gap-2' : 'gap-3')}>
-        <div className={cn('bg-muted/50 rounded-lg space-y-1', isMobile ? 'p-2.5' : 'p-3')}>
-          <div className="flex items-center justify-between">
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Aujourd’hui</span>
-            <MagnifyingGlassIcon className={isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-          </div>
-          {usageLoading ? (
-            <Skeleton className={cn('font-semibold', isMobile ? 'text-base h-4' : 'text-lg h-5')} />
-          ) : (
-            <div className={cn('font-semibold', isMobile ? 'text-base' : 'text-lg')}>{searchCount?.count || 0}</div>
-          )}
-          <p className="text-[10px] text-muted-foreground">Recherches normales</p>
+      {/* Agent Usage Dashboard */}
+      <div className="space-y-3">
+        {/* Résumé compact */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span>
+            <span className="font-semibold text-foreground text-sm tabular-nums">{searchCount?.count || 0}</span>{' '}
+            recherches aujourd’hui
+          </span>
+          <span>
+            <span className="font-semibold text-foreground text-sm tabular-nums">{extremeSearchCount?.count || 0}</span>{' '}
+            extrêmes ce mois
+          </span>
         </div>
 
-        <div className={cn('bg-muted/50 rounded-lg space-y-1', isMobile ? 'p-2.5' : 'p-3')}>
-          <div className="flex items-center justify-between">
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Extrême</span>
-            <LightningIcon className={isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-          </div>
-          {usageLoading ? (
-            <Skeleton className={cn('font-semibold', isMobile ? 'text-base h-4' : 'text-lg h-5')} />
-          ) : (
-            <div className={cn('font-semibold', isMobile ? 'text-base' : 'text-lg')}>
-              {extremeSearchCount?.count || 0}
+        {/* Agent Grid */}
+        <div className={cn('grid', isMobile ? 'grid-cols-2 gap-2' : 'grid-cols-3 gap-3')}>
+          {AGENTS.map((agent) => (
+            <div
+              key={agent.id}
+              className={cn(
+                'relative bg-muted/50 dark:bg-card rounded-xl flex flex-col items-center gap-1.5 text-center',
+                'border border-border/50 hover:border-border transition-colors',
+                isMobile ? 'p-3' : 'p-4',
+              )}
+            >
+              {agent.premium && (
+                <span className="absolute -top-2 -right-2 text-base drop-shadow-sm">👑</span>
+              )}
+              <div
+                className={cn(
+                  'rounded-full flex items-center justify-center',
+                  agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
+                  isMobile ? 'size-9' : 'size-10',
+                )}
+              >
+                <HugeiconsIcon
+                  icon={agent.icon}
+                  size={isMobile ? 18 : 20}
+                  strokeWidth={1.5}
+                  className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
+                />
+              </div>
+              <span className={cn('font-medium leading-tight', isMobile ? 'text-[11px]' : 'text-xs')}>
+                {agent.name}
+              </span>
+              <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-base' : 'text-lg')}>
+                —
+              </span>
+              <span className="text-[9px] text-muted-foreground">utilisations</span>
             </div>
-          )}
-          <p className="text-[10px] text-muted-foreground">Ce mois-ci</p>
+          ))}
         </div>
+
+        <p className="text-[10px] text-muted-foreground text-center italic">
+          Suivi détaillé par agent bientôt disponible
+        </p>
       </div>
 
       {!isProUser && (
@@ -966,9 +1009,9 @@ export function UsageSection({ user }: any) {
               <TooltipProvider>
                 <ContributionGraph
                   data={loadingStars}
-                  blockSize={isMobile ? 8 : 12}
-                  blockMargin={isMobile ? 3 : 4}
-                  fontSize={isMobile ? 9 : 12}
+                  blockSize={isMobile ? 7 : 10}
+                  blockMargin={isMobile ? 2 : 3}
+                  fontSize={isMobile ? 9 : 11}
                   labels={{
                     totalCount: 'Chargement des données d’activité…',
                     legend: {
@@ -1007,7 +1050,7 @@ export function UsageSection({ user }: any) {
                     />
                     <ContributionGraphLegend className={cn('text-muted-foreground', isMobile ? 'flex-shrink-0' : '')}>
                       {({ level }) => (
-                        <svg height={isMobile ? 8 : 12} width={isMobile ? 8 : 12}>
+                        <svg height={isMobile ? 7 : 10} width={isMobile ? 7 : 10}>
                           <rect
                             className={cn(
                               'stroke-[1px] stroke-border/50',
@@ -1018,10 +1061,10 @@ export function UsageSection({ user }: any) {
                               'data-[level="4"]:fill-primary/90',
                             )}
                             data-level={level}
-                            height={isMobile ? 8 : 12}
+                            height={isMobile ? 7 : 10}
                             rx={2}
                             ry={2}
-                            width={isMobile ? 8 : 12}
+                            width={isMobile ? 7 : 10}
                           />
                         </svg>
                       )}
@@ -1033,9 +1076,9 @@ export function UsageSection({ user }: any) {
               <TooltipProvider>
                 <ContributionGraph
                   data={historicalUsageData}
-                  blockSize={isMobile ? 8 : 12}
-                  blockMargin={isMobile ? 3 : 4}
-                  fontSize={isMobile ? 9 : 12}
+                  blockSize={isMobile ? 7 : 10}
+                  blockMargin={isMobile ? 2 : 3}
+                  fontSize={isMobile ? 9 : 11}
                   labels={{
                     totalCount: '{{count}} messages au total en {{year}}',
                     legend: {
@@ -1113,7 +1156,7 @@ export function UsageSection({ user }: any) {
                         return (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <svg height={isMobile ? 8 : 12} width={isMobile ? 8 : 12} className="cursor-help">
+                              <svg height={isMobile ? 7 : 10} width={isMobile ? 7 : 10} className="cursor-help">
                                 <rect
                                   className={cn(
                                     'stroke-[1px] stroke-border/50',
@@ -1124,10 +1167,10 @@ export function UsageSection({ user }: any) {
                                     'data-[level="4"]:fill-primary',
                                   )}
                                   data-level={level}
-                                  height={isMobile ? 8 : 12}
+                                  height={isMobile ? 7 : 10}
                                   rx={2}
                                   ry={2}
-                                  width={isMobile ? 8 : 12}
+                                  width={isMobile ? 7 : 10}
                                 />
                               </svg>
                             </TooltipTrigger>
