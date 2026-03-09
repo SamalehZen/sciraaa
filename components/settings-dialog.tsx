@@ -603,7 +603,7 @@ export function UsageSection({ user }: any) {
                 </div>
                 <div className="flex items-center justify-between mt-4 pt-2">
                   <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                    {historicalTotalCount.toLocaleString('fr-FR')} messages au total en {new Date().getFullYear()}
+                    {historicalTotalCount.toLocaleString('fr-FR')} messages (12 derniers mois)
                   </p>
                   <div className="flex items-center gap-[3px]">
                     <span className={cn('text-muted-foreground mr-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Moins</span>
