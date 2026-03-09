@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { PlusIcon, GlobeHemisphereWestIcon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
-import { UserProfile, NavigationMenu } from '@/components/user-profile';
+import { UserProfile } from '@/components/user-profile';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { ChatHistoryButton } from '@/components/chat-history-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -205,8 +206,8 @@ const Navbar = memo(
 
             {/* Chat History Button */}
             {user && <ChatHistoryButton onClickAction={onHistoryClick} />}
-            {/* Navigation Menu - settings icon for general navigation */}
-            <NavigationMenu />
+            {/* Theme Switcher - directly inline */}
+            <ThemeSwitcher />
             {/* User Profile - focused on authentication and account management */}
             <UserProfile
               user={user}
