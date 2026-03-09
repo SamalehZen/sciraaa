@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo, useRef, useEffect } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,103 +17,14 @@ import {
   SignInIcon,
   EyeIcon,
   EyeSlashIcon,
-  InfoIcon,
-  FileTextIcon,
-  ShieldIcon,
-  SunIcon,
   GearIcon,
-  XLogoIcon,
-  InstagramLogoIcon,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { ThemeSwitcher } from './theme-switcher';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import Link from 'next/link';
 import { User } from '@/lib/db/schema';
-import { SettingsIcon, type SettingsIconHandle } from '@/components/ui/settings';
 import { SignInPromptDialog } from '@/components/sign-in-prompt-dialog';
-
-// Navigation Menu Component - contains all the general navigation items
-const NavigationMenu = memo(() => {
-  const [isOpen, setIsOpen] = useState(false);
-  const settingsIconRef = useRef<SettingsIconHandle>(null);
-
-  // Control the animation based on dropdown state
-  useEffect(() => {
-    if (isOpen) {
-      settingsIconRef.current?.startAnimation();
-    } else {
-      settingsIconRef.current?.stopAnimation();
-    }
-  }, [isOpen]);
-
-  return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center justify-center hover:bg-accent hover:text-accent-foreground rounded-md transition-colors cursor-pointer !size-6 !p-0 !m-0">
-              <SettingsIcon ref={settingsIconRef} size={18} />
-            </div>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={4}>
-          Menu
-        </TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent className="w-[240px] z-[110] mr-5">
-        <DropdownMenuItem className="cursor-pointer py-1 hover:bg-transparent!">
-          <div className="flex items-center justify-between w-full px-0" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2">
-              <SunIcon size={16} />
-              <span className="text-sm">Theme</span>
-            </div>
-            <ThemeSwitcher />
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem className="cursor-pointer" asChild>
-          <Link href="/about" className="w-full flex items-center gap-2">
-            <InfoIcon size={16} />
-            <span>About</span>
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem className="cursor-pointer" asChild>
-          <Link href="/terms" className="w-full flex items-center gap-2">
-            <FileTextIcon size={16} />
-            <span>Terms</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" asChild>
-          <Link href="/privacy-policy" className="w-full flex items-center gap-2">
-            <ShieldIcon size={16} />
-            <span>Privacy</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem className="cursor-pointer" asChild>
-          <a href={'https://x.com/hyperai'} target="_blank" className="w-full flex items-center gap-2">
-            <XLogoIcon size={16} />
-            <span>X.com</span>
-          </a>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" asChild>
-          <a href={'https://www.instagram.com/hyper.vercel.app'} target="_blank" className="w-full flex items-center gap-2">
-            <InstagramLogoIcon size={16} />
-            <span>Instagram</span>
-          </a>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-});
-
-NavigationMenu.displayName = 'NavigationMenu';
 
 // User Profile Component - focused on user authentication and account management
 const UserProfile = memo(
@@ -356,4 +267,4 @@ const UserProfile = memo(
 // Add a display name for the memoized component for better debugging
 UserProfile.displayName = 'UserProfile';
 
-export { UserProfile, NavigationMenu };
+export { UserProfile };
