@@ -20,7 +20,6 @@ import {
 import {
   MagnifyingGlassIcon,
   LightningIcon,
-  CalendarIcon,
 } from '@phosphor-icons/react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -540,71 +539,67 @@ export function UsageSection({ user }: any) {
 
       {/* Activity Graph Section */}
       {(historicalUsageData || historicalLoading) && (
-        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
-          <div className="flex items-center justify-between mb-3">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <div>
-                <h3 className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-sm')}>Activité</h3>
-                <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                  {historicalTotalCount.toLocaleString('fr-FR')} recherches (12 derniers mois)
-                </p>
-              </div>
-            </div>
-          </div>
-
+        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3 pt-4' : 'p-5 pt-5')}>
           <div className="space-y-3">
             {processedHistoricalData && processedHistoricalData.length > 0 ? (
               <TooltipProvider delayDuration={0}>
-                <div className="w-full overflow-x-auto">
-                  <div className="flex gap-1">
-                    {processedHistoricalData.map((month) => (
-                      <div key={month.month} className="flex flex-col gap-1">
-                        <div className="text-[10px] text-muted-foreground text-center mb-1">
-                          {month.month}
+                <div className="w-full overflow-x-auto pb-1">
+                  <div className="flex" style={{ gap: isMobile ? '2px' : '3px' }}>
+                    {processedHistoricalData.map((month) => {
+                      const weekCount = Math.ceil(month.days.length / 7);
+                      return (
+                        <div key={month.month} className="flex flex-col" style={{ gap: isMobile ? '2px' : '3px' }}>
+                          <div className={cn(
+                            'text-muted-foreground font-medium mb-0.5',
+                            isMobile ? 'text-[9px]' : 'text-[11px]',
+                          )} style={{ paddingLeft: 1 }}>
+                            {month.month}
+                          </div>
+                          <div
+                            className="grid grid-rows-7 grid-flow-col"
+                            style={{ gap: isMobile ? '2px' : '3px' }}
+                          >
+                            {month.days.map((day, dayIndex) => (
+                              <Tooltip key={`${month.month}-${dayIndex}`}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={cn(
+                                      'rounded-[3px] cursor-default',
+                                      isMobile ? 'size-[10px]' : 'size-[13px]',
+                                      day.level === 0 && 'bg-muted',
+                                      day.level === 1 && 'bg-primary/30',
+                                      day.level === 2 && 'bg-primary/50',
+                                      day.level === 3 && 'bg-primary/70',
+                                      day.level === 4 && 'bg-primary',
+                                    )}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                  <p className="text-muted-foreground">
+                                    {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === day.date)?.count : 0) ?? 0} recherches
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </div>
                         </div>
-                        <div className="grid grid-rows-7 grid-flow-col gap-1">
-                          {month.days.map((day, dayIndex) => (
-                            <Tooltip key={`${month.month}-${dayIndex}`}>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className={cn(
-                                    'w-3 h-3 rounded-sm cursor-default',
-                                    day.level === 0 && 'bg-muted',
-                                    day.level === 1 && 'bg-primary/30',
-                                    day.level === 2 && 'bg-primary/50',
-                                    day.level === 3 && 'bg-primary/70',
-                                    day.level === 4 && 'bg-primary',
-                                  )}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">
-                                <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                <p className="text-muted-foreground">
-                                  {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === day.date)?.count : 0) ?? 0} recherches
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">Moins</span>
-                    <div className="w-3 h-3 rounded-sm bg-muted" />
-                    <div className="w-3 h-3 rounded-sm bg-primary/30" />
-                    <div className="w-3 h-3 rounded-sm bg-primary/50" />
-                    <div className="w-3 h-3 rounded-sm bg-primary/70" />
-                    <div className="w-3 h-3 rounded-sm bg-primary" />
-                    <span className="text-[10px] text-muted-foreground">Plus</span>
-                  </div>
-                  <div className="text-[10px]">
-                    {historicalTotalCount.toLocaleString('fr-FR')} activités
+                <div className="flex items-center justify-between mt-3 pt-2">
+                  <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
+                    {historicalTotalCount.toLocaleString('fr-FR')} messages au total en {new Date().getFullYear()}
+                  </p>
+                  <div className="flex items-center" style={{ gap: '3px' }}>
+                    <span className={cn('text-muted-foreground mr-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Moins</span>
+                    <div className={cn('rounded-[3px] bg-muted', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <div className={cn('rounded-[3px] bg-primary/30', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <div className={cn('rounded-[3px] bg-primary/50', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <div className={cn('rounded-[3px] bg-primary/70', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <div className={cn('rounded-[3px] bg-primary', isMobile ? 'size-[10px]' : 'size-[13px]')} />
+                    <span className={cn('text-muted-foreground ml-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Plus</span>
                   </div>
                 </div>
               </TooltipProvider>
