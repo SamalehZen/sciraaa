@@ -536,7 +536,7 @@ export function UsageSection({ user }: any) {
       </div>
 
       {/* Subscription info if available */}
-      {usageData?.subscriptionDetails && (
+      {usageData?.subscriptionDetails?.hasSubscription && (
         <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
           <div className="flex items-center justify-between mb-2">
             <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
