@@ -347,7 +347,13 @@ function SettingsPageInner() {
           <div className="flex-1 min-w-0">
             <Card className="p-0 shadow-none bg-transparent border-none">
               <TabsContent value="usage" className="m-0">
-                <UsageSection user={user} />
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold">Statistiques d'utilisation</h2>
+                    <p className="text-sm text-muted-foreground">Suivez votre utilisation quotidienne et mensuelle</p>
+                  </div>
+                  <UsageSection user={user} />
+                </div>
               </TabsContent>
 
               <TabsContent value="preferences" className="m-0">
