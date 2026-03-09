@@ -42,15 +42,7 @@ import {
   AppleStocksIcon,
   GlobalSearchIcon,
 } from '@hugeicons/core-free-icons';
-import {
-  ContributionGraph,
-  ContributionGraphCalendar,
-  ContributionGraphBlock,
-  ContributionGraphFooter,
-  ContributionGraphLegend,
-  ContributionGraphTotalCount,
-  type Activity,
-} from '@/components/ui/kibo-ui/contribution-graph';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocalSession } from '@/hooks/use-local-session';
 import { GripIcon } from '@/components/ui/grip';
@@ -566,12 +558,9 @@ export function UsageSection({ user }: any) {
           <div className="space-y-3">
             {processedHistoricalData && processedHistoricalData.length > 0 ? (
               <TooltipProvider delayDuration={0}>
-                <ContributionGraph
-                  data={processedHistoricalData}
-                  className="w-full"
-                >
-                  <ContributionGraphCalendar className="w-full">
-                    {processedHistoricalData.map((month, monthIndex) => (
+                <div className="w-full overflow-x-auto">
+                  <div className="flex gap-1">
+                    {processedHistoricalData.map((month) => (
                       <div key={month.month} className="flex flex-col gap-1">
                         <div className="text-[10px] text-muted-foreground text-center mb-1">
                           {month.month}
@@ -580,13 +569,9 @@ export function UsageSection({ user }: any) {
                           {month.days.map((day, dayIndex) => (
                             <Tooltip key={`${month.month}-${dayIndex}`}>
                               <TooltipTrigger asChild>
-                                <ContributionGraphBlock
-                                  activity={{
-                                    level: day.level,
-                                    date: day.date,
-                                  } as Activity}
+                                <div
                                   className={cn(
-                                    'w-3 h-3 rounded-sm',
+                                    'w-3 h-3 rounded-sm cursor-default',
                                     day.level === 0 && 'bg-muted',
                                     day.level === 1 && 'bg-primary/30',
                                     day.level === 2 && 'bg-primary/50',
@@ -606,20 +591,22 @@ export function UsageSection({ user }: any) {
                         </div>
                       </div>
                     ))}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter className="flex items-center justify-between text-xs text-muted-foreground mt-3">
-                    <ContributionGraphLegend className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">Moins</span>
-                      <ContributionGraphBlock activity={{ level: 0 } as Activity} className="w-3 h-3 rounded-sm bg-muted" />
-                      <ContributionGraphBlock activity={{ level: 1 } as Activity} className="w-3 h-3 rounded-sm bg-primary/30" />
-                      <ContributionGraphBlock activity={{ level: 2 } as Activity} className="w-3 h-3 rounded-sm bg-primary/50" />
-                      <ContributionGraphBlock activity={{ level: 3 } as Activity} className="w-3 h-3 rounded-sm bg-primary/70" />
-                      <ContributionGraphBlock activity={{ level: 4 } as Activity} className="w-3 h-3 rounded-sm bg-primary" />
-                      <span className="text-[10px] text-muted-foreground">Plus</span>
-                    </ContributionGraphLegend>
-                    <ContributionGraphTotalCount className="text-[10px]" />
-                  </ContributionGraphFooter>
-                </ContributionGraph>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">Moins</span>
+                    <div className="w-3 h-3 rounded-sm bg-muted" />
+                    <div className="w-3 h-3 rounded-sm bg-primary/30" />
+                    <div className="w-3 h-3 rounded-sm bg-primary/50" />
+                    <div className="w-3 h-3 rounded-sm bg-primary/70" />
+                    <div className="w-3 h-3 rounded-sm bg-primary" />
+                    <span className="text-[10px] text-muted-foreground">Plus</span>
+                  </div>
+                  <div className="text-[10px]">
+                    {historicalTotalCount.toLocaleString('fr-FR')} activités
+                  </div>
+                </div>
               </TooltipProvider>
             ) : (
               <div className="h-24 flex items-center justify-center">
