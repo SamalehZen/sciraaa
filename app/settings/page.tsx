@@ -246,7 +246,7 @@ function SettingsPageInner() {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row gap-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:flex-row lg:items-end gap-6">
           {/* Mobile Dropdown */}
           <div className="lg:hidden">
             <Select value={activeTab} onValueChange={setActiveTab}>
@@ -278,7 +278,7 @@ function SettingsPageInner() {
           </div>
 
           {/* Desktop Sidebar Navigation */}
-          <aside className="hidden lg:block lg:w-64 shrink-0 space-y-4">
+          <aside className="hidden lg:block lg:w-64 shrink-0 space-y-4 lg:pb-0">
             {/* User Profile Card */}
             <Card className="p-6 shadow-none">
               <div className="flex flex-col items-center text-center space-y-4">

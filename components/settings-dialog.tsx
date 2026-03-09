@@ -498,42 +498,47 @@ export function UsageSection({ user }: any) {
 
   return (
     <div className={cn('space-y-3', isMobile ? 'space-y-2.5' : 'space-y-3')}>
-      {/* Agent Grid */}
-      <div className={cn('grid', isMobile ? 'grid-cols-3 gap-2' : 'grid-cols-6 gap-2')}>
-        {AGENTS.map((agent) => (
-          <div
-            key={agent.id}
-            className={cn(
-              'relative bg-muted/50 dark:bg-card rounded-lg flex flex-col items-center gap-1 text-center',
-              'border border-border/50 hover:border-border transition-colors',
-              isMobile ? 'p-2.5' : 'p-3',
-            )}
-          >
-            {agent.premium && (
-              <span className="absolute -top-1.5 -right-1.5 text-xs drop-shadow-sm">👑</span>
-            )}
+      {/* Agents */}
+      <div className="space-y-2">
+        <h3 className={cn('font-semibold', isMobile ? 'text-sm' : 'text-sm')}>Vos Agents</h3>
+        <div className={cn('grid', isMobile ? 'grid-cols-3 gap-2' : 'grid-cols-3 gap-2')}>
+          {AGENTS.map((agent) => (
             <div
+              key={agent.id}
               className={cn(
-                'rounded-full flex items-center justify-center',
-                agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
-                isMobile ? 'size-7' : 'size-8',
+                'relative bg-muted/50 dark:bg-card rounded-lg flex items-center gap-2.5',
+                'border border-border/50 hover:border-border transition-colors',
+                isMobile ? 'p-2' : 'px-3 py-2.5',
               )}
             >
-              <HugeiconsIcon
-                icon={agent.icon}
-                size={isMobile ? 14 : 16}
-                strokeWidth={1.5}
-                className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
-              />
+              {agent.premium && (
+                <span className="absolute -top-1.5 -right-1.5 text-[10px] drop-shadow-sm">👑</span>
+              )}
+              <div
+                className={cn(
+                  'rounded-full flex items-center justify-center shrink-0',
+                  agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
+                  'size-7',
+                )}
+              >
+                <HugeiconsIcon
+                  icon={agent.icon}
+                  size={14}
+                  strokeWidth={1.5}
+                  className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
+                />
+              </div>
+              <div className="min-w-0">
+                <span className={cn('font-medium leading-tight block truncate', isMobile ? 'text-[10px]' : 'text-xs')}>
+                  {agent.name}
+                </span>
+                <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-xs' : 'text-sm')}>
+                  —
+                </span>
+              </div>
             </div>
-            <span className={cn('font-medium leading-tight', isMobile ? 'text-[9px]' : 'text-[10px]')}>
-              {agent.name}
-            </span>
-            <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-sm' : 'text-base')}>
-              —
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Activity Graph Section */}
