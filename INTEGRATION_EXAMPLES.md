@@ -84,7 +84,7 @@ import { geminiKeyManager } from '@/lib/gemini-key-manager';
 async function callGeminiWithRotation(activeKey: string, keyId: string, prompt: string) {
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${activeKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,7 @@ export async function generateWithTracking(prompt: string) {
 
     // Make API call
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${activeKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

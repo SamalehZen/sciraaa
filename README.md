@@ -109,7 +109,7 @@ Notes
 ## LLM Models Supported
 
 - **xAI**: Grok 3, Grok 3 Mini, Grok 2 Vision
-- **Google**: Gemini 2.5 Flash (Preview), Gemini 2.5 Pro (Preview)
+- **Google**: Gemini 3.1 Flash Lite (Preview)
 - **Anthropic**: Claude 4 Sonnet
 - **OpenAI**: GPT-4o, o4-mini, o3 (with reasoning capabilities)
 - **Groq**: Qwen QwQ 32B, Qwen 3 32B, Meta's Llama 4 Maverick
