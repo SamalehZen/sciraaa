@@ -188,8 +188,8 @@ async function seedMessages(chatIds: string[]) {
   console.log('\n📨 Création des messages...\n');
 
   const models = [
-    { name: 'google-gemini-1.5-pro', weight: 40 },
-    { name: 'google-gemini-2.0-flash', weight: 30 },
+    { name: 'google-gemini-3.1-flash-lite-preview', weight: 40 },
+    { name: 'google-gemini-1.5-pro', weight: 30 },
     { name: 'google-gemini-1.5-flash', weight: 20 },
     { name: 'gpt-4', weight: 5 },
     { name: 'claude-3-opus', weight: 5 },
