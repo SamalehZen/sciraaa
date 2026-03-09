@@ -144,8 +144,8 @@ function SettingsPageInner() {
   };
 
   const tabs = [
-    { value: 'usage', label: 'Usage', icon: Analytics01Icon },
-    { value: 'preferences', label: 'Preferences', icon: Settings02Icon },
+    { value: 'usage', label: 'Utilisation', icon: Analytics01Icon },
+    { value: 'preferences', label: 'Préférences', icon: Settings02Icon },
   ];
 
   return (
@@ -278,7 +278,7 @@ function SettingsPageInner() {
           </div>
 
           {/* Desktop Sidebar Navigation */}
-          <aside className="hidden lg:block lg:w-64 shrink-0 space-y-4">
+          <aside className="hidden lg:block lg:w-64 shrink-0 space-y-4 lg:pb-0">
             {/* User Profile Card */}
             <Card className="p-6 shadow-none">
               <div className="flex flex-col items-center text-center space-y-4">
@@ -349,8 +349,8 @@ function SettingsPageInner() {
               <TabsContent value="usage" className="m-0">
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-lg font-semibold">Usage Statistics</h2>
-                    <p className="text-sm text-muted-foreground">Track your daily and monthly usage</p>
+                    <h2 className="text-lg font-semibold">Statistiques d'utilisation</h2>
+                    <p className="text-sm text-muted-foreground">Suivez votre utilisation quotidienne et mensuelle</p>
                   </div>
                   <UsageSection user={user} />
                 </div>
@@ -359,8 +359,8 @@ function SettingsPageInner() {
               <TabsContent value="preferences" className="m-0">
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-lg font-semibold">Preferences</h2>
-                    <p className="text-sm text-muted-foreground">Customize your search and AI experience</p>
+                    <h2 className="text-lg font-semibold">Préférences</h2>
+                    <p className="text-sm text-muted-foreground">Personnalisez votre expérience de recherche et d'IA</p>
                   </div>
                   <PreferencesSection user={user} />
                 </div>

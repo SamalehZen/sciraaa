@@ -20,7 +20,6 @@ import {
 import {
   MagnifyingGlassIcon,
   LightningIcon,
-  CalendarIcon,
 } from '@phosphor-icons/react';
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -35,16 +34,14 @@ import {
   UserAccountIcon,
   Analytics01Icon,
   Settings02Icon,
+  HierarchyIcon,
+  MagicWandIcon,
+  File02Icon,
+  ChattingIcon,
+  AppleStocksIcon,
+  GlobalSearchIcon,
 } from '@hugeicons/core-free-icons';
-import {
-  ContributionGraph,
-  ContributionGraphCalendar,
-  ContributionGraphBlock,
-  ContributionGraphFooter,
-  ContributionGraphLegend,
-  ContributionGraphTotalCount,
-  type Activity,
-} from '@/components/ui/kibo-ui/contribution-graph';
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocalSession } from '@/hooks/use-local-session';
 import { GripIcon } from '@/components/ui/grip';
@@ -414,14 +411,19 @@ export function UsageSection({ user }: any) {
   }, [historicalLoading]);
 
   const processedHistoricalData = useMemo(() => {
-    if (historicalLoading || !historicalUsageData?.history) {
+    const raw = Array.isArray(historicalUsageData) ? historicalUsageData : null;
+    if (historicalLoading || !raw || raw.length === 0) {
       return loadingStars;
     }
+
+    const historyMap = new Map<string, { count: number; level: number }>();
+    raw.forEach((item: { date: string; count: number; level: number }) => {
+      historyMap.set(item.date, { count: item.count, level: item.level });
+    });
 
     const today = new Date();
     const months: { month: string; days: { level: number; date: string }[] }[] = [];
 
-    // Generate last 12 months
     for (let i = 0; i < 12; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       months.unshift({
@@ -430,46 +432,64 @@ export function UsageSection({ user }: any) {
       });
     }
 
-    // Create a map of date -> count from historical data
-    const historyMap = new Map<string, number>();
-    if (historicalUsageData?.history) {
-      historicalUsageData.history.forEach((item: { date: string; count: number }) => {
-        historyMap.set(item.date, item.count);
-      });
-    }
-
-    // Fill in days for each month with data from history or zeros
     months.forEach((month, index) => {
       const date = new Date(today.getFullYear(), today.getMonth() - (11 - index), 1);
       const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 
       for (let day = 1; day <= daysInMonth; day++) {
         const currentDate = new Date(date.getFullYear(), date.getMonth(), day);
+        if (currentDate > today) continue;
         const dateStr = currentDate.toISOString().split('T')[0];
-        const count = historyMap.get(dateStr) || 0;
+        const entry = historyMap.get(dateStr);
 
-        let level = 0;
-        if (count > 0) {
-          if (count >= 20) level = 4;
-          else if (count >= 12) level = 3;
-          else if (count >= 6) level = 2;
-          else level = 1;
-        }
-
-        // Don't show future dates
-        const isFuture = currentDate > today;
-        if (!isFuture) {
-          month.days.push({
-            level,
-            date: dateStr,
-          });
-        }
+        month.days.push({
+          level: entry?.level ?? 0,
+          date: dateStr,
+        });
       }
     });
 
     return months;
   }, [historicalUsageData, historicalLoading, loadingStars]);
 
+  const historicalTotalCount = useMemo(() => {
+    const raw = Array.isArray(historicalUsageData) ? historicalUsageData : null;
+    if (!raw) return 0;
+    return raw.reduce((sum: number, item: { count: number }) => sum + item.count, 0);
+  }, [historicalUsageData]);
+
+  const { monthMeta, totalCols, allCells } = useMemo(() => {
+    if (!processedHistoricalData?.length) return { monthMeta: [], totalCols: 0, allCells: [] as Array<{ level: number; date: string; empty?: boolean }> };
+
+    let col = 0;
+    const monthMeta = processedHistoricalData.map(month => {
+      const weeks = Math.ceil(month.days.length / 7);
+      const startCol = col;
+      col += weeks;
+      return { label: month.month, startCol, weeks };
+    });
+
+    const allCells: Array<{ level: number; date: string; empty?: boolean }> = [];
+    processedHistoricalData.forEach(month => {
+      const weeks = Math.ceil(month.days.length / 7);
+      const totalSlots = weeks * 7;
+      month.days.forEach(d => allCells.push({ level: d.level, date: d.date }));
+      for (let i = month.days.length; i < totalSlots; i++) {
+        allCells.push({ level: 0, date: '', empty: true });
+      }
+    });
+
+    return { monthMeta, totalCols: col, allCells };
+  }, [processedHistoricalData]);
+
+  const AGENTS = [
+    { id: 'libeller', name: 'Correction Libellé', icon: MagicWandIcon, premium: false },
+    { id: 'nomenclature', name: 'Nomenclature', icon: AppleStocksIcon, premium: false },
+    { id: 'chat', name: 'Chat', icon: ChattingIcon, premium: false },
+    { id: 'eanexpert', name: 'EAN Expert', icon: GlobalSearchIcon, premium: false },
+    { id: 'cyrus', name: 'Cyrus Structure', icon: HierarchyIcon, premium: true },
+    { id: 'pdfExcel', name: 'PDF → Excel', icon: File02Icon, premium: true },
+  ];
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([refetchUsageData(), refetchHistoricalData()]);
@@ -477,187 +497,124 @@ export function UsageSection({ user }: any) {
   };
 
   return (
-    <div className={cn('space-y-4', isMobile ? 'space-y-3' : 'space-y-4')}>
-      {/* Quick Stats */}
-      <div className={cn('grid grid-cols-2 gap-3', isMobile ? 'gap-2' : 'gap-3')}>
-        {/* Search count card */}
-        <div
-          className={cn(
-            'bg-card rounded-xl border shadow-sm overflow-hidden',
-            isMobile ? 'p-2.5' : 'p-4',
-          )}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <MagnifyingGlassIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches</span>
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            {usageLoading ? (
-              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
-            ) : (
-              <span
+    <div className={cn('space-y-3', isMobile ? 'space-y-2.5' : 'space-y-3')}>
+      {/* Agents */}
+      <div className="space-y-2">
+        <h3 className={cn('font-semibold', isMobile ? 'text-sm' : 'text-sm')}>Vos Agents</h3>
+        <div className={cn('grid', isMobile ? 'grid-cols-3 gap-2' : 'grid-cols-3 gap-2')}>
+          {AGENTS.map((agent) => (
+            <div
+              key={agent.id}
+              className={cn(
+                'relative bg-muted/50 dark:bg-card rounded-lg flex items-center gap-2.5',
+                'border border-border/50 hover:border-border transition-colors',
+                isMobile ? 'p-2' : 'px-3 py-2.5',
+              )}
+            >
+              {agent.premium && (
+                <span className="absolute -top-1.5 -right-1.5 text-[10px] drop-shadow-sm">👑</span>
+              )}
+              <div
                 className={cn(
-                  'font-semibold text-foreground tabular-nums tracking-tight',
-                  isMobile ? 'text-lg' : 'text-xl',
+                  'rounded-full flex items-center justify-center shrink-0',
+                  agent.premium ? 'bg-amber-500/10 dark:bg-amber-400/10' : 'bg-primary/10',
+                  'size-7',
                 )}
               >
-                {searchCount?.toLocaleString('fr-FR') ?? '—'}
-              </span>
-            )}
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>aujourd'hui</span>
-          </div>
-        </div>
-
-        {/* Extreme Search count card */}
-        <div
-          className={cn(
-            'bg-card rounded-xl border shadow-sm overflow-hidden',
-            isMobile ? 'p-2.5' : 'p-4',
-          )}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <LightningIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
+                <HugeiconsIcon
+                  icon={agent.icon}
+                  size={14}
+                  strokeWidth={1.5}
+                  className={agent.premium ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}
+                />
               </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Recherches Profondes</span>
+              <div className="min-w-0">
+                <span className={cn('font-medium leading-tight block truncate', isMobile ? 'text-[10px]' : 'text-xs')}>
+                  {agent.name}
+                </span>
+                <span className={cn('font-bold tabular-nums text-muted-foreground', isMobile ? 'text-xs' : 'text-sm')}>
+                  —
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="flex items-end justify-between">
-            {usageLoading ? (
-              <Skeleton className={cn('bg-muted', isMobile ? 'h-6 w-16' : 'h-7 w-20')} />
-            ) : (
-              <span
-                className={cn(
-                  'font-semibold text-foreground tabular-nums tracking-tight',
-                  isMobile ? 'text-lg' : 'text-xl',
-                )}
-              >
-                {extremeSearchCount?.toLocaleString('fr-FR') ?? '—'}
-              </span>
-            )}
-            <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>ce mois</span>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Subscription info if available */}
-      {usageData?.subscriptionDetails && (
-        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
-          <div className="flex items-center justify-between mb-2">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <span className={cn('text-muted-foreground', isMobile ? 'text-[11px]' : 'text-xs')}>Abonnement</span>
-            </div>
-            {usageData.subscriptionDetails.plan && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  isMobile ? 'text-[9px] px-1.5 py-0.5' : 'text-xs',
-                  usageData.subscriptionDetails.plan === 'Pro'
-                    ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                    : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {usageData.subscriptionDetails.plan}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-end justify-between">
-            <div className="flex flex-col">
-              <span className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-base')}>
-                {usageData.subscriptionDetails.status === 'active' ? 'Actif' : usageData.subscriptionDetails.status}
-              </span>
-              {usageData.subscriptionDetails.renewsAt && (
-                <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                  Renouvellement le {new Date(usageData.subscriptionDetails.renewsAt).toLocaleDateString('fr-FR')}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Activity Graph Section */}
-      {historicalUsageData && (
-        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
-          <div className="flex items-center justify-between mb-3">
-            <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
-              <div className="flex items-center justify-center rounded-md bg-muted p-1.5">
-                <CalendarIcon className={cn('text-muted-foreground', isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4')} weight="bold" />
-              </div>
-              <div>
-                <h3 className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-sm')}>Activité</h3>
-                <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                  {historicalUsageData?.totalCount?.toLocaleString('fr-FR') ?? '—'} recherches (12 derniers mois)
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {processedHistoricalData && processedHistoricalData.length > 0 ? (
+      {(historicalUsageData || historicalLoading) && (
+        <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3 pt-4' : 'p-5 pt-5')}>
+          <div>
+            {processedHistoricalData && processedHistoricalData.length > 0 && totalCols > 0 ? (
               <TooltipProvider delayDuration={0}>
-                <ContributionGraph
-                  data={processedHistoricalData}
-                  className="w-full"
-                >
-                  <ContributionGraphCalendar className="w-full">
-                    {processedHistoricalData.map((month, monthIndex) => (
-                      <div key={month.month} className="flex flex-col gap-1">
-                        <div className="text-[10px] text-muted-foreground text-center mb-1">
-                          {month.month}
-                        </div>
-                        <div className="grid grid-rows-7 grid-flow-col gap-1">
-                          {month.days.map((day, dayIndex) => (
-                            <Tooltip key={`${month.month}-${dayIndex}`}>
-                              <TooltipTrigger asChild>
-                                <ContributionGraphBlock
-                                  activity={{
-                                    level: day.level,
-                                    date: day.date,
-                                  } as Activity}
-                                  className={cn(
-                                    'w-3 h-3 rounded-sm',
-                                    day.level === 0 && 'bg-muted',
-                                    day.level === 1 && 'bg-primary/30',
-                                    day.level === 2 && 'bg-primary/50',
-                                    day.level === 3 && 'bg-primary/70',
-                                    day.level === 4 && 'bg-primary',
-                                  )}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">
-                                <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                <p className="text-muted-foreground">
-                                  {historicalUsageData?.history?.find((h: any) => h.date === day.date)?.count ?? 0} recherches
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                        </div>
+                <div className="w-full">
+                  <div
+                    className="grid mb-1.5"
+                    style={{ gridTemplateColumns: `repeat(${totalCols}, 1fr)`, gap: '2px' }}
+                  >
+                    {monthMeta.map(m => (
+                      <div
+                        key={m.label}
+                        className={cn('text-muted-foreground font-medium truncate', isMobile ? 'text-[8px]' : 'text-[11px]')}
+                        style={{ gridColumn: `${m.startCol + 1} / span ${m.weeks}` }}
+                      >
+                        {m.label}
                       </div>
                     ))}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter className="flex items-center justify-between text-xs text-muted-foreground mt-3">
-                    <ContributionGraphLegend className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">Moins</span>
-                      <ContributionGraphBlock activity={{ level: 0 } as Activity} className="w-3 h-3 rounded-sm bg-muted" />
-                      <ContributionGraphBlock activity={{ level: 1 } as Activity} className="w-3 h-3 rounded-sm bg-primary/30" />
-                      <ContributionGraphBlock activity={{ level: 2 } as Activity} className="w-3 h-3 rounded-sm bg-primary/50" />
-                      <ContributionGraphBlock activity={{ level: 3 } as Activity} className="w-3 h-3 rounded-sm bg-primary/70" />
-                      <ContributionGraphBlock activity={{ level: 4 } as Activity} className="w-3 h-3 rounded-sm bg-primary" />
-                      <span className="text-[10px] text-muted-foreground">Plus</span>
-                    </ContributionGraphLegend>
-                    <ContributionGraphTotalCount className="text-[10px]" />
-                  </ContributionGraphFooter>
-                </ContributionGraph>
+                  </div>
+                  <div
+                    className="grid w-full"
+                    style={{
+                      gridTemplateColumns: `repeat(${totalCols}, 1fr)`,
+                      gridTemplateRows: 'repeat(7, auto)',
+                      gridAutoFlow: 'column',
+                      gap: '2px',
+                    }}
+                  >
+                    {allCells.map((cell, i) =>
+                      cell.empty ? (
+                        <div key={i} />
+                      ) : (
+                        <Tooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={cn(
+                                'aspect-square rounded-[3px] cursor-default',
+                                cell.level === 0 && 'bg-muted',
+                                cell.level === 1 && 'bg-primary/30',
+                                cell.level === 2 && 'bg-primary/50',
+                                cell.level === 3 && 'bg-primary/70',
+                                cell.level === 4 && 'bg-primary',
+                              )}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            <p className="font-medium">
+                              {new Date(cell.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === cell.date)?.count : 0) ?? 0} recherches
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-2">
+                  <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
+                    {historicalTotalCount.toLocaleString('fr-FR')} messages (12 derniers mois)
+                  </p>
+                  <div className="flex items-center gap-[3px]">
+                    <span className={cn('text-muted-foreground mr-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Moins</span>
+                    <div className={cn('rounded-[3px] bg-muted', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/30', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/50', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary/70', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <div className={cn('rounded-[3px] bg-primary', isMobile ? 'size-[8px]' : 'size-3')} />
+                    <span className={cn('text-muted-foreground ml-1', isMobile ? 'text-[9px]' : 'text-[11px]')}>Plus</span>
+                  </div>
+                </div>
               </TooltipProvider>
             ) : (
               <div className="h-24 flex items-center justify-center">
