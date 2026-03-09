@@ -495,7 +495,7 @@ export function UsageSection({ user }: any) {
                   isMobile ? 'text-lg' : 'text-xl',
                 )}
               >
-                {searchCount?.toLocaleString('fr-FR') ?? '—'}
+                {searchCount?.count?.toLocaleString('fr-FR') ?? '—'}
               </span>
             )}
             <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>aujourd'hui</span>
@@ -527,7 +527,7 @@ export function UsageSection({ user }: any) {
                   isMobile ? 'text-lg' : 'text-xl',
                 )}
               >
-                {extremeSearchCount?.toLocaleString('fr-FR') ?? '—'}
+                {extremeSearchCount?.count?.toLocaleString('fr-FR') ?? '—'}
               </span>
             )}
             <span className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>ce mois</span>
