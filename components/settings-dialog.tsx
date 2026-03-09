@@ -420,14 +420,19 @@ export function UsageSection({ user }: any) {
   }, [historicalLoading]);
 
   const processedHistoricalData = useMemo(() => {
-    if (historicalLoading || !historicalUsageData?.history) {
+    const raw = Array.isArray(historicalUsageData) ? historicalUsageData : null;
+    if (historicalLoading || !raw || raw.length === 0) {
       return loadingStars;
     }
+
+    const historyMap = new Map<string, { count: number; level: number }>();
+    raw.forEach((item: { date: string; count: number; level: number }) => {
+      historyMap.set(item.date, { count: item.count, level: item.level });
+    });
 
     const today = new Date();
     const months: { month: string; days: { level: number; date: string }[] }[] = [];
 
-    // Generate last 12 months
     for (let i = 0; i < 12; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       months.unshift({
@@ -436,45 +441,31 @@ export function UsageSection({ user }: any) {
       });
     }
 
-    // Create a map of date -> count from historical data
-    const historyMap = new Map<string, number>();
-    if (historicalUsageData?.history) {
-      historicalUsageData.history.forEach((item: { date: string; count: number }) => {
-        historyMap.set(item.date, item.count);
-      });
-    }
-
-    // Fill in days for each month with data from history or zeros
     months.forEach((month, index) => {
       const date = new Date(today.getFullYear(), today.getMonth() - (11 - index), 1);
       const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 
       for (let day = 1; day <= daysInMonth; day++) {
         const currentDate = new Date(date.getFullYear(), date.getMonth(), day);
+        if (currentDate > today) continue;
         const dateStr = currentDate.toISOString().split('T')[0];
-        const count = historyMap.get(dateStr) || 0;
+        const entry = historyMap.get(dateStr);
 
-        let level = 0;
-        if (count > 0) {
-          if (count >= 20) level = 4;
-          else if (count >= 12) level = 3;
-          else if (count >= 6) level = 2;
-          else level = 1;
-        }
-
-        // Don't show future dates
-        const isFuture = currentDate > today;
-        if (!isFuture) {
-          month.days.push({
-            level,
-            date: dateStr,
-          });
-        }
+        month.days.push({
+          level: entry?.level ?? 0,
+          date: dateStr,
+        });
       }
     });
 
     return months;
   }, [historicalUsageData, historicalLoading, loadingStars]);
+
+  const historicalTotalCount = useMemo(() => {
+    const raw = Array.isArray(historicalUsageData) ? historicalUsageData : null;
+    if (!raw) return 0;
+    return raw.reduce((sum: number, item: { count: number }) => sum + item.count, 0);
+  }, [historicalUsageData]);
 
 
   const AGENTS = [
@@ -556,7 +547,7 @@ export function UsageSection({ user }: any) {
       </div>
 
       {/* Activity Graph Section */}
-      {historicalUsageData && (
+      {(historicalUsageData || historicalLoading) && (
         <div className={cn('bg-card rounded-xl border shadow-sm', isMobile ? 'p-3' : 'p-4')}>
           <div className="flex items-center justify-between mb-3">
             <div className={cn('flex items-center gap-2', isMobile ? 'gap-1.5' : 'gap-2')}>
@@ -566,7 +557,7 @@ export function UsageSection({ user }: any) {
               <div>
                 <h3 className={cn('font-medium text-foreground', isMobile ? 'text-sm' : 'text-sm')}>Activité</h3>
                 <p className={cn('text-muted-foreground', isMobile ? 'text-[10px]' : 'text-xs')}>
-                  {historicalUsageData?.totalCount?.toLocaleString('fr-FR') ?? '—'} recherches (12 derniers mois)
+                  {historicalTotalCount.toLocaleString('fr-FR')} recherches (12 derniers mois)
                 </p>
               </div>
             </div>
@@ -607,7 +598,7 @@ export function UsageSection({ user }: any) {
                               <TooltipContent side="top" className="text-xs">
                                 <p className="font-medium">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                                 <p className="text-muted-foreground">
-                                  {historicalUsageData?.history?.find((h: any) => h.date === day.date)?.count ?? 0} recherches
+                                  {(Array.isArray(historicalUsageData) ? historicalUsageData.find((h: any) => h.date === day.date)?.count : 0) ?? 0} recherches
                                 </p>
                               </TooltipContent>
                             </Tooltip>
