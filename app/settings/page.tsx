@@ -44,10 +44,6 @@ function SettingsPageInner() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'usage';
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [isCustomInstructionsEnabled, setIsCustomInstructionsEnabled] = useLocalStorage(
-    'scira-custom-instructions-enabled',
-    true,
-  );
   const [blurPersonalInfo, setBlurPersonalInfo] = useLocalStorage<boolean>('scira-blur-personal-info', false);
   const [selectedProfileIcon, setSelectedProfileIcon] = useState<string | null>(null);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -366,11 +362,7 @@ function SettingsPageInner() {
                     <h2 className="text-lg font-semibold">Preferences</h2>
                     <p className="text-sm text-muted-foreground">Customize your search and AI experience</p>
                   </div>
-                  <PreferencesSection
-                    user={user}
-                    isCustomInstructionsEnabled={isCustomInstructionsEnabled}
-                    setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-                  />
+                  <PreferencesSection user={user} />
                 </div>
               </TabsContent>
 
