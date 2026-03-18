@@ -13,6 +13,7 @@ import { CYRUS_PROMPT, CYRUS_OUTPUT_RULES } from '@/ai/prompts/classification-cy
 import { NOMENCLATURE_DOUANIERE_PROMPT } from '@/ai/prompts/nomenclature-douaniere';
 import { LIBELLER_PROMPT } from '@/ai/prompts/correction-libeller';
 import { SMART_PDF_TO_EXCEL_PROMPT } from '@/ai/prompts/pdf-to-excel';
+import { PRESENTATION_AGENT_PROMPT } from '@/ai/prompts/presentation';
 import {
   getChatsByUserId,
   deleteChatById,
@@ -129,7 +130,7 @@ export async function generateSpeech(_text: string) {
   return { audio: '' };
 }
 
-type LegacyGroupId = 'chat' | 'cyrus' | 'libeller' | 'nomenclature' | 'pdfExcel' | 'eanexpert';
+type LegacyGroupId = 'chat' | 'cyrus' | 'libeller' | 'nomenclature' | 'pdfExcel' | 'eanexpert' | 'presentation';
 
 const groupTools = {
   chat: [] as const,
@@ -138,6 +139,7 @@ const groupTools = {
   nomenclature: [] as const,
   pdfExcel: [] as const,
   eanexpert: ['ean_search', 'datetime'] as const,
+  presentation: [] as const,
 } as const;
 
 const rawGroupInstructions = {
@@ -242,6 +244,7 @@ Ce produit est classé dans les catégories suivantes : [Liste des catégories]
 - Inclure toutes les images trouvées pour aider l'utilisateur à identifier le produit
 - Adapter la structure de réponse selon le type de recherche (code-barres vs libellé)
 `,
+  presentation: PRESENTATION_AGENT_PROMPT,
 };
 
 const groupInstructions = rawGroupInstructions;

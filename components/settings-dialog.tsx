@@ -40,6 +40,7 @@ import {
   ChattingIcon,
   AppleStocksIcon,
   GlobalSearchIcon,
+  PresentationBarChart01Icon,
 } from '@hugeicons/core-free-icons';
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -487,6 +488,7 @@ export function UsageSection({ user }: any) {
     { id: 'nomenclature', name: 'Nomenclature', icon: AppleStocksIcon, premium: false },
     { id: 'chat', name: 'Chat', icon: ChattingIcon, premium: false },
     { id: 'eanexpert', name: 'EAN Expert', icon: GlobalSearchIcon, premium: false },
+    { id: 'presentation', name: 'HyperSlide', icon: PresentationBarChart01Icon, premium: false },
     { id: 'cyrus', name: 'Cyrus Structure', icon: HierarchyIcon, premium: true },
     { id: 'pdfExcel', name: 'PDF → Excel', icon: File02Icon, premium: true },
   ];

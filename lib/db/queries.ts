@@ -965,7 +965,7 @@ export async function initializeUserAgentAccess(userId: string) {
     const allAgents = [
       'web', 'x', 'academic', 'youtube', 'reddit', 'stocks', 'chat', 'extreme', 
       'memory', 'crypto', 'code', 'connectors', 'cyrus', 'libeller', 'nomenclature', 'pdfExcel',
-      'eanexpert'
+      'eanexpert', 'presentation'
     ];
     const values = allAgents.map(agentId => ({
       id: generateId(),

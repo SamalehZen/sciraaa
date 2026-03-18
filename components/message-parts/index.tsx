@@ -39,6 +39,7 @@ import { ComprehensiveUserData } from '@/lib/user-data-server';
 import { Spinner } from '../ui/spinner';
 import { markdownTablesToXlsx } from '@/lib/export-xlsx';
 import { downloadResponseAsPdf } from '@/lib/export-pdf';
+import { hasHyperslideContent, parseHyperslideJson, downloadPptx } from '@/lib/export-pptx';
 import { EANSearchResults } from '@/components/ean-search-results';
 import { EANLoadingState } from '@/components/ean-loading-state';
 import { NutritionScores } from '@/components/nutrition-scores';
@@ -162,6 +163,7 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
       const outputCount = meta?.outputTokens ?? null;
 
       const hasMarkdownTable = /\n\s*\|[^\n]+\|\s*\n\s*\|\s*[-:]+[^\n]*\|/.test(part.text || '');
+      const hasPptxContent = hasHyperslideContent(part.text || '');
 
       return (
         <div key={`${messageIndex}-${partIndex}-text`} className="mt-2">
@@ -247,6 +249,38 @@ export const MessagePartRenderer = memo<MessagePartRendererProps>(
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Télécharger en Excel (.xlsx)</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {hasPptxContent && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={async () => {
+                            try {
+                              toast.loading('Génération du PPTX...', { id: 'pptx-export' });
+                              const data = parseHyperslideJson(part.text || '');
+                              if (!data) {
+                                toast.error('Aucune donnée de présentation trouvée', { id: 'pptx-export' });
+                                return;
+                              }
+                              await downloadPptx(data);
+                              toast.success('PPTX téléchargé avec succès', { id: 'pptx-export' });
+                            } catch (error: any) {
+                              console.error('PPTX export error:', error);
+                              toast.error(`Échec PPTX: ${(error?.message || String(error)).slice(0, 100)}`, { id: 'pptx-export', duration: 8000 });
+                            }
+                          }}
+                          className="size-8 p-0 rounded-full"
+                          aria-label="Télécharger en PowerPoint (.pptx)"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Télécharger en PowerPoint (.pptx)</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 )}
