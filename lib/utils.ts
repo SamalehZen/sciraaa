@@ -17,6 +17,7 @@ import {
   HierarchyIcon,
   MagicWandIcon,
   File02Icon,
+  PresentationBarChart01Icon,
 } from '@hugeicons/core-free-icons';
 
 export function cn(...inputs: ClassValue[]) {
@@ -40,7 +41,8 @@ export type SearchGroupId =
   | 'libeller'
   | 'nomenclature'
   | 'pdfExcel'
-  | 'eanexpert';
+  | 'eanexpert'
+  | 'presentation';
 
 // Search provider information for dynamic descriptions
 export const searchProviderInfo = {
@@ -181,6 +183,13 @@ function getBaseSearchGroups(searchProvider: SearchProvider = 'parallel') {
       name: 'EAN-Expert',
       description: "Recherche d'articles par code-barres",
       icon: GlobalSearchIcon,
+      show: true,
+    },
+    {
+      id: 'presentation' as const,
+      name: 'HyperSlide',
+      description: 'Génère des présentations PowerPoint professionnelles (PPTX)',
+      icon: PresentationBarChart01Icon,
       show: true,
     },
   ] as const;
