@@ -45,7 +45,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
             <span>Try again</span>
           </Button>
 
-          <Link href="/">
+          <Link href="/" prefetch={false}>
             <Button variant="outline" className="flex items-center gap-2 px-4 py-2 rounded-full">
               <ArrowLeft size={18} />
               <span>Return to home</span>

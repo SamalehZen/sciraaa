@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const resumeRequestedAt = new Date();
 
   if (!streamContext) {
-    return new Response(null, { status: 204 });
+    return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   }
 
   if (!chatId) {
@@ -48,17 +48,26 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const mostRecentMessage = messages.at(-1);
 
     if (!mostRecentMessage) {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {
+        status: 200,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      });
     }
 
     if (mostRecentMessage.role !== 'assistant') {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {
+        status: 200,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      });
     }
 
     const messageCreatedAt = new Date(mostRecentMessage.createdAt);
 
     if (differenceInSeconds(resumeRequestedAt, messageCreatedAt) > 15) {
-      return new Response(emptyDataStream, { status: 200 });
+      return new Response(emptyDataStream, {
+        status: 200,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      });
     }
 
     const restoredStream = createUIMessageStream<ChatMessage>({
@@ -71,8 +80,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       },
     });
 
-    return new Response(restoredStream.pipeThrough(new JsonToSseTransformStream()), { status: 200 });
+    return new Response(restoredStream.pipeThrough(new JsonToSseTransformStream()), {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    });
   }
 
-  return new Response(stream, { status: 200 });
+  return new Response(stream, {
+    status: 200,
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+  });
 }

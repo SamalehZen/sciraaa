@@ -8,7 +8,9 @@ import { headers } from 'next/headers';
 export async function GET() {
   const hdrs = await headers();
   const sess = getSessionFromHeaders(hdrs as any);
-  if (!sess) return NextResponse.json({ user: null });
+  if (!sess) return NextResponse.json({ user: null }, {
+    headers: { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' }
+  });
 
   const [u] = await db
     .select({
@@ -22,6 +24,10 @@ export async function GET() {
     .where(eq(appUser.id, sess.userId))
     .limit(1);
 
-  if (!u) return NextResponse.json({ user: null });
-  return NextResponse.json({ user: u });
+  if (!u) return NextResponse.json({ user: null }, {
+    headers: { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' }
+  });
+  return NextResponse.json({ user: u }, {
+    headers: { 'Cache-Control': 'private, no-store, no-cache, must-revalidate' }
+  });
 }
