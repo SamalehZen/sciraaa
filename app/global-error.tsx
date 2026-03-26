@@ -106,7 +106,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
                     Try again
                   </Button>
 
-                  <Link href="/" prefetch>
+                  <Link href="/" prefetch={false}>
                     <Button variant="outline" className="rounded-full">
                       <Home className="size-4" />
                       Home

@@ -134,7 +134,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'maps.googleapis.com',
         port: '',
-        pathname: '/**',
+        pathname: '/maps/api/**',
       },
       // Product Hunt badge
       {
@@ -176,7 +176,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'image.tmdb.org',
         port: '',
-        pathname: '/**',
+        pathname: '/t/p/**',
       },
     ],
     // Add additional settings for better image loading
