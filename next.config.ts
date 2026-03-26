@@ -116,19 +116,7 @@ const nextConfig: NextConfig = {
     qualities: [75, 100],
     dangerouslyAllowSVG: true,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-        port: '',
-        pathname: '**',
-      },
-      {
-        protocol: 'http',
-        hostname: '**',
-        port: '',
-        pathname: '**',
-      },
-      // Google Favicon Service - comprehensive patterns
+      // Google Favicon Service
       {
         protocol: 'https',
         hostname: 'www.google.com',
@@ -148,54 +136,42 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      // Google Street View Static API
-      {
-        protocol: 'https',
-        hostname: 'maps.googleapis.com',
-        port: '',
-        pathname: '/maps/api/streetview/**',
-      },
+      // Product Hunt badge
       {
         protocol: 'https',
         hostname: 'api.producthunt.com',
         port: '',
         pathname: '/widgets/embed-image/v1/featured.svg',
       },
+      // Vercel blob storage
       {
         protocol: 'https',
         hostname: 'metwm7frkvew6tn1.public.blob.vercel-storage.com',
         port: '',
-        pathname: '**',
+        pathname: '/**',
       },
-      // upload.wikimedia.org
+      // Wikimedia
       {
         protocol: 'https',
         hostname: 'upload.wikimedia.org',
         port: '',
-        pathname: '**',
+        pathname: '/**',
       },
-      // media.theresanaiforthat.com
+      // TheresAnAIForThat
       {
         protocol: 'https',
         hostname: 'media.theresanaiforthat.com',
         port: '',
-        pathname: '**',
+        pathname: '/**',
       },
-      // www.uneed.best
+      // Uneed
       {
         protocol: 'https',
         hostname: 'www.uneed.best',
         port: '',
-        pathname: '**',
+        pathname: '/**',
       },
-      // image.tmdb.org
-      {
-        protocol: 'https',
-        hostname: 'image.tmdb.org',
-        port: '',
-        pathname: '/t/p/original/**',
-      },
-      // image.tmdb.org
+      // TMDB images
       {
         protocol: 'https',
         hostname: 'image.tmdb.org',
@@ -204,7 +180,6 @@ const nextConfig: NextConfig = {
       },
     ],
     // Add additional settings for better image loading
-    domains: [],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     formats: ['image/webp'],

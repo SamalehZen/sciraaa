@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           >
             {/* Logo */}
             <motion.div variants={item} className="text-center">
-              <Link href="/" className="inline-flex items-center gap-3 font-be-vietnam-pro font-bold">
+              <Link href="/" prefetch={false} className="inline-flex items-center gap-3 font-be-vietnam-pro font-bold">
                 <div className="relative w-14 h-14 rounded-full bg-background/90 shadow-sm flex items-center justify-center border">
                   <HyperLogo className="size-8 opacity-90" />
                 </div>
@@ -180,7 +180,7 @@ export default function PrivacyPage() {
           <div className="my-8 border-t pt-8">
             <p className="text-sm text-muted-foreground">
               By using Hyper AI, you agree to our Privacy Policy and our{' '}
-              <Link href="/terms" className="underline">
+              <Link href="/terms" prefetch={false} className="underline">
                 Terms of Service
               </Link>
               .
@@ -203,16 +203,16 @@ export default function PrivacyPage() {
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-foreground transition-colors">
+              <Link href="/" prefetch={false} className="hover:text-foreground transition-colors">
                 Home
               </Link>
-              <Link href="/about" className="hover:text-foreground transition-colors">
+              <Link href="/about" prefetch={false} className="hover:text-foreground transition-colors">
                 About
               </Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">
+              <Link href="/terms" prefetch={false} className="hover:text-foreground transition-colors">
                 Terms
               </Link>
-              <Link href="/privacy-policy" className="text-foreground font-medium">
+              <Link href="/privacy-policy" prefetch={false} className="text-foreground font-medium">
                 Privacy
               </Link>
             </div>

@@ -648,6 +648,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(({ content,
             <Link
               href={href}
               target="_blank"
+              prefetch={false}
               className={
                 isCitation
                   ? 'cursor-pointer text-xs no-underline text-primary py-0.5 px-1.25 m-0! bg-primary/10 rounded-sm font-medium inline-flex items-center -translate-y-[1px] leading-none hover:bg-primary/20 focus:outline-none focus:ring-1 focus:ring-primary align-baseline'

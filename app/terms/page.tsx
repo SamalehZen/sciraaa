@@ -39,7 +39,7 @@ export default function TermsPage() {
           >
             {/* Logo */}
             <motion.div variants={item} className="text-center">
-              <Link href="/" className="inline-flex items-center gap-3 font-be-vietnam-pro font-bold">
+              <Link href="/" prefetch={false} className="inline-flex items-center gap-3 font-be-vietnam-pro font-bold">
                 <div className="relative w-14 h-14 rounded-full bg-background/90 shadow-sm flex items-center justify-center border">
                   <HyperLogo className="size-8 opacity-90" />
                 </div>
@@ -136,7 +136,7 @@ export default function TermsPage() {
           <h2>7. Pricing and Billing</h2>
           <p>
             Hyper AI offers both free and paid subscription plans. For detailed pricing information, visit our{' '}
-            <Link href="/pricing" className="underline">
+            <Link href="/pricing" prefetch={false} className="underline">
               Pricing page
             </Link>
             .
@@ -194,7 +194,7 @@ export default function TermsPage() {
           <h2>9. Privacy</h2>
           <p>
             Your use of Hyper AI is also governed by our{' '}
-            <Link href="/privacy-policy" className="underline">
+            <Link href="/privacy-policy" prefetch={false} className="underline">
               Privacy Policy
             </Link>
             , which is incorporated into these Terms of Service by reference.
@@ -238,7 +238,7 @@ export default function TermsPage() {
           <div className="my-8 border-t pt-8">
             <p className="text-sm text-muted-foreground">
               By using Hyper AI, you agree to these Terms of Service and our{' '}
-              <Link href="/privacy-policy" className="underline">
+              <Link href="/privacy-policy" prefetch={false} className="underline">
                 Privacy Policy
               </Link>
               .
@@ -261,16 +261,16 @@ export default function TermsPage() {
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-foreground transition-colors">
+              <Link href="/" prefetch={false} className="hover:text-foreground transition-colors">
                 Home
               </Link>
-              <Link href="/about" className="hover:text-foreground transition-colors">
+              <Link href="/about" prefetch={false} className="hover:text-foreground transition-colors">
                 About
               </Link>
-              <Link href="/terms" className="text-foreground font-medium">
+              <Link href="/terms" prefetch={false} className="text-foreground font-medium">
                 Terms
               </Link>
-              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
+              <Link href="/privacy-policy" prefetch={false} className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
             </div>

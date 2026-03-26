@@ -150,11 +150,11 @@ export function SignInPromptDialog({ open, onOpenChange }: SignInPromptDialogPro
       {/* Legal */}
       <p className="text-xs text-muted-foreground text-center mt-4">
         By continuing, you accept our{' '}
-        <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+        <Link href="/terms" prefetch={false} className="underline underline-offset-2 hover:text-foreground">
           Terms
         </Link>
         {' & '}
-        <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-foreground">
+        <Link href="/privacy-policy" prefetch={false} className="underline underline-offset-2 hover:text-foreground">
           Privacy Policy
         </Link>
       </p>
@@ -196,11 +196,11 @@ export function SignInPromptDialog({ open, onOpenChange }: SignInPromptDialogPro
             {/* Legal */}
             <p className="text-xs text-muted-foreground text-center mt-4">
               By continuing, you accept our{' '}
-              <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+              <Link href="/terms" prefetch={false} className="underline underline-offset-2 hover:text-foreground">
                 Terms
               </Link>
               {' & '}
-              <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-foreground">
+              <Link href="/privacy-policy" prefetch={false} className="underline underline-offset-2 hover:text-foreground">
                 Privacy Policy
               </Link>
             </p>
